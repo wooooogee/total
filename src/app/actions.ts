@@ -28,11 +28,13 @@ export async function registerAction(data: any) {
     try {
       const sheetData: any = {
         '신청일시': new Date().toLocaleString('ko-KR'),
-        '상품명': data.product || '하이브리드698',
+        '상품명': data.product,
+        '제품명': data.productName || '',
         '계약자': data.name,
         '연락처': data.phone,
         '주소': `${data.address} ${data.addressDetail}`,
-        '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : data.productName,
+        '기업명': data.companyName || '',
+        '사업자등록번호': data.businessNumber || '',
         '구좌수': data.productCount,
         '결제정보(카드/cms)': data.paymentMethod === 'card' ? '카드' : 'CMS',
         '카드사/은행명': data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName,
@@ -57,8 +59,15 @@ export async function registerAction(data: any) {
         });
       }
       
-      await addRegistrationToSheet(sheetData, '라이즈498');
-      console.log('Google Sheets 기록 완료 (라이즈498 시트)');
+      let sheetName = '헬스케어580';
+      if (data.product === '더좋은하이브리드698') {
+        sheetName = '하이브리드698';
+      } else if (data.product === '더좋은통신결합') {
+        sheetName = '통신결합';
+      }
+
+      await addRegistrationToSheet(sheetData, sheetName);
+      console.log(`Google Sheets 기록 완료 (${sheetName} 시트)`);
     } catch (sheetError) {
       console.error('Google Sheets 기록 중 실패 (프로세스는 계속됨):', sheetError);
     }
