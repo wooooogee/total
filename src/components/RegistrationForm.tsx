@@ -1034,7 +1034,7 @@ const RegistrationForm = () => {
                           </div>
                         </div>
                         <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                          <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4800000 * formData.productCount).toLocaleString()}원 100% 환급</span>
+                          <span className="text-emerald-600 font-black text-sm italic">만기 2년 후 {(4800000 * formData.productCount).toLocaleString()}원 100% 환급</span>
                         </div>
                       </>
                     )}
