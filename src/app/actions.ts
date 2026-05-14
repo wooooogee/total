@@ -62,6 +62,8 @@ export async function registerAction(data: any) {
       let sheetName = '헬스케어580';
       if (data.product === '더좋은하이브리드698') {
         sheetName = '하이브리드698';
+      } else if (data.product === '더좋은프리미엄540') {
+        sheetName = '프리미엄540';
       } else if (data.product === '더좋은통신결합') {
         sheetName = '통신결합';
       }

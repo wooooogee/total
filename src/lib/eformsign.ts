@@ -92,16 +92,17 @@ export async function createEformsignDocument(data: any) {
         const cleanPhone = (data.phone || '').replace(/\D/g, '');
 
         const EFORMSIGN_TEMPLATE_ID_Hybrid698 = '4e2f0d0f49a24b7caa89fc9c5baf8506';
+        const EFORMSIGN_TEMPLATE_ID_Premium540 = 'b9ecf11e1ed14beba8f6d925af8d26e6';
         const EFORMSIGN_TEMPLATE_ID_Tongsin = '009b8bca4f1c417a8774b22afccf8ccf';
         let templateId = EFORMSIGN_TEMPLATE_ID_Health580;
         let fields: any[] = [];
 
-        if (data.product === '더좋은하이브리드698') {
-            templateId = EFORMSIGN_TEMPLATE_ID_Hybrid698;
+        if (data.product === '더좋은하이브리드698' || data.product === '더좋은프리미엄540') {
+            templateId = data.product === '더좋은하이브리드698' ? EFORMSIGN_TEMPLATE_ID_Hybrid698 : EFORMSIGN_TEMPLATE_ID_Premium540;
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [
-                { id: '상품명', value: `더좋은하이브리드698(${data.productCount}구좌) ${data.productName || ''}`.trim() },
+                { id: '상품명', value: `${data.product}(${data.productCount}구좌) ${data.productName || ''}`.trim() },
                 { id: '제품명', value: data.productName || '' },
                 { id: '구좌수', value: `${data.productCount}구좌` },
                 { id: '계약자이름', value: data.name },

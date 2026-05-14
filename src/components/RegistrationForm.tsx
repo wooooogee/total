@@ -72,9 +72,9 @@ const TONGSIN_TERMS = [
 · 본 상품은 더좋은라이프 상조 서비스와 에넥스텔레콤 통신상품이 결합된 상품으로, 상조 계약과 통신 계약은 각각 별도의 계약으로 운영되며 상호 독립적으로 적용됩니다.
 · 통신요금을 36개월간 정상 납입하여야 하며, 36개월 정상 유지 시 상조포인트가 지급됩니다. 37회차부터 가입한 상조 상품 금액이 출금되는 구조임을 확인합니다.
 · 통신계약에 따라 제공되는 제품 및 건강안심케어 서비스는 사은품이 아니며, 통신계약의 유지 및 이행에 따라 제공되는 서비스임을 확인합니다.
-· 본 통신결합 상품의 총 납입 금액은 360만원형과 540만원형으로 구성되며, 실 상조 납입금은 각각 다음과 같습니다.
-●360형: 적립포인트 1,200,000원, 실상조납입금 2,400,000원, 만기 186회
-●540형: 적립포인트 1,800,000원, 실상조납입금 3,600,000원, 만기 261회
+· 본 통신결합 상품의 총 납입 금액은 360만원형과 540만원형으로 구성되며, 납입 방식은 다음과 같습니다.
+●360형: 1~36회 월 0원 (통신사 적립포인트 33,333원 충당) + 37~186회 월 16,000원 (실 상조 납입금 총 2,400,000원)
+●540형: 1~36회 월 0원 (통신사 적립포인트 50,000원 충당) + 37~261회 월 16,000원 (실 상조 납입금 총 3,600,000원)
 · 계약자가 만기 회차 도래 시점까지 상품 금액을 완납하고 상조 서비스를 이용하지 아니한 경우에는 실 상조 납입금 전액과 약정된 만기 축하금이 지급됩니다.
 · 계약자가 만기 이전에 해지할 경우에는 해지 시점을 기준으로 납입된 실 상조 납입금액에 대하여 「공정거래위원회 해약 환급금 산정 기준 고시」에 따라 환급됩니다.
 · 360플러스 상품의 경우 만기 도래 후 환급금은 5년간 예치되며, 540플러스 상품의 경우 만기 도래 다음 달에 만기 환급금이 지급됩니다. 계약자는 상기 상품 구조, 납입 방식, 해지 환급 기준 및 만기 조건에 대하여 충분한 설명을 듣고 이해하였으며 이에 동의합니다.`,
@@ -135,6 +135,62 @@ const HYBRID_698_TERMS = [
 본 상품은 60회 약정 의무 납입 상품으로, 청약 철회 기간(14일) 이후 해지 시 잔여금을 완납하여야 하며 이에 동의합니다.
 본 상품은 더좋은라이프 상조 서비스와 에넥스텔레콤 결합 상품으로, 상조 서비스와 렌탈 계약은 각각 별개로 진행됩니다. 60회까지의 렌탈 계약으로 제공되는 제품 및 건강 안심 케어 서비스는 사은품이 아님을 알려드립니다.
 본 결합 상품의 총 납입 금액은 498만원(실 상조 납입금 300만 원, 제품 1구좌 198만 원 기준), 240회 만기 상품입니다. 고객님께서 만기 회차 도래 시점까지 상품 금액을 완납하고 익월까지 상조 서비스를 이용하지 않고 해약하실 경우, 실 상조 납입금 전액과 만기 축하금을 지급해 드립니다. 단, 고객님께서 만기 회차 이전에 해지할 경우, 해지 시점을 기준으로 납입된 실 상조 납입금에 대해 공정거래위원회 해약 환급금 산정 기준 고시에 따라 환급합니다.`,
+    required: true
+  },
+  {
+    id: 'privacy',
+    title: '2. 개인(신용)정보의 수집·이용에 관한 사항(필수)',
+    content: `이용목적
+· 상조서비스에 관한 계약이행 및 서비스 제공
+· 상조서비스 가입 고객 관리 및 상조서비스계약의 체결·유지·관리, 상담(민원처리 등)
+· 요금청구를 위한 본인 확인, 요금결제(카드결제, CMS출금 등) 및 추심 업무를 위한 신용정보조회
+· 공공기관의 정책자료로 제공
+
+수집·이용할 개인(신용)정보의 항목
+성명, 주소, 주민번호 앞 7자리, 전화번호, 계좌번호, 카드정보, 휴대폰번호
+
+이용기간
+본 계약체결일로부터 계약종료 후 3년까지
+(단, 전자상거래 등에서의 소비자보호에 관한 법률 등 관련 법령의 규정에 의하여 보존할 필요가 있는 경우에는 그에 따름)`,
+    required: true
+  },
+  {
+    id: 'third_party',
+    title: '3. 제3자 제공 동의에 관한 사항(필수)',
+    content: `본 계약과 관련하여 귀사가 본인으로부터 취득한 개인정보는 「개인정보보호법」 제17조와 제22조에 따라 제3자에게 제공할 경우에는 본인의 사전 동의를 얻어야 합니다. 이에 본인은 귀사가 본인의 개인정보를 아래와 같이 제3자에게 제공하는 것에 동의합니다.
+
+· 개인정보를 제공받는 자: 신한은행, 금융결제원, KICC, 더좋은라이프(주), 에넥스텔레콤, 비에스온, KB헬스케어, (주)여의도자산관리본부, 신안소프트
+· 개인정보를 제공받는 자의 개인정보 이용 목적: 할부거래에 관한 법률 제27조에 따른 공제 계약 및 소비자피해보상보험계약업무, 출금이체 서비스 제공 및 출금 동의 확인, 할부거래, 건강안심케어서비스 이용, 상품/서비스 홍보 및 판매, SMS 서비스 제공, 개인정보조회/신용정보조회 등
+· 제공하는 개인정보의 항목: 
+  - 개인식별정보: 성명, 생년월일, 주소(자택/직장), 연락처(휴대폰/자택)
+  - 계약정보: 회원번호, 납입내역, 상담내역, 행사/해약사항
+  - 결제정보: 예금주, 생년월일, 연락처, 계약자와의 관계, 계좌·카드 정보
+· 개인정보를 제공받는 자의 개인정보 보유 및 이용기간: 상조서비스계약 종료 시 삭제`,
+    required: true
+  },
+  {
+    id: 'marketing',
+    title: '4. 마케팅 정보 제공 동의(선택)',
+    content: `이용목적
+· 신규 상품 및 서비스 안내
+· 이벤트, 프로모션, 혜택 정보 제공
+· 고객 맞춤 정보 제공
+수집·이용할 개인(신용)정보의 항목
+성명, 주소, 휴대폰번호
+이용기간
+동의일로부터 동의 철회 시까지`,
+    required: false
+  },
+];
+
+const PREMIUM_540_TERMS = [
+  {
+    id: 'product_notice',
+    title: '1. 상품내용 고지에 대한 동의 (필수)',
+    content: `본 신청과 관련하여 계약자 본인은 상기 금융거래정보(카드 정보, 은행, 계좌번호 등)를 만기·해지 신청 때까지 청구 기관에 제공하고, 자동이체를 신청합니다.
+본 상품은 60회 약정 의무 납입 상품으로, 청약 철회 기간(14일) 이후 해지 시 잔여금을 완납하여야 하며 이에 동의합니다.
+본 상품은 더좋은라이프 상조 서비스와 에넥스텔레콤 결합 상품으로, 상조 서비스와 렌탈 계약은 각각 별개로 진행됩니다. 60회까지의 렌탈 계약으로 제공되는 제품 및 건강 안심 케어 서비스는 사은품이 아님을 알려드립니다.
+본 결합 상품의 총 납입 금액은 540만원(실 상조 납입금 312만 원, 제품 1구좌 228만 원 기준), 210회 만기 상품입니다. 고객님께서 만기 회차 도래 시점까지 상품 금액을 완납하고 익월까지 상조 서비스를 이용하지 않고 해약하실 경우, 실 상조 납입금 전액과 만기 축하금을 지급해 드립니다. 단, 고객님께서 만기 회차 이전에 해지할 경우, 해지 시점을 기준으로 납입된 실 상조 납입금에 대해 공정거래위원회 해약 환급금 산정 기준 고시에 따라 환급합니다.`,
     required: true
   },
   {
@@ -364,7 +420,7 @@ const RegistrationForm = () => {
       }
     }
     if (currentStep === 1) { // Info
-      if ((formData.product === '더좋은하이브리드698' || formData.product === '더좋은통신결합') && !formData.productName) {
+      if ((formData.product === '더좋은하이브리드698' || formData.product === '더좋은프리미엄540' || formData.product === '더좋은통신결합') && !formData.productName) {
         alert('제품명을 입력해 주세요.');
         return;
       }
@@ -400,7 +456,10 @@ const RegistrationForm = () => {
       }
     }
     if (currentStep === 5) { // Terms Agreement step
-      const currentTerms = formData.product === '더좋은하이브리드698' ? HYBRID_698_TERMS : DEFAULT_TERMS;
+      let currentTerms = DEFAULT_TERMS;
+      if (formData.product === '더좋은하이브리드698') currentTerms = HYBRID_698_TERMS;
+      else if (formData.product === '더좋은프리미엄540') currentTerms = PREMIUM_540_TERMS;
+
       const requiredTerms = currentTerms.filter(t => t.required).map(t => t.id);
       const isAllRequiredAgreed = requiredTerms.every(id => (formData.agreement as any)[id]);
       if (!isAllRequiredAgreed) {
@@ -497,12 +556,12 @@ const RegistrationForm = () => {
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Package size={14} /> 상품 선택</label>
                   <div className="flex flex-col gap-2">
-                    {['더좋은하이브리드698', '더좋은헬스케어580', '더좋은통신결합'].map(p => (
+                    {['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합'].map(p => (
                       <button
                         key={p}
                         type="button"
                         onClick={() => {
-                          const maxCount = p === '더좋은하이브리드698' ? 3 : p === '더좋은통신결합' ? 1 : 4;
+                          const maxCount = (p === '더좋은하이브리드698' || p === '더좋은프리미엄540') ? 3 : p === '더좋은통신결합' ? 1 : 4;
                           setFormData(prev => ({
                             ...prev,
                             product: p,
@@ -511,7 +570,9 @@ const RegistrationForm = () => {
                         }}
                         className={`w-full py-4 px-6 rounded-2xl font-black text-left transition-all ${formData.product === p ? 'bg-indigo-600 text-white shadow-lg' : 'bg-theme border border-theme text-sub hover:text-indigo-500'}`}
                       >
-                        {p}
+                        {p === '더좋은프리미엄540' ? '더좋은프리미엄540 (Premium)' : 
+                         p === '더좋은헬스케어580' ? '더좋은헬스케어580 💪' : 
+                         p === '더좋은통신결합' ? '더좋은통신결합 📞' : p}
                       </button>
                     ))}
                   </div>
@@ -593,7 +654,7 @@ const RegistrationForm = () => {
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calculator size={14} /> 구좌수 (가입 인원)</label>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                      {Array.from({ length: formData.product === '더좋은하이브리드698' ? 3 : 4 }, (_, i) => i + 1).map((num) => (
+                      {Array.from({ length: (formData.product === '더좋은하이브리드698' || formData.product === '더좋은프리미엄540') ? 3 : 4 }, (_, i) => i + 1).map((num) => (
                         <button
                           key={num}
                           type="button"
@@ -607,7 +668,7 @@ const RegistrationForm = () => {
                   </div>
                 )}
 
-                {(formData.product === '더좋은하이브리드698' || formData.product === '더좋은통신결합') && (
+                {(formData.product === '더좋은하이브리드698' || formData.product === '더좋은프리미엄540' || formData.product === '더좋은통신결합') && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -848,9 +909,9 @@ const RegistrationForm = () => {
                 <div className="bg-theme border border-theme p-8 rounded-[2rem] space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">Selected Product</p>
+                      <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">선택한 상품</p>
                       <h3 className="text-lg font-black italic">
-                        {formData.product}({formData.productCount}구좌) {formData.product === '더좋은하이브리드698' && formData.productName ? formData.productName : ''}
+                        {formData.product}({formData.productCount}구좌) {(formData.product === '더좋은하이브리드698' || formData.product === '더좋은프리미엄540') && formData.productName ? formData.productName : ''}
                       </h3>
                     </div>
                   </div>
@@ -860,48 +921,120 @@ const RegistrationForm = () => {
                       <>
                         <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                           <div className="flex flex-col">
-                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">Monthly Payment</span>
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">월 납입금</span>
                             <span className="text-xs font-bold">1~60회차</span>
                           </div>
                           <div className="text-right">
                             <span className="text-xl font-black text-indigo-500">
-                              {(35000 * Number(formData.productCount)).toLocaleString()}
+                              {(35000 * formData.productCount).toLocaleString()}
                             </span>
                             <span className="text-sm font-bold ml-1">원</span>
                           </div>
                         </div>
                         <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                           <div className="flex flex-col">
-                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">Monthly Payment</span>
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">월 납입금</span>
                             <span className="text-xs font-bold">61~240회차</span>
                           </div>
                           <div className="text-right">
                             <span className="text-xl font-black text-indigo-500">
-                              {(16000 * Number(formData.productCount)).toLocaleString()}
+                              {(16000 * formData.productCount).toLocaleString()}
                             </span>
                             <span className="text-sm font-bold ml-1">원</span>
                           </div>
                         </div>
-                        <div className="flex justify-center items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                          <span className="text-emerald-600 font-black text-sm italic">만기 후 100% 환급</span>
+                        <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                          <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * formData.productCount).toLocaleString()}원 100% 환급</span>
+                        </div>
+                      </>
+                    ) : formData.product === '더좋은프리미엄540' ? (
+                      <>
+                        <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                          <div className="flex flex-col">
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">월 납입금</span>
+                            <span className="text-xs font-bold">1~60회차</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xl font-black text-indigo-500">
+                              {(40000 * formData.productCount).toLocaleString()}
+                            </span>
+                            <span className="text-sm font-bold ml-1">원</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                          <div className="flex flex-col">
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">월 납입금</span>
+                            <span className="text-xs font-bold">61~210회차</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xl font-black text-indigo-500">
+                              {(20000 * formData.productCount).toLocaleString()}
+                            </span>
+                            <span className="text-sm font-bold ml-1">원</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                          <span className="text-emerald-600 font-black text-sm italic">만기 시 {(5400000 * formData.productCount).toLocaleString()}원 100% 환급</span>
+                        </div>
+                      </>
+                    ) : formData.product === '더좋은통신결합' ? (
+                      <>
+                        <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                          <div className="flex flex-col">
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider"></span>
+                            <span className="text-xs font-bold text-indigo-600 leading-tight">
+                              1~36회차<br />통신요금
+                            </span>
+                          </div>
+                          <div className="text-right flex flex-col items-end">
+                            <div className="flex items-end">
+                              <span className="text-lg font-black text-indigo-500">
+                                {formData.planName.match(/월([\d,]+)원/)?.[1] || (formData.planName.includes('79,200') ? '79,200' : '0')}
+                              </span>
+                              <span className="text-[11px] font-bold ml-0.5 mb-0.5">원</span>
+                            </div>
+                            <span className="text-[9px] text-emerald-600 font-bold whitespace-nowrap">상조적립금 {formData.planName.includes('360') ? '33,333' : '50,000'}원</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                          <div className="flex flex-col">
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider"></span>
+                            <span className="text-xs font-bold leading-tight">
+                              37~{formData.planName.includes('360') ? '186' : '261'}회차<br />상조부금
+                            </span>
+                          </div>
+                          <div className="text-right flex items-end">
+                            <span className="text-lg font-black text-indigo-500">
+                              {(16000 * formData.productCount).toLocaleString()}
+                            </span>
+                            <span className="text-[11px] font-bold ml-0.5 mb-0.5">원</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
+                          <span className="text-emerald-600 font-black text-sm italic">
+                            {formData.planName.includes('360')
+                              ? `만기 5년예치시 상조적립금 포함 ${(3600000 * formData.productCount).toLocaleString()}원 환급`
+                              : `만기시 상조적립금 포함 ${(5400000 * formData.productCount).toLocaleString()}원 환급`
+                            }
+                          </span>
                         </div>
                       </>
                     ) : (
                       <>
                         <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                           <div className="flex flex-col">
-                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">Monthly Payment</span>
+                            <span className="text-sub text-[10px] font-black uppercase tracking-wider">월 납입금</span>
                             <span className="text-xs font-bold">1~192회차 전 회차 동일</span>
                           </div>
                           <div className="text-right">
                             <span className="text-xl font-black text-indigo-500">
-                              {(25000 * Number(formData.productCount)).toLocaleString()}
+                              {(25000 * formData.productCount).toLocaleString()}
                             </span>
                             <span className="text-sm font-bold ml-1">원</span>
                           </div>
                         </div>
-                        <div className="flex justify-center items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                          <span className="text-emerald-600 font-black text-sm italic">192회 완납 + 2년 예치 시 100% 환급</span>
+                        <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                          <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4800000 * formData.productCount).toLocaleString()}원 100% 환급</span>
                         </div>
                       </>
                     )}
@@ -1030,7 +1163,9 @@ const RegistrationForm = () => {
                         ? TONGSIN_TERMS
                         : formData.product === '더좋은하이브리드698'
                           ? HYBRID_698_TERMS
-                          : DEFAULT_TERMS
+                          : formData.product === '더좋은프리미엄540'
+                            ? PREMIUM_540_TERMS
+                            : DEFAULT_TERMS
                     }
                     onAgreementChange={(agreement) => updateFormData('agreement', agreement)}
                   />
@@ -1138,8 +1273,11 @@ const RegistrationForm = () => {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
                 <div className="inline-flex w-24 h-24 bg-white/20 rounded-[2.5rem] items-center justify-center mb-2 animate-bounce"><CheckCircle2 className="text-white" size={48} /></div>
                 <div className="space-y-4">
-                  <h2 className="text-3xl font-black text-white italic tracking-tighter leading-tight">회원가입 신청완료</h2>
-                  <p className="text-indigo-100 text-sm font-bold opacity-80">계약서 PDF가 자동으로 열립니다.<br />열리지 않으면 아래 버튼을 눌러주세요.</p>
+                  <h2 className="text-2xl font-black text-white italic tracking-tighter leading-tight whitespace-nowrap">회원가입 신청 완료</h2>
+                  <p className="text-indigo-100 text-sm font-bold opacity-80">
+                    계약서 PDF가 열립니다.<br />
+                    열리지 않으면 아래 버튼을<br />눌러주세요.
+                  </p>
                 </div>
 
                 {createdDocumentId && (
