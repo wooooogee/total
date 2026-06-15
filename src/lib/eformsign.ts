@@ -99,7 +99,7 @@ export async function createEformsignDocument(data: any) {
             const EFORMSIGN_TEMPLATE_ID_Premium540 = 'b9ecf11e1ed14beba8f6d925af8d26e6';
             const EFORMSIGN_TEMPLATE_ID_Tongsin = '009b8bca4f1c417a8774b22afccf8ccf';
             const EFORMSIGN_TEMPLATE_ID_Rise498 = '413d37beb6e8476498026303b14a6718';
-            const EFORMSIGN_TEMPLATE_ID_Cruise = 'd9e0306ea32f462194628f8045610816';
+            const EFORMSIGN_TEMPLATE_ID_Cruise = '9c8457e6d8b9433d8e87384d5accdc7b';
             const EFORMSIGN_TEMPLATE_ID_Goodlife = 'd32af2e31ab34cf3932442f278e69ea4';
             
             if (data.product === '더좋은하이브리드698') templateId = EFORMSIGN_TEMPLATE_ID_Hybrid698;
