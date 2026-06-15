@@ -302,6 +302,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [products, setProducts] = useState<ProductConfig[]>([]);
   const sigCanvas = useRef<SignatureCanvas>(null);
+  const [isCustomProductCount, setIsCustomProductCount] = useState(false);
+
 
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어'];
   const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
@@ -438,34 +440,39 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   // 상품 변경에 따른 구좌 수 자료형 및 대상자 리스트 개수 조율
   useEffect(() => {
     const isRise = formData.product === '더좋은라이즈498';
-    const isCruise = formData.product === '좋은건강크루즈' || formData.product === '더좋은크루즈';
+    const isHealthcare580 = formData.product === '더좋은헬스케어580';
+    setIsCustomProductCount(false);
 
     if (isRise) {
       setFormData(prev => ({
         ...prev,
         productCount: 'A',
         hasMultipleProducts: false,
-        productName2: ''
+        productName2: '',
+        contractorType: 'individual'
       }));
     } else {
       setFormData(prev => ({
         ...prev,
         productCount: 1,
         hasMultipleProducts: false,
-        productName2: ''
+        productName2: '',
+        contractorType: isHealthcare580 ? prev.contractorType : 'individual'
       }));
     }
   }, [formData.product]);
+
 
   // 구좌 수 변경 시 대상자 배열 크기 조정
   useEffect(() => {
     let count = 1;
     if (formData.product === '더좋은라이즈498') {
-      const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
+      const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
       count = countMap[formData.productCount as string] || 1;
     } else {
       count = Number(formData.productCount) || 1;
     }
+
 
     if (formData.healthcareTargets.length !== count) {
       setFormData(prev => {
@@ -570,15 +577,23 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         alert('계약자 정보를 모두 정확히 입력해 주세요.');
         return;
       }
+      if (formData.product === '더좋은헬스케어580') {
+        const countNum = Number(formData.productCount);
+        if (!formData.productCount || isNaN(countNum) || countNum <= 0) {
+          alert('신청 구좌 수를 올바르게 입력해 주세요 (1 이상의 숫자).');
+          return;
+        }
+      }
     }
     if (currentStep === 2) { // Healthcare Targets step
       let count = 1;
       if (formData.product === '더좋은라이즈498') {
-        const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
+        const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
         count = countMap[formData.productCount as string] || 1;
       } else {
         count = Number(formData.productCount) || 1;
       }
+
       
       const isTargetValid = formData.healthcareTargets.slice(0, count).every(t => t.relation && t.name && t.birth && t.phone);
       if (!isTargetValid) {
@@ -809,15 +824,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   </>
                 )}
 
-                <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 가입 유형</label>
-                  <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                    <button type="button" onClick={() => updateFormData('contractorType', 'individual')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.contractorType === 'individual' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub hover:text-indigo-400'}`}>개인</button>
-                    <button type="button" onClick={() => updateFormData('contractorType', 'corporate')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.contractorType === 'corporate' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub hover:text-indigo-400'}`}>기업/단체</button>
+                {formData.product === '더좋은헬스케어580' && (
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 가입 유형</label>
+                    <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                      <button type="button" onClick={() => updateFormData('contractorType', 'individual')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.contractorType === 'individual' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub hover:text-indigo-400'}`}>개인</button>
+                      <button type="button" onClick={() => updateFormData('contractorType', 'corporate')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.contractorType === 'corporate' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub hover:text-indigo-400'}`}>기업/단체</button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {formData.contractorType === 'corporate' && (
+                {formData.product === '더좋은헬스케어580' && formData.contractorType === 'corporate' && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Briefcase size={14} /> 기업명</label>
@@ -838,7 +855,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일 / 주민번호 앞자리</label>
-                    <input type="text" placeholder="주민번호 앞 6자리(또는 7자리)" maxLength={7} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    <input type="text" placeholder="주민번호 앞 6자리" maxLength={7} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1">성별</label>
@@ -871,16 +888,59 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calculator size={14} /> 신청 구좌 수</label>
                   {formData.product === '더좋은라이즈498' ? (
-                    <div className="grid grid-cols-4 gap-2 bg-theme p-1 rounded-2xl border border-theme h-14">
-                      {['A', 'B', 'C', 'D'].map(grade => (
+                    <div className="grid grid-cols-3 gap-2 bg-theme p-1 rounded-2xl border border-theme h-14">
+                      {['A', 'B', 'C'].map(grade => (
                         <button key={grade} type="button" onClick={() => updateFormData('productCount', grade)} className={`rounded-xl font-bold transition-all text-xs ${formData.productCount === grade ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
                           {grade}
                         </button>
                       ))}
                     </div>
+                  ) : formData.product === '더좋은헬스케어580' ? (
+                    <div className="space-y-3">
+                      <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
+                        {[1, 2, 3].map(num => (
+                          <button 
+                            key={num} 
+                            type="button" 
+                            onClick={() => {
+                              setIsCustomProductCount(false);
+                              updateFormData('productCount', num);
+                            }} 
+                            className={`flex-1 rounded-xl font-bold transition-all ${!isCustomProductCount && formData.productCount === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                          >
+                            {num}구좌
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomProductCount(true);
+                            updateFormData('productCount', '');
+                          }}
+                          className={`flex-1 rounded-xl font-bold transition-all ${isCustomProductCount ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                        >
+                          직접 입력
+                        </button>
+                      </div>
+                      {isCustomProductCount && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative">
+                          <input 
+                            type="text" 
+                            placeholder="신청할 구좌 수를 숫자로 입력해 주세요 (예: 5)" 
+                            value={formData.productCount} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              updateFormData('productCount', val);
+                            }} 
+                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-6 focus:border-indigo-500 outline-none font-bold text-base" 
+                          />
+                          <span className="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-sub">구좌</span>
+                        </motion.div>
+                      )}
+                    </div>
                   ) : (
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
-                      {[1, 2, 3, 4].map(num => {
+                      {[1, 2, 3].map(num => {
                         const disabled = (formData.product === '더좋은통신결합' && num > 1) || ((formData.product === '좋은건강크루즈' || formData.product === '더좋은크루즈') && num > 2);
                         if (disabled) return null;
                         return (
@@ -892,6 +952,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     </div>
                   )}
                 </div>
+
               </div>
 
               <div className="flex gap-3 pt-4">
