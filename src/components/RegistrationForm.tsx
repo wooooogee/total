@@ -470,8 +470,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
       count = countMap[formData.productCount as string] || 1;
     } else {
-      count = Number(formData.productCount) || 1;
+      // 더좋은헬스케어580에서 직접 입력을 선택한 경우에는 대상자 스킵이므로 0명으로 설정
+      count = (formData.product === '더좋은헬스케어580' && isCustomProductCount) ? 0 : (Number(formData.productCount) || 1);
     }
+
 
 
     if (formData.healthcareTargets.length !== count) {
@@ -636,20 +638,34 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       handleSubmit();
       return;
     }
-    if (currentStep === 1 && formData.product === '더좋은통신결합') {
-      setCurrentStep(3);
-      return;
+    if (currentStep === 1) {
+      if (formData.product === '더좋은통신결합') {
+        setCurrentStep(3);
+        return;
+      }
+      if (formData.product === '더좋은헬스케어580' && isCustomProductCount) {
+        setCurrentStep(3); // 헬스케어대상자(Step 2)를 건너뛰고 상품정보(Step 3)로 바로 이동
+        return;
+      }
     }
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+
   };
 
   const handleBack = () => {
-    if (currentStep === 3 && formData.product === '더좋은통신결합') {
-      setCurrentStep(1);
-      return;
+    if (currentStep === 3) {
+      if (formData.product === '더좋은통신결합') {
+        setCurrentStep(1);
+        return;
+      }
+      if (formData.product === '더좋은헬스케어580' && isCustomProductCount) {
+        setCurrentStep(1); // 헬스케어대상자(Step 2)를 건너뛰고 계약자정보(Step 1)로 바로 이동
+        return;
+      }
     }
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
+
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
