@@ -1,5 +1,6 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import { ProductConfig } from './db';
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '19HQigorXz8j2K2PyQx4k4rGGUMVKk43aNSAI9sEgRyc';
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -130,3 +131,295 @@ export async function addRegistrationToSheet(data: any, sheetTitle: string = '�
     throw error;
   }
 }
+
+export async function getLinkConfigsFromSheet(): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+    console.warn('Google Sheets credentials are not set. Using local DB.');
+    return [];
+  }
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['링크설정'];
+    if (!sheet) {
+      // 링크설정 시트가 없으면 생성하고 헤더 지정
+      const newSheet = await doc.addSheet({
+        title: '링크설정',
+        headerValues: ['링크ID', '링크명', '노출상품목록', '활성화여부', '생성일시']
+      });
+      return [];
+    }
+
+    const rows = await sheet.getRows();
+    return rows.map(row => ({
+      id: row.get('링크ID'),
+      title: row.get('링크명'),
+      products: (row.get('노출상품목록') || '').split(',').map((p: string) => p.trim()).filter(Boolean),
+      isActive: row.get('활성화여부') === 'true' || row.get('활성화여부') === 'TRUE',
+      createdAt: row.get('생성일시')
+    }));
+  } catch (error) {
+    console.error('Failed to get link configs from Sheet:', error);
+    return [];
+  }
+}
+
+export async function saveLinkConfigToSheet(config: any): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    let sheet = doc.sheetsByTitle['링크설정'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '링크설정',
+        headerValues: ['링크ID', '링크명', '노출상품목록', '활성화여부', '생성일시']
+      });
+    }
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('링크ID') === config.id);
+
+    const rowData = {
+      '링크ID': config.id,
+      '링크명': config.title,
+      '노출상품목록': config.products.join(','),
+      '활성화여부': String(config.isActive),
+      '생성일시': config.createdAt || new Date().toISOString()
+    };
+
+    if (existingRow) {
+      existingRow.set('링크명', rowData['링크명']);
+      existingRow.set('노출상품목록', rowData['노출상품목록']);
+      existingRow.set('활성화여부', rowData['활성화여부']);
+      await existingRow.save();
+    } else {
+      await sheet.addRow(rowData);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save link config to Sheet:', error);
+    return false;
+  }
+}
+
+export async function deleteLinkConfigFromSheet(id: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['링크설정'];
+    if (!sheet) return false;
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('링크ID') === id);
+
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete link config from Sheet:', error);
+    return false;
+  }
+}
+
+export async function getRegistrationsFromSheet(sheetTitle: string): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return [];
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle[sheetTitle];
+    if (!sheet) return [];
+
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+
+    return rows.map(row => {
+      const data: any = {};
+      headers.forEach(h => {
+        data[h] = row.get(h) || '';
+      });
+      return data;
+    });
+  } catch (error) {
+    console.error(`Failed to get registrations from sheet ${sheetTitle}:`, error);
+    return [];
+  }
+}
+
+export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+    console.warn('Google Sheets credentials are not set. Using local DB.');
+    return [];
+  }
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['상품설정'];
+    if (!sheet) {
+      // 상품설정 시트가 없으면 생성하고 헤더 지정
+      await doc.addSheet({
+        title: '상품설정',
+        headerValues: [
+          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID',
+          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
+        ]
+      });
+      return [];
+    }
+
+    const rows = await sheet.getRows();
+    return rows.map(row => ({
+      id: row.get('상품ID') || '',
+      name: row.get('상품명') || '',
+      totalPrice: row.get('총액') || '',
+      monthlyPayment1: row.get('1차납입금') || '',
+      monthlyPayment2: row.get('2차납입금') || '',
+      refundNotice: row.get('환급금안내') || '',
+      eformTemplateId: row.get('이폼사인템플릿ID') || '',
+      productNoticeTerm: row.get('상품내용고지약관') || '',
+      privacyTerm: row.get('개인정보수집이용약관') || '',
+      thirdPartyTerm: row.get('제3자제공동의약관') || '',
+      marketingTerm: row.get('마케팅정보제공동의약관') || ''
+    }));
+  } catch (error) {
+    console.error('Failed to get product configs from Sheet:', error);
+    return [];
+  }
+}
+
+export async function saveProductConfigToSheet(config: ProductConfig): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    let sheet = doc.sheetsByTitle['상품설정'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '상품설정',
+        headerValues: [
+          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID',
+          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
+        ]
+      });
+    }
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('상품ID') === config.id);
+
+    const rowData = {
+      '상품ID': config.id,
+      '상품명': config.name,
+      '총액': config.totalPrice,
+      '1차납입금': config.monthlyPayment1,
+      '2차납입금': config.monthlyPayment2,
+      '환급금안내': config.refundNotice,
+      '이폼사인템플릿ID': config.eformTemplateId,
+      '상품내용고지약관': config.productNoticeTerm,
+      '개인정보수집이용약관': config.privacyTerm,
+      '제3자제공동의약관': config.thirdPartyTerm,
+      '마케팅정보제공동의약관': config.marketingTerm
+    };
+
+    if (existingRow) {
+      existingRow.set('상품명', rowData['상품명']);
+      existingRow.set('총액', rowData['총액']);
+      existingRow.set('1차납입금', rowData['1차납입금']);
+      existingRow.set('2차납입금', rowData['2차납입금']);
+      existingRow.set('환급금안내', rowData['환급금안내']);
+      existingRow.set('이폼사인템플릿ID', rowData['이폼사인템플릿ID']);
+      existingRow.set('상품내용고지약관', rowData['상품내용고지약관']);
+      existingRow.set('개인정보수집이용약관', rowData['개인정보수집이용약관']);
+      existingRow.set('제3자제공동의약관', rowData['제3자제공동의약관']);
+      existingRow.set('마케팅정보제공동의약관', rowData['마케팅정보제공동의약관']);
+      await existingRow.save();
+    } else {
+      await sheet.addRow(rowData);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save product config to Sheet:', error);
+    return false;
+  }
+}
+
+export async function deleteProductConfigFromSheet(id: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['상품설정'];
+    if (!sheet) return false;
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('상품ID') === id);
+
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete product config from Sheet:', error);
+    return false;
+  }
+}
+

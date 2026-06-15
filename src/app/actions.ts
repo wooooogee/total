@@ -28,11 +28,12 @@ export async function registerAction(data: any) {
     try {
       const sheetData: any = {
         '신청일시': new Date().toLocaleString('ko-KR'),
+        '유입링크': data.linkId || '직접접속',
         '상품명': data.product,
-        '제품명': data.productName || '',
+        '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
         '계약자': data.name,
         '연락처': data.phone,
-        '주소': `${data.address} ${data.addressDetail}`,
+        '주소': `${data.address} ${data.addressDetail || ''}`.trim(),
         '기업명': data.companyName || '',
         '사업자등록번호': data.businessNumber || '',
         '구좌수': data.productCount,
@@ -66,6 +67,12 @@ export async function registerAction(data: any) {
         sheetName = '프리미엄540';
       } else if (data.product === '더좋은통신결합') {
         sheetName = '통신결합';
+      } else if (data.product === '더좋은라이즈498') {
+        sheetName = '라이즈498';
+      } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈') {
+        sheetName = '크루즈';
+      } else if (data.product === '굿라이프헬스케어') {
+        sheetName = '굿라이프헬스케어';
       }
 
       await addRegistrationToSheet(sheetData, sheetName);

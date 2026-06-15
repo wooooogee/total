@@ -1,9 +1,5 @@
-import RegistrationForm from '@/components/RegistrationForm';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <main>
-      <RegistrationForm />
-    </main>
-  );
+  redirect('/admin/dashboard');
 }
