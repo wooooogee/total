@@ -1087,9 +1087,28 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="space-y-3">
                   {(() => {
                     const currentConfig = products.find(p => p.id === formData.product);
+                    
+                    if (formData.product === '더좋은헬스케어580') {
+                      const count = Number(formData.productCount) || 1;
+                      const monthlyPayment = (25000 * count).toLocaleString();
+                      const refund = (4800000 * count).toLocaleString();
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">월 납입금 (1~192회)</span>
+                            <span className="text-lg font-black text-indigo-500">{monthlyPayment}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">만기 2년 후 {refund}원 100% 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
+
                       return (
                         <>
                           {currentConfig.monthlyPayment1 && (
