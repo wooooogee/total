@@ -1,0 +1,888 @@
+[
+  {
+    "seq": 1,
+    "step_group": 1,
+    "name": "시작(발송인)",
+    "type": "write",
+    "numbering": true,
+    "inperson": false,
+    "inperson_monitor": false,
+    "option": {
+      "use_status": false,
+      "status_value": "",
+      "doc_default_title": "",
+      "auth_type": "",
+      "auth_pwd_field": "",
+      "auth_pwd_hint": "",
+      "use_multi_factor": false,
+      "use_email_auth": true,
+      "use_email_sms_auth_view": false,
+      "use_mobile_auth": false,
+      "use_mobile_auth_view": false,
+      "use_corporation_cert": false,
+      "corp_cert_infos": {
+        "type": "",
+        "use_corporation_cert_view": false,
+        "use_auto_corp_number": false,
+        "corp_num_field": "",
+        "corp_number_registration": null
+      },
+      "use_login_auth": false,
+      "use_login_auth_view": false,
+      "use_before_view_auth": false,
+      "use_before_send_auth": false,
+      "use_before_send_mobile_auth": false,
+      "use_before_send_login_auth": false,
+      "use_before_send_email_auth": true,
+      "use_before_send_corporation_cert": false,
+      "use_doc_count": false,
+      "doc_count_value": "",
+      "specified_recipient_seq": 0,
+      "use_xfreesign": false,
+      "sign_type": "",
+      "sign_type_value": "",
+      "sign_field_value": "",
+      "digital_signature_info": {
+        "module_type": "",
+        "use_sign": false,
+        "sign_type": "private",
+        "sign_type_value": "none",
+        "sign_field_value": ""
+      }
+    },
+    "alert_option": {
+      "mail": {
+        "use": false,
+        "sending_points": []
+      },
+      "sms": {
+        "use": false,
+        "sending_points": [],
+        "alimtalk": {
+          "use": false
+        },
+        "whatsapp": {
+          "use": true
+        }
+      }
+    },
+    "input_control_option": [
+      {
+        "name": "계약자",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "주민번호",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "성별",
+        "input_type": "InputList",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "주소",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "휴대폰",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "결제방법",
+        "input_type": "InputRadioGroup",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "카드/은행명",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "이체일",
+        "input_type": "InputList",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "카드번호/계좌번호",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "구좌수",
+        "input_type": "InputRadioGroup",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "제품명",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "서명",
+        "input_type": "SignPad",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "영업자소속",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_관계",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_성명",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_생년월일",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_성별",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_연락처",
+        "input_type": "InputText",
+        "accessible": true,
+        "required": true,
+        "section": null,
+        "data_type": null
+      }
+    ],
+    "_internal_only": false
+  },
+  {
+    "seq": 2,
+    "step_group": 3,
+    "name": "열람자 1",
+    "type": "reader",
+    "numbering": false,
+    "inperson": false,
+    "inperson_monitor": false,
+    "option": {
+      "auth_valid_time": 720,
+      "auth_type": "field",
+      "auth_pwd_field": "계약자",
+      "auth_pwd_hint": "'계약자'(을)를 입력하세요.",
+      "use_multi_factor": false,
+      "use_email_auth": true,
+      "use_email_sms_auth_view": false,
+      "use_mobile_auth": false,
+      "use_mobile_auth_view": false,
+      "use_corporation_cert": false,
+      "corp_cert_infos": {
+        "type": "",
+        "use_corporation_cert_view": false,
+        "use_auto_corp_number": false,
+        "corp_num_field": "",
+        "corp_number_registration": null
+      },
+      "use_login_auth": false,
+      "use_login_auth_view": false,
+      "use_before_view_auth": false,
+      "use_before_send_auth": false,
+      "use_before_send_mobile_auth": false,
+      "use_before_send_login_auth": false,
+      "use_before_send_email_auth": true,
+      "use_before_send_corporation_cert": false,
+      "is_outsider_auto_info": false,
+      "outsider_auto_infos": {
+        "name": "",
+        "email": "",
+        "sms_number": ""
+      },
+      "owner": {
+        "members": [],
+        "groups": [],
+        "externals": null,
+        "externalCreators": null,
+        "roles": null,
+        "owner_type": "groupormember",
+        "memberObjectList": null,
+        "groupObjectList": null,
+        "_owner_specified": false
+      },
+      "receipients": [],
+      "use_hidden_sections": false,
+      "hidden_sections": [],
+      "required_sections": [],
+      "selected_sections": [],
+      "use_mail": false,
+      "use_sms": true,
+      "use_alimtalk": true,
+      "specified_recipient_type": "",
+      "specified_recipient_seq": -1,
+      "use_receipient_specified": false,
+      "use_xfreesign": false,
+      "sign_type": "private",
+      "sign_type_value": "",
+      "sign_field_value": "",
+      "skip_type": "none",
+      "use_reject_restrict": false,
+      "digital_signature_info": {
+        "module_type": "kicacert",
+        "use_sign": false,
+        "sign_type": "private",
+        "sign_type_value": "",
+        "sign_field_value": ""
+      },
+      "stepApprovalAgentInfo": {
+        "useApprovalAgent": false,
+        "stepSeq": 0,
+        "option": ""
+      }
+    },
+    "alert_option": {
+      "mail": {
+        "use": false,
+        "sending_points": [
+          {
+            "sending_point": "reject_accept",
+            "mail_subject": "[문서 반려로 인한 수정 요청] $$document_title$$",
+            "mail_template": "05fed2c3145f4aabb0e37eab9f83029c",
+            "is_used": true,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "approval_accept",
+            "mail_subject": "",
+            "mail_template": "",
+            "is_used": false,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "request_accept",
+            "mail_subject": "",
+            "mail_template": "9a0aad24f6b74095adb86f26a7de60a2",
+            "is_used": true,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "complete_outsider_document",
+            "mail_subject": "[$$company_name$$] '$$document_title$$' 문서가 완료되었습니다.",
+            "mail_template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+            "is_used": false,
+            "is_use_template": false,
+            "is_attach_pdf": true,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "reject_outsider",
+            "mail_subject": "[문서 반려로 인한 수정 요청] $$document_title$$",
+            "mail_template": "05fed2c3145f4aabb0e37eab9f83029c",
+            "is_used": true,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "approval_outsider",
+            "mail_subject": "",
+            "mail_template": "",
+            "is_used": false,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "request_outsider",
+            "mail_subject": "",
+            "mail_template": "9a0aad24f6b74095adb86f26a7de60a2",
+            "is_used": true,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "revoke_document",
+            "mail_subject": "",
+            "mail_template": "",
+            "is_used": false,
+            "is_use_template": true,
+            "is_attach_pdf": false,
+            "attach_audit_pdf": false,
+            "is_edit": false
+          }
+        ]
+      },
+      "sms": {
+        "use": true,
+        "sending_points": [
+          {
+            "sending_point": "reject_accept",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "05fed2c3145f4aabb0e37eab9f83029c",
+            "show_document": false,
+            "pdf_download": false,
+            "audit_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "approval_accept",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "",
+            "show_document": false,
+            "pdf_download": false,
+            "audit_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "request_accept",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "9a0aad24f6b74095adb86f26a7de60a2",
+            "show_document": false,
+            "pdf_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "complete_outsider_document",
+            "is_used": true,
+            "is_use_template": false,
+            "sms_message": "더좋은하이브리드698 계약이 완료되었습니다.",
+            "sms_template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+            "show_document": false,
+            "pdf_download": true,
+            "audit_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "reject_outsider",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "05fed2c3145f4aabb0e37eab9f83029c",
+            "show_document": false,
+            "pdf_download": false,
+            "audit_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "approval_outsider",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "",
+            "show_document": false,
+            "pdf_download": false,
+            "audit_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "request_outsider",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "9a0aad24f6b74095adb86f26a7de60a2",
+            "show_document": false,
+            "pdf_download": false,
+            "is_edit": false
+          },
+          {
+            "sending_point": "revoke_document",
+            "is_used": true,
+            "is_use_template": true,
+            "sms_message": "",
+            "sms_template": "",
+            "show_document": false,
+            "pdf_download": false,
+            "audit_download": false,
+            "is_edit": false
+          }
+        ],
+        "alimtalk": {
+          "use": true
+        },
+        "whatsapp": {
+          "use": true
+        }
+      },
+      "multiNotiLangList": [
+        "ko"
+      ]
+    },
+    "input_control_option": [
+      {
+        "name": "계약자",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "주민번호",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "성별",
+        "input_type": "InputList",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "주소",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "휴대폰",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "결제방법",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "카드/은행명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "이체일",
+        "input_type": "InputList",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "카드번호/계좌번호",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "유효기간",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "구좌수",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "제품명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "상품내용고지",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "개인정보수집",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "제3자제공",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "마케팅정보제공",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "체크 4",
+        "input_type": "InputRadioGroup",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "서명",
+        "input_type": "SignPad",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "계약일",
+        "input_type": "DateTimePicker",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "영업자소속",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "영업자성명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "영업자연락처",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_관계",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_성명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_생년월일",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_성별",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자1_연락처",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자2_관계",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자2_성명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자2_생년월일",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자2_성별",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자2_연락처",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자3_관계",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자3_성명",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자3_생년월일",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자3_성별",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      },
+      {
+        "name": "대상자3_연락처",
+        "input_type": "InputText",
+        "accessible": false,
+        "required": false,
+        "section": null,
+        "data_type": null
+      }
+    ],
+    "_internal_only": false
+  },
+  {
+    "seq": 3,
+    "step_group": 2,
+    "name": "완료",
+    "type": "complete",
+    "numbering": false,
+    "inperson": false,
+    "inperson_monitor": false,
+    "option": {
+      "use_multi_factor": false,
+      "use_email_auth": false,
+      "use_corporation_cert": false,
+      "use_login_auth": false,
+      "use_tsa": false,
+      "use_dropbox": false,
+      "use_hana_ceda": false,
+      "specified_recipient_seq": 0,
+      "use_attach_link": false
+    },
+    "alert_option": {
+      "mail": {
+        "use": false,
+        "sending_points": [
+          {
+            "sending_point": "complete_document",
+            "mail_subject": "[$$company_name$$] '$$document_title$$' 문서가 완료되었습니다.",
+            "mail_template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+            "is_used": true,
+            "is_use_template": false,
+            "is_attach_pdf": true,
+            "attach_audit_pdf": false,
+            "is_edit": false,
+            "multi_noti_template": [
+              {
+                "template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+                "email_title": "[$$company_name$$] '$$document_title$$' 문서가 완료되었습니다.",
+                "sms_title": null,
+                "lang_code": "ko"
+              },
+              {
+                "template": "<table id=\"mail_wrapper\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\">\n            \n            <tbody><tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                    <div class=\"mail_cont mail_title\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                        <b>The document has been completed.</b>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            \n            \n            \n\n            \n            <tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">\n                    <div class=\"mail_cont user_info\">\n                        <p style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">Document name : <b>$$document_title$$</b></p>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n\n            \n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            <tr>\n                <td width=\"100%\" height=\"38\" valign=\"top\">\n                    \n                    <table id=\"footer_logo\" width=\"320\" height=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse;\">\n                        <tbody><tr>\n                            <td width=\"130\" height=\"100%\" align=\"center\" valign=\"middle\">\n                                \n                                <img controlkey=\"brand_image\" src=\"https://www.eformsign.com/images/logo/logo_eformsign.png\" width=\"130\" height=\"32\" alt=\"eformsign\" style=\"margin: 0; padding: 0; border: 0 none;\">\n                            </td>\n                            <td width=\"10\"></td>\n                            <td align=\"left\" height=\"100%\" valign=\"middle\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; line-height: 1;\">\n                                <img src=\"https://test.eformsign.com/images/logo/logo_txt.png\" alt=\"Powered by eformsign\" width=\"89\" height=\"35\" valign=\"middle\">\n                            </td>\n                        </tr>\n                        <tr>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                        </tr>\n        <tr><td width=\"100%;\"><p>   <font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b></b></font></p>\n   <pre style=\"display: inline-block; margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500; border: 0 none; background: none;\"><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b>$$privacy_polish_link$$</b></font></pre><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b> </b></font></td></tr>\n         </tbody></table>\n                </td>\n            </tr>\n            <tr><td height=\"20\" valign=\"top\"></td></tr>\n            \n        </tbody></table>",
+                "email_title": "[$$company_name$$] '$$document_title$$' has been completed.",
+                "sms_title": null,
+                "lang_code": "en"
+              },
+              {
+                "template": "<table id=\"mail_wrapper\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\">\n            \n            <tbody><tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                    <div class=\"mail_cont mail_title\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                        <b>文書が完了しました。</b>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            \n            \n            \n\n            \n            <tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">\n                    <div class=\"mail_cont user_info\">\n                        <p style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">文書タイトル : <b>$$document_title$$</b></p>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n\n            \n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            <tr>\n                <td width=\"100%\" height=\"38\" valign=\"top\">\n                    \n                    <table id=\"footer_logo\" width=\"320\" height=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse;\">\n                        <tbody><tr>\n                            <td width=\"130\" height=\"100%\" align=\"center\" valign=\"middle\">\n                                \n                                <img controlkey=\"brand_image\" src=\"https://www.eformsign.com/images/logo/logo_eformsign.png\" width=\"130\" height=\"32\" alt=\"eformsign\" style=\"margin: 0; padding: 0; border: 0 none;\">\n                            </td>\n                            <td width=\"10\"></td>\n                            <td align=\"left\" height=\"100%\" valign=\"middle\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; line-height: 1;\">\n                                <img src=\"https://test.eformsign.com/images/logo/logo_txt.png\" alt=\"Powered by eformsign\" width=\"89\" height=\"35\" valign=\"middle\">\n                            </td>\n                        </tr>\n                        <tr>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                        </tr>\n        <tr><td width=\"100%;\"><p>   <font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b></b></font></p>\n   <pre style=\"display: inline-block; margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500; border: 0 none; background: none;\"><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b>$$privacy_polish_link$$</b></font></pre><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b> </b></font></td></tr>\n         </tbody></table>\n                </td>\n            </tr>\n            <tr><td height=\"20\" valign=\"top\"></td></tr>\n            \n        </tbody></table>",
+                "email_title": "[$$company_name$$] $$document_title$$が完了しました",
+                "sms_title": null,
+                "lang_code": "ja"
+              }
+            ]
+          }
+        ]
+      },
+      "sms": {
+        "use": false,
+        "sending_points": [
+          {
+            "sending_point": "complete_document",
+            "is_used": false,
+            "is_use_template": false,
+            "sms_message": "더좋은하이브리드698 계약이 완료되었습니다.",
+            "sms_template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+            "show_document": false,
+            "pdf_download": true,
+            "audit_download": false,
+            "is_edit": false,
+            "multi_noti_template": [
+              {
+                "template": "<p></p><p></p><p></p><table style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\" id=\"mail_wrapper\"><tbody><tr><td style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" valign=\"top\" width=\"100%\"><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><b>더좋은하이브리드698 계약이 완료되었습니다.</b></div><div style=\"margin: 0px; padding: 0px; font-family: &quot;Noto Sans KR&quot;, Helvetica, arial, sans-serif; color: rgb(50, 50, 50); font-size: 18px;\" class=\"mail_cont mail_title\"><p data-end=\"221\" data-start=\"125\"><br></p><p data-end=\"221\" data-start=\"125\">고객님의 계약이 정상적으로 완료되었습니다.<br data-end=\"174\" data-start=\"171\">\n소중한 선택에 감사드리며, 계약 내용은 등록된 정보 기준으로 안전하게 보관됩니다.</p>\n<p data-end=\"306\" data-start=\"223\">이용 관련 문의사항이 있으실 경우 언제든지 고객센터로 연락 주시기 바랍니다.<br data-end=\"268\" data-start=\"265\">\n앞으로도 더좋은라이프(주)는 고객님의 든든한 동반자가 되겠습니다.</p>\n<p data-end=\"314\" data-start=\"308\">감사합니다.</p></div></td></tr>\n            <tr><td valign=\"top\" height=\"20\"><p><br></p></td></tr>\n            \n        </tbody></table>",
+                "email_title": null,
+                "sms_title": "더좋은하이브리드698 계약이 완료되었습니다.",
+                "lang_code": "ko"
+              },
+              {
+                "template": "<table id=\"mail_wrapper\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\">\n            \n            <tbody><tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                    <div class=\"mail_cont mail_title\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                        <b>The document has been completed.</b>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            \n            \n            \n\n            \n            <tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">\n                    <div class=\"mail_cont user_info\">\n                        <p style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">Document name : <b>$$document_title$$</b></p>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n\n            \n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            <tr>\n                <td width=\"100%\" height=\"38\" valign=\"top\">\n                    \n                    <table id=\"footer_logo\" width=\"320\" height=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse;\">\n                        <tbody><tr>\n                            <td width=\"130\" height=\"100%\" align=\"center\" valign=\"middle\">\n                                \n                                <img controlkey=\"brand_image\" src=\"https://www.eformsign.com/images/logo/logo_eformsign.png\" width=\"130\" height=\"32\" alt=\"eformsign\" style=\"margin: 0; padding: 0; border: 0 none;\">\n                            </td>\n                            <td width=\"10\"></td>\n                            <td align=\"left\" height=\"100%\" valign=\"middle\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; line-height: 1;\">\n                                <img src=\"https://test.eformsign.com/images/logo/logo_txt.png\" alt=\"Powered by eformsign\" width=\"89\" height=\"35\" valign=\"middle\">\n                            </td>\n                        </tr>\n                        <tr>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                        </tr>\n        <tr><td width=\"100%;\"><p>   <font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b></b></font></p>\n   <pre style=\"display: inline-block; margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500; border: 0 none; background: none;\"><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b>$$privacy_polish_link$$</b></font></pre><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b> </b></font></td></tr>\n         </tbody></table>\n                </td>\n            </tr>\n            <tr><td height=\"20\" valign=\"top\"></td></tr>\n            \n        </tbody></table>",
+                "email_title": null,
+                "sms_title": "[eformsign] A document has been completed.",
+                "lang_code": "en"
+              },
+              {
+                "template": "<table id=\"mail_wrapper\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse; margin: 0 0 0 0; padding: 0 0 0 0;\">\n            \n            <tbody><tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                    <div class=\"mail_cont mail_title\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #323232; font-size: 18px; font-weight: 500;\">\n                        <b>文書が完了しました。</b>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            \n            \n            \n\n            \n            <tr>\n                <td width=\"100%\" valign=\"top\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">\n                    <div class=\"mail_cont user_info\">\n                        <p style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; color: #000000; font-size: 14px;\">文書タイトル : <b>$$document_title$$</b></p>\n                    </div>\n                </td>\n            </tr>\n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n\n            \n            <tr><td height=\"30\" valign=\"top\"></td></tr>\n            <tr>\n                <td width=\"100%\" height=\"38\" valign=\"top\">\n                    \n                    <table id=\"footer_logo\" width=\"320\" height=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"table-layout: fixed; border-collapse: collapse;\">\n                        <tbody><tr>\n                            <td width=\"130\" height=\"100%\" align=\"center\" valign=\"middle\">\n                                \n                                <img controlkey=\"brand_image\" src=\"https://www.eformsign.com/images/logo/logo_eformsign.png\" width=\"130\" height=\"32\" alt=\"eformsign\" style=\"margin: 0; padding: 0; border: 0 none;\">\n                            </td>\n                            <td width=\"10\"></td>\n                            <td align=\"left\" height=\"100%\" valign=\"middle\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', Helvetica, arial, sans-serif; line-height: 1;\">\n                                <img src=\"https://test.eformsign.com/images/logo/logo_txt.png\" alt=\"Powered by eformsign\" width=\"89\" height=\"35\" valign=\"middle\">\n                            </td>\n                        </tr>\n                        <tr>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                            <td height=\"30\" valign=\"top\" style=\"border-bottom: 2px solid #808080;\"></td>\n                        </tr>\n        <tr><td width=\"100%;\"><p>   <font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b></b></font></p>\n   <pre style=\"display: inline-block; margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500; border: 0 none; background: none;\"><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b>$$privacy_polish_link$$</b></font></pre><font color=\"#0E73C3\" style=\"margin: 0 0 0 0; padding: 0 0 0 0; font-family: 'Noto Sans KR', sans-serif, Helvetica, arial; font-size: 14px; font-weight: 500;\"><b> </b></font></td></tr>\n         </tbody></table>\n                </td>\n            </tr>\n            <tr><td height=\"20\" valign=\"top\"></td></tr>\n            \n        </tbody></table>",
+                "email_title": null,
+                "sms_title": "[eformsign] 文書が完了しました",
+                "lang_code": "ja"
+              }
+            ]
+          }
+        ],
+        "alimtalk": {
+          "use": false
+        },
+        "whatsapp": {
+          "use": true
+        }
+      },
+      "multiNotiLangList": [
+        "ko",
+        "en",
+        "ja"
+      ]
+    },
+    "_internal_only": false
+  }
+]
