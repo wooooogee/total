@@ -1086,29 +1086,146 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
                 <div className="space-y-3">
                   {(() => {
-                    const currentConfig = products.find(p => p.id === formData.product);
-                    
+                    // 1. 하드코딩된 동적 계산 로직 우선 적용
                     if (formData.product === '더좋은헬스케어580') {
                       const count = Number(formData.productCount) || 1;
-                      const monthlyPayment = (25000 * count).toLocaleString();
-                      const refund = (4800000 * count).toLocaleString();
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                             <span className="text-xs font-bold">월 납입금 (1~192회)</span>
-                            <span className="text-lg font-black text-indigo-500">{monthlyPayment}원</span>
+                            <span className="text-lg font-black text-indigo-500">{(25000 * count).toLocaleString()}원</span>
                           </div>
                           <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                            <span className="text-emerald-600 font-black text-sm italic">만기 2년 후 {refund}원 100% 환급</span>
+                            <span className="text-emerald-600 font-black text-sm italic">만기 2년 후 {(4800000 * count).toLocaleString()}원 100% 환급</span>
                           </div>
                         </>
                       );
                     }
 
+                    if (formData.product === '더좋은하이브리드698') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1~60회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(35000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">61~240회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(16000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    if (formData.product === '더좋은프리미엄540') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1~60회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(40000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">61~210회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(20000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(5400000 * count).toLocaleString()}원 100% 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    if (formData.product === '굿라이프헬스케어') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1~60회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(35000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">61~240회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(16000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    if (formData.product === '더좋은라이즈498') {
+                      const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
+                      const count = countMap[formData.productCount as string] || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1~60회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(33000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">61~260회차 (월 납입)</span>
+                            <span className="text-lg font-black text-indigo-500">{(15000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    if (formData.product === '더좋은통신결합') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1~36회차 통신비</span>
+                            <span className="text-lg font-black text-indigo-500">
+                              {formData.planName.match(/월([\d,]+)원/)?.[1] || (formData.planName.includes('79,200') ? '79,200' : '0')}원
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">37~{formData.planName.includes('360') ? '186' : '261'}회차 상조금</span>
+                            <span className="text-lg font-black text-indigo-500">{(16000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
+                            <span className="text-emerald-600 font-black text-sm italic">
+                              {formData.planName.includes('360')
+                                ? `만기 5년예치시 ${(3600000 * count).toLocaleString()}원 환급`
+                                : `만기시 ${(5400000 * count).toLocaleString()}원 환급`}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    if (formData.product === '좋은건강크루즈' || formData.product === '더좋은크루즈') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold">월 납입금 (100회)</span>
+                              <span className="text-[9px] text-indigo-500 font-bold">선결제금 60만 원 제외분 납부</span>
+                            </div>
+                            <span className="text-lg font-black text-indigo-500">{(27000 * count).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                            <span className="text-emerald-600 font-black text-sm italic">완납 후 5년예치 만기 시 100% 전액 환급</span>
+                          </div>
+                        </>
+                      );
+                    }
+
+                    // 2. 알 수 없는 신규 상품인 경우 products.json 설정 기반 폴백
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
-
                       return (
                         <>
                           {currentConfig.monthlyPayment1 && (
@@ -1132,126 +1249,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    return (
-                      <>
-                        {formData.product === '더좋은하이브리드698' && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(35000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">61~240회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(16000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                              <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * Number(formData.productCount)).toLocaleString()}원 100% 환급</span>
-                            </div>
-                          </>
-                        )}
-
-                        {formData.product === '더좋은프리미엄540' && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(40000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">61~210회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(20000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                              <span className="text-emerald-600 font-black text-sm italic">만기 시 {(5400000 * Number(formData.productCount)).toLocaleString()}원 100% 환급</span>
-                            </div>
-                          </>
-                        )}
-
-                        {formData.product === '굿라이프헬스케어' && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(35000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">61~240회차 (월 납입)</span>
-                              <span className="text-lg font-black text-indigo-500">{(16000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                              <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * Number(formData.productCount)).toLocaleString()}원 100% 환급</span>
-                            </div>
-                          </>
-                        )}
-
-                        {formData.product === '더좋은라이즈498' && (() => {
-                          const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
-                          const count = countMap[formData.productCount as string] || 1;
-                          return (
-                            <>
-                              <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                                <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                                <span className="text-lg font-black text-indigo-500">{(33000 * count).toLocaleString()}원</span>
-                              </div>
-                              <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                                <span className="text-xs font-bold">61~260회차 (월 납입)</span>
-                                <span className="text-lg font-black text-indigo-500">{(15000 * count).toLocaleString()}원</span>
-                              </div>
-                              <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                                <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
-                              </div>
-                            </>
-                          );
-                        })()}
-
-                        {formData.product === '더좋은통신결합' && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1~36회차 통신비</span>
-                              <span className="text-lg font-black text-indigo-500">
-                                {formData.planName.match(/월([\d,]+)원/)?.[1] || (formData.planName.includes('79,200') ? '79,200' : '0')}원
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">37~{formData.planName.includes('360') ? '186' : '261'}회차 상조금</span>
-                              <span className="text-lg font-black text-indigo-500">{(16000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
-                              <span className="text-emerald-600 font-black text-sm italic">
-                                {formData.planName.includes('360')
-                                  ? `만기 5년예치시 ${(3600000 * Number(formData.productCount)).toLocaleString()}원 환급`
-                                  : `만기시 ${(5400000 * Number(formData.productCount)).toLocaleString()}원 환급`}
-                              </span>
-                            </div>
-                          </>
-                        )}
-
-                        {(formData.product === '좋은건강크루즈' || formData.product === '더좋은크루즈') && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold">월 납입금 (100회)</span>
-                                <span className="text-[9px] text-indigo-500 font-bold">선결제금 60만 원 제외분 납부</span>
-                              </div>
-                              <span className="text-lg font-black text-indigo-500">{(27000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                              <span className="text-emerald-600 font-black text-sm italic">완납 후 5년예치 만기 시 100% 전액 환급</span>
-                            </div>
-                          </>
-                        )}
-
-                        {formData.product === '더좋은헬스케어580' && (
-                          <>
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1~192회차 전회 동일</span>
-                              <span className="text-lg font-black text-indigo-500">{(25000 * Number(formData.productCount)).toLocaleString()}원</span>
-                            </div>
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                              <span className="text-emerald-600 font-black text-sm italic">만기 2년 후 {(4800000 * Number(formData.productCount)).toLocaleString()}원 100% 환급</span>
-                            </div>
-                          </>
-                        )}
-                      </>
-                    );
+                    return null;
                   })()}
                 </div>
               </div>

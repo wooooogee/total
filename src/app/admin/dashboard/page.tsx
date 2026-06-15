@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, 
-  Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award
+  Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award, ChevronRightIcon,
+  X, Eye, Download, Lock
 } from 'lucide-react';
 
 interface LinkConfig {
@@ -31,6 +32,14 @@ interface ProductConfig {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products'>('links');
+  
+  // 인증 상태
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+
+  // PDF 모달 상태
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
   
   // 동적 링크 상태
   const [links, setLinks] = useState<LinkConfig[]>([]);
@@ -287,9 +296,49 @@ export default function AdminDashboard() {
       (log['상품명'] && log['상품명'].includes(searchTerm));
       
     const matchesSheet = sheetFilter === 'ALL' || log['시트구분'] === sheetFilter;
-    
     return matchesSearch && matchesSheet;
   });
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === '880805') {
+      setIsAuthenticated(true);
+    } else {
+      alert('비밀번호가 일치하지 않습니다.');
+      setPasswordInput('');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 w-full max-w-sm space-y-8">
+          <div className="text-center space-y-3">
+            <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+              <Lock size={24} />
+            </div>
+            <div>
+              <h1 className="text-lg font-black text-slate-800">통합 신청 시스템</h1>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1">관리자 접근을 위해 비밀번호를 입력해주세요</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-center tracking-widest text-lg font-black text-slate-800 focus:border-indigo-600 focus:outline-none transition-colors"
+              placeholder="••••••"
+              autoFocus
+            />
+            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3.5 font-black text-sm transition-colors shadow-sm">
+              시스템 접속하기
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
@@ -747,7 +796,7 @@ export default function AdminDashboard() {
 
                 <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
                   <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-xl overflow-x-auto max-w-full font-sans">
-                    {['ALL', '하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '통신결합'].map(sheet => (
+                    {['ALL', '하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '헬스케어580', '통신결합'].map(sheet => (
                       <button 
                         key={sheet}
                         onClick={() => setSheetFilter(sheet)}
@@ -832,14 +881,12 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               {log['document_id'] ? (
-                                <a 
-                                  href={`/api/download?id=${log['document_id']}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button 
+                                  onClick={() => { setSelectedPdfId(log['document_id']); setPdfModalOpen(true); }}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-150 text-indigo-600 hover:bg-indigo-650 hover:text-white hover:border-transparent rounded-lg transition-all text-[10px] font-black shadow-sm"
                                 >
                                   <FileText size={12} /> 계약서 보기
-                                </a>
+                                </button>
                               ) : (
                                 <span className="text-slate-400 font-bold">서명 미완료</span>
                               )}
@@ -855,26 +902,63 @@ export default function AdminDashboard() {
           )}
         </AnimatePresence>
       </main>
-    </div>
-  );
-}
 
-// ChevronRightIcon component inline fallback
-function ChevronRightIcon({ size = 16, className = '' }: { size?: number, className?: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
+      {/* PDF 모달 */}
+      <AnimatePresence>
+        {pdfModalOpen && selectedPdfId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => setPdfModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800">계약서 확인</h3>
+                    <p className="text-[10px] font-bold text-slate-400">PDF 원본 문서를 열람하거나 다운로드합니다.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`/api/download?id=${selectedPdfId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors"
+                  >
+                    <Download size={14} /> PDF 다운로드
+                  </a>
+                  <button 
+                    onClick={() => setPdfModalOpen(false)}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex-1 bg-slate-100/50 relative overflow-hidden">
+                <iframe 
+                  src={`/api/download?id=${selectedPdfId}`} 
+                  className="w-full h-[65vh] border-0"
+                  title="PDF Viewer"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
