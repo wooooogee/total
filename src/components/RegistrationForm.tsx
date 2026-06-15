@@ -681,6 +681,26 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           </button>
         </div>
 
+        {currentStep > 0 && currentStep < 8 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between bg-indigo-50/50 dark:bg-zinc-800/40 border border-indigo-100/60 dark:border-zinc-700/50 rounded-2xl py-3.5 px-5 w-full shadow-sm"
+          >
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-sub opacity-60">선택한 상품</span>
+              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{formData.product}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentStep(0)}
+              className="text-[11px] font-bold bg-white dark:bg-zinc-800 border border-theme text-sub hover:text-indigo-600 px-3 py-2 rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1 cursor-pointer"
+            >
+              <ArrowLeft size={12} /> 상품 재선택
+            </button>
+          </motion.div>
+        )}
+
         <AnimatePresence mode="wait">
           {currentStep === 0 && (
             <motion.div
@@ -710,15 +730,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                         }}
                         className={`w-full py-4 px-6 rounded-2xl font-black text-left transition-all ${formData.product === p ? 'bg-indigo-600 text-white shadow-lg' : 'bg-theme border border-theme text-sub hover:text-indigo-500'}`}
                       >
-                        {p === '더좋은프리미엄540' ? '더좋은프리미엄540 (Premium)' :
-                         p === '더좋은헬스케어580' ? '더좋은헬스케어580 💪' :
-                         p === '더좋은통신결합' ? '더좋은통신결합 📞' :
-                         p === '더좋은라이즈498' ? '더좋은라이즈498 🚀' :
-                         p === '좋은건강크루즈' ? '좋은건강크루즈 🚢' :
-                         p === '굿라이프헬스케어' ? '굿라이프헬스케어 💚' : p}
+                        {p}
                       </button>
                     ))}
                   </div>
+
                 </div>
               </div>
 
