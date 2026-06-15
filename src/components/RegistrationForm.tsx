@@ -1223,6 +1223,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     }
 
                     // 2. 알 수 없는 신규 상품인 경우 products.json 설정 기반 폴백
+                    const currentConfig = products.find(p => p.id === formData.product);
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
