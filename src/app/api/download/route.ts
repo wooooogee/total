@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get('id');
+    const action = searchParams.get('action');
 
     if (!documentId) {
       return new NextResponse('Document ID is required', { status: 400 });
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="contract_${documentId}.pdf"`
+        'Content-Disposition': `${action === 'download' ? 'attachment' : 'inline'}; filename="contract_${documentId}.pdf"`
       }
     });
   } catch (error: any) {

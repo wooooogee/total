@@ -932,7 +932,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                   <a
-                    href={`/api/download?id=${selectedPdfId}`}
+                    href={`/api/download?id=${selectedPdfId}&action=download`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors"
