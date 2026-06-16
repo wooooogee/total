@@ -843,11 +843,11 @@ export default function AdminDashboard() {
                               {log['신청일시'] || '-'}
                             </td>
                             <td className="p-5 whitespace-nowrap">
-                              {log['_R'] || log['_S'] || log['_T'] ? (
+                              {log['_targets'] && log['_targets'].length > 0 ? (
                                 <div className="flex flex-col gap-0.5">
-                                  {log['_R'] && <span className="text-slate-600 font-normal">{log['_R']}</span>}
-                                  {log['_S'] && <span className="text-slate-600 font-normal">{log['_S']}</span>}
-                                  {log['_T'] && <span className="text-slate-600 font-normal">{log['_T']}</span>}
+                                  {log['_targets'].map((t: string, tIdx: number) => (
+                                    <span key={tIdx} className="text-slate-600 font-normal">{t}</span>
+                                  ))}
                                 </div>
                               ) : (
                                 <span className="text-slate-400 font-bold">-</span>
