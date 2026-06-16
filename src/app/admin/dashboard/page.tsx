@@ -930,7 +930,7 @@ export default function AdminDashboard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-[2rem] w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
+              className="bg-white rounded-[2rem] w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
             >
               <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center gap-3">
@@ -962,8 +962,8 @@ export default function AdminDashboard() {
               
               <div className="flex-1 bg-slate-100/50 relative overflow-hidden">
                 <iframe 
-                  src={`/api/download?id=${selectedPdfId}`} 
-                  className="w-full h-[80vh] border-0"
+                  src={`/api/download?id=${selectedPdfId}#view=FitV`} 
+                  className="w-full h-full border-0"
                   title="PDF Viewer"
                 />
               </div>
