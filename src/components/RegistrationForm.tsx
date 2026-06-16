@@ -828,14 +828,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 요금제 선택</label>
                       <select value={formData.planName} onChange={(e) => updateFormData('planName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
                         <option value="">-- 요금제를 선택하세요 --</option>
-                        <option value="360플러스 (월 0원)">더좋은통신360플러스 (월 0원 / 상조부금 37회부터 납부)</option>
-                        <option value="540플러스 (월 0원)">더좋은통신540플러스 (월 0원 / 상조부금 37회부터 납부)</option>
-                        <option value="더좋은통신792 (월 79,200원)">더좋은통신792 (월 79,200원)</option>
+                        <option value="360플러스(7G 월44,000원)">360플러스(7G 월44,000원)</option>
+                        <option value="360플러스(10G 월47,080원)">360플러스(10G 월47,080원)</option>
+                        <option value="360플러스(15G 월49,060원)">360플러스(15G 월49,060원)</option>
+                        <option value="540플러스(7G 월64,020원)">540플러스(7G 월64,020원)</option>
+                        <option value="540플러스(10G 월67,100원)">540플러스(10G 월67,100원)</option>
+                        <option value="540플러스(15G 월69,080원)">540플러스(15G 월69,080원)</option>
+                        <option value="프리미어플러스(11G 79,200원)">프리미어플러스(11G 79,200원)</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 지원 스마트폰 / 단말기</label>
-                      <input type="text" placeholder="예: 갤럭시 S24" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
+                      <input type="text" placeholder="예: 신세계상품권 80만원" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                     </div>
                   </>
                 )}
