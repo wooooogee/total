@@ -11,6 +11,24 @@ function formatBirth8(birth: string) {
   return prefix + birth;
 }
 
+function getKoreanDateTime() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  
+  const year = kst.getUTCFullYear();
+  const month = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kst.getUTCDate()).padStart(2, '0');
+  let hour = kst.getUTCHours();
+  const minute = String(kst.getUTCMinutes()).padStart(2, '0');
+  const second = String(kst.getUTCSeconds()).padStart(2, '0');
+
+  const ampm = hour < 12 ? '오전' : '오후';
+  if (hour > 12) hour -= 12;
+  if (hour === 0) hour = 12;
+
+  return `${year}. ${month}. ${day}. ${ampm} ${hour}:${minute}:${second}`;
+}
+
 export async function registerAction(data: any) {
   try {
     console.log('--- Register Action Started ---');
@@ -27,7 +45,7 @@ export async function registerAction(data: any) {
     // Google Sheets에 데이터 기록
     try {
       const sheetData: any = {
-        '신청일시': new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+        '신청일시': getKoreanDateTime(),
         '유입링크': data.linkId || '직접접속',
         '상품명': data.product,
         '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
