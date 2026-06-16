@@ -832,6 +832,7 @@ export default function AdminDashboard() {
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제 구분</th>
+                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제일</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
                         </tr>
@@ -874,6 +875,9 @@ export default function AdminDashboard() {
                                   {log['카드사/은행명'] || log['결제기관'] || ''}
                                 </span>
                               </div>
+                            </td>
+                            <td className="p-5 whitespace-nowrap text-slate-700">
+                              {log['결제일'] || '-'}
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               <div className="flex flex-col">
