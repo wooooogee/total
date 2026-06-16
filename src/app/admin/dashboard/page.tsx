@@ -828,7 +828,7 @@ export default function AdminDashboard() {
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">유입경로</th>
+                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">대상자 정보 (R, S, T)</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제 구분</th>
@@ -843,13 +843,15 @@ export default function AdminDashboard() {
                               {log['신청일시'] || '-'}
                             </td>
                             <td className="p-5 whitespace-nowrap">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase ${
-                                log['유입링크'] && log['유입링크'] !== '직접접속' 
-                                  ? 'bg-indigo-50 border-indigo-150 text-indigo-600 shadow-sm' 
-                                  : 'bg-slate-100 border-slate-200 text-slate-450'
-                              }`}>
-                                {log['유입링크'] || '직접접속'}
-                              </span>
+                              {log['_R'] || log['_S'] || log['_T'] ? (
+                                <div className="flex flex-col gap-0.5">
+                                  {log['_R'] && <span className="text-slate-600 font-normal">{log['_R']}</span>}
+                                  {log['_S'] && <span className="text-slate-600 font-normal">{log['_S']}</span>}
+                                  {log['_T'] && <span className="text-slate-600 font-normal">{log['_T']}</span>}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-bold">-</span>
+                              )}
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               <div className="flex flex-col">
@@ -876,7 +878,13 @@ export default function AdminDashboard() {
                             <td className="p-5 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700">{log['영업자'] || log['영업담당'] || '-'}</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 font-normal">{log['영업자소속'] || log['영업소속'] || ''}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                  {(() => {
+                                    const aff = log['영업자소속'] || log['영업소속'] || '';
+                                    if (!aff) return '본인섭외-';
+                                    return aff.startsWith('본인섭외-') ? aff : `본인섭외-${aff}`;
+                                  })()}
+                                </span>
                               </div>
                             </td>
                             <td className="p-5 whitespace-nowrap">
@@ -918,7 +926,7 @@ export default function AdminDashboard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
+              className="bg-white rounded-[2rem] w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200"
             >
               <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center gap-3">
@@ -951,7 +959,7 @@ export default function AdminDashboard() {
               <div className="flex-1 bg-slate-100/50 relative overflow-hidden">
                 <iframe 
                   src={`/api/download?id=${selectedPdfId}`} 
-                  className="w-full h-[65vh] border-0"
+                  className="w-full h-[80vh] border-0"
                   title="PDF Viewer"
                 />
               </div>

@@ -273,6 +273,12 @@ export async function getRegistrationsFromSheet(sheetTitle: string): Promise<any
       headers.forEach(h => {
         data[h] = row.get(h) || '';
       });
+      // 각 시트의 R, S, T열 값을 물리 셀 위치 기준(index 17, 18, 19)으로 그대로 가져옵니다.
+      // TypeScript 컴파일러의 private 속성 접근 경고를 우회하기 위해 type casting을 적용합니다.
+      const raw = (row as any)._rawData;
+      data['_R'] = headers[17] ? (row.get(headers[17]) || '') : (raw?.[17] || '');
+      data['_S'] = headers[18] ? (row.get(headers[18]) || '') : (raw?.[18] || '');
+      data['_T'] = headers[19] ? (row.get(headers[19]) || '') : (raw?.[19] || '');
       return data;
     });
   } catch (error) {

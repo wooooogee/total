@@ -27,7 +27,7 @@ export async function registerAction(data: any) {
     // Google Sheets에 데이터 기록
     try {
       const sheetData: any = {
-        '신청일시': new Date().toLocaleString('ko-KR'),
+        '신청일시': new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
         '유입링크': data.linkId || '직접접속',
         '상품명': data.product,
         '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
