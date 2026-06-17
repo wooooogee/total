@@ -51,13 +51,18 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error('Failed to fetch PDF');
       
       const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
       
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
       
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      // Use unpkg to get the worker file
+      const pdfjsVersion = pdfjsLib.version || '4.0.379';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
+      
+      const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
       const pdf = await loadingTask.promise;
       
+      // 사용자 요청에 따라 1페이지만 가져옵니다.
       const page = await pdf.getPage(1);
       
       const viewport = page.getViewport({ scale: 1.5 });
@@ -78,11 +83,11 @@ export default function AdminDashboard() {
       
       const a = document.createElement('a');
       a.href = imageUrl;
-      a.download = `contract_${selectedPdfId}.jpg`;
+      a.download = `contract_${selectedPdfId}_page1.jpg`;
       a.click();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading image:', error);
-      alert('이미지 다운로드 중 오류가 발생했습니다.');
+      alert(`이미지 다운로드 중 오류가 발생했습니다: ${error.message || error}`);
     } finally {
       setIsDownloadingImage(false);
     }
