@@ -40,6 +40,53 @@ export default function AdminDashboard() {
   // PDF 모달 상태
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+
+  const handleDownloadAsImage = async () => {
+    if (!selectedPdfId) return;
+    
+    try {
+      setIsDownloadingImage(true);
+      const response = await fetch(`/api/download?id=${selectedPdfId}&action=download`);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+      
+      const arrayBuffer = await response.arrayBuffer();
+      
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      
+      const page = await pdf.getPage(1);
+      
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('No canvas context');
+      
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      } as any).promise;
+      
+      // Convert to JPG (0.6 quality for < 300kb)
+      const imageUrl = canvas.toDataURL('image/jpeg', 0.6);
+      
+      const a = document.createElement('a');
+      a.href = imageUrl;
+      a.download = `contract_${selectedPdfId}.jpg`;
+      a.click();
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      alert('이미지 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
   
   // 동적 링크 상태
   const [links, setLinks] = useState<LinkConfig[]>([]);
@@ -828,11 +875,11 @@ export default function AdminDashboard() {
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">대상자 정보 (R, S, T)</th>
+                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제 구분</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제일</th>
+                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
                           <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
                         </tr>
@@ -947,10 +994,18 @@ export default function AdminDashboard() {
                     href={`/api/download?id=${selectedPdfId}&action=download`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-black transition-colors"
                   >
-                    <Download size={14} /> PDF 다운로드
+                    <Download size={14} /> PDF 원본
                   </a>
+                  <button
+                    onClick={handleDownloadAsImage}
+                    disabled={isDownloadingImage}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDownloadingImage ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
+                    {isDownloadingImage ? '다운로드 중...' : '이미지로 다운로드'}
+                  </button>
                   <button 
                     onClick={() => setPdfModalOpen(false)}
                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
