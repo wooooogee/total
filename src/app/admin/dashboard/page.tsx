@@ -894,7 +894,29 @@ export default function AdminDashboard() {
                         {filteredLogs.map((log, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
                             <td className="p-5 whitespace-nowrap text-slate-400 font-mono">
-                              {log['신청일시'] || '-'}
+                              {(() => {
+                                const dt = log['신청일시'];
+                                if (!dt || dt === '-') return '-';
+                                const amIdx = dt.indexOf(' AM ');
+                                const pmIdx = dt.indexOf(' PM ');
+                                if (amIdx !== -1) {
+                                  return (
+                                    <div className="flex flex-col">
+                                      <span>{dt.substring(0, amIdx).trim()}</span>
+                                      <span className="text-[10px] text-slate-400 opacity-70 mt-0.5">{dt.substring(amIdx).trim()}</span>
+                                    </div>
+                                  );
+                                } else if (pmIdx !== -1) {
+                                  return (
+                                    <div className="flex flex-col">
+                                      <span>{dt.substring(0, pmIdx).trim()}</span>
+                                      <span className="text-[10px] text-slate-400 opacity-70 mt-0.5">{dt.substring(pmIdx).trim()}</span>
+                                    </div>
+                                  );
+                                }
+                                // AM/PM이 없을 경우 단순 반환
+                                return dt;
+                              })()}
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               {log['_targets'] && log['_targets'].length > 0 ? (
@@ -915,7 +937,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-5">
                               <div className="flex flex-col">
-                                <span className="text-slate-800 font-black">{log['상품명'] || '-'}</span>
+                                <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
                                   구좌: {log['구좌수'] || log['수량'] || '-'} {log['제품명'] && `// 제품: ${log['제품명']}`}
                                 </span>
@@ -946,7 +968,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               {log['document_id'] ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1.5 items-start">
                                   <button 
                                     onClick={() => { setSelectedPdfId(log['document_id']); setPdfModalOpen(true); }}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 rounded-lg transition-all text-[10px] font-black shadow-sm"
