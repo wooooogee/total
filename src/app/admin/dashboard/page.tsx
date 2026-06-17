@@ -897,6 +897,45 @@ export default function AdminDashboard() {
                               {(() => {
                                 const dt = log['신청일시'];
                                 if (!dt || dt === '-') return '-';
+                                
+                                // UTC 기반으로 저장된 시간을 KST(+9시간)로 보정
+                                const regex = /(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})[\.\-\/]?\s*(AM|PM|오전|오후)?\s*(\d{1,2}):(\d{1,2}):?(\d{1,2})?/i;
+                                const match = dt.match(regex);
+                                if (match) {
+                                  const year = parseInt(match[1], 10);
+                                  const month = parseInt(match[2], 10) - 1;
+                                  const day = parseInt(match[3], 10);
+                                  const ampm = (match[4] || '').toUpperCase();
+                                  let hour = parseInt(match[5], 10);
+                                  const minute = parseInt(match[6], 10);
+                                  const second = parseInt(match[7] || '0', 10);
+
+                                  if ((ampm === 'PM' || ampm === '오후') && hour < 12) hour += 12;
+                                  if ((ampm === 'AM' || ampm === '오전') && hour === 12) hour = 0;
+
+                                  const date = new Date(year, month, day, hour + 9, minute, second);
+                                  
+                                  const outYear = date.getFullYear();
+                                  const outMonth = date.getMonth() + 1;
+                                  const outDay = date.getDate();
+                                  let outHour = date.getHours();
+                                  const outMinute = date.getMinutes();
+                                  const outSecond = date.getSeconds();
+                                  
+                                  const outAmPm = outHour >= 12 ? 'PM' : 'AM';
+                                  if (outHour > 12) outHour -= 12;
+                                  if (outHour === 0) outHour = 12;
+                                  
+                                  return (
+                                    <div className="flex flex-col">
+                                      <span>{`${outYear}. ${outMonth}. ${outDay}.`}</span>
+                                      <span className="text-[10px] text-slate-400 opacity-70 mt-0.5">
+                                        {`${outAmPm} ${outHour}:${outMinute.toString().padStart(2, '0')}:${outSecond.toString().padStart(2, '0')}`}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+
                                 const amIdx = dt.indexOf(' AM ');
                                 const pmIdx = dt.indexOf(' PM ');
                                 if (amIdx !== -1) {
@@ -914,7 +953,6 @@ export default function AdminDashboard() {
                                     </div>
                                   );
                                 }
-                                // AM/PM이 없을 경우 단순 반환
                                 return dt;
                               })()}
                             </td>
