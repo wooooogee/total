@@ -42,12 +42,13 @@ export default function AdminDashboard() {
   const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
 
-  const handleDownloadAsImage = async () => {
-    if (!selectedPdfId) return;
+  const handleDownloadAsImage = async (documentId?: string | React.MouseEvent, contractorName?: string) => {
+    const targetId = typeof documentId === 'string' ? documentId : selectedPdfId;
+    if (!targetId) return;
     
     try {
       setIsDownloadingImage(true);
-      const response = await fetch(`/api/download?id=${selectedPdfId}&action=download`);
+      const response = await fetch(`/api/download?id=${targetId}&action=download`);
       if (!response.ok) throw new Error('Failed to fetch PDF');
       
       const arrayBuffer = await response.arrayBuffer();
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
       
       const a = document.createElement('a');
       a.href = imageUrl;
-      a.download = `contract_${selectedPdfId}_page1.jpg`;
+      a.download = contractorName && typeof contractorName === 'string' ? `${contractorName}.jpg` : `contract_${targetId}_page1.jpg`;
       a.click();
     } catch (error: any) {
       console.error('Error downloading image:', error);
@@ -945,12 +946,22 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-5 whitespace-nowrap">
                               {log['document_id'] ? (
-                                <button 
-                                  onClick={() => { setSelectedPdfId(log['document_id']); setPdfModalOpen(true); }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-150 text-indigo-600 hover:bg-indigo-650 hover:text-white hover:border-transparent rounded-lg transition-all text-[10px] font-black shadow-sm"
-                                >
-                                  <FileText size={12} /> 계약서 보기
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => { setSelectedPdfId(log['document_id']); setPdfModalOpen(true); }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800 rounded-lg transition-all text-[10px] font-black shadow-sm"
+                                  >
+                                    <FileText size={12} /> 계약서 보기
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDownloadAsImage(log['document_id'], log['계약자'] || log['성명'])}
+                                    disabled={isDownloadingImage}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-150 text-indigo-600 hover:bg-indigo-650 hover:text-white hover:border-transparent rounded-lg transition-all text-[10px] font-black shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isDownloadingImage ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                                    이미지 다운
+                                  </button>
+                                </div>
                               ) : (
                                 <span className="text-slate-400 font-bold">서명 미완료</span>
                               )}
