@@ -303,6 +303,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const [products, setProducts] = useState<ProductConfig[]>([]);
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [isCustomProductCount, setIsCustomProductCount] = useState(false);
+  const [showInstallmentGuide, setShowInstallmentGuide] = useState(false);
 
 
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어'];
@@ -876,7 +877,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일 / 주민번호 앞자리</label>
-                    <input type="text" placeholder="주민번호 앞 6자리" maxLength={7} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    <input type="text" placeholder="주민번호 앞 6자리" maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1">성별</label>
@@ -1345,88 +1346,106 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     
                     {formData.product === '좋은건강크루즈' && (
                       <div className="mt-4 border border-blue-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                        <div className="bg-[#0b2b6d] text-white p-2.5 text-center font-bold flex items-center justify-center gap-2 text-sm">
-                          <CreditCard size={16} /> 무이자 할부 안내
-                        </div>
-                        <div className="p-3 space-y-3">
-                          <div className="bg-gray-50 p-2.5 rounded-lg text-[13px] text-gray-700 leading-relaxed border border-gray-100">
-                            <span className="font-bold text-gray-900 mb-0.5 block">대상카드</span>
-                            BC / 신한 / 삼성 / 현대 / 국민 / 농협 / 하나 / 롯데 / 우리
-                            <div className="text-[11px] text-gray-500 mt-0.5">(법인(기업), 체크, 선불, 기프트카드 제외)</div>
+                        <button
+                          type="button"
+                          onClick={() => setShowInstallmentGuide(!showInstallmentGuide)}
+                          className="w-full bg-[#0b2b6d] text-white p-2.5 text-center font-bold flex items-center justify-between px-4 text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CreditCard size={16} /> 무이자 할부 안내
                           </div>
-                          
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="w-full text-[13px] border-collapse">
-                              <thead>
-                                <tr className="bg-[#0b2b6d] text-white">
-                                  <th className="py-2 px-2 text-center font-bold w-1/2 border-r border-blue-800">카드사</th>
-                                  <th className="py-2 px-2 text-center font-bold w-1/2">무이자 할부 기간</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200">
-                                <tr>
-                                  <td className="py-2.5 px-3 font-medium text-gray-800 border-r border-gray-200">
-                                    <span className="text-red-600 font-bold mr-1 text-[14px]">BC</span>
-                                    <div className="text-[11px] text-gray-500 mt-0.5 font-normal leading-tight">
-                                      (우리, IBK, 농협, SC, 대구, 부산, 경남, 신한, 하나, KB국민, 씨티)
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-bold text-blue-700 align-middle text-[14px]" rowSpan={3}>2~5개월</td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0"></div> 우리
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-red-500 flex-shrink-0"></div> 롯데
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-yellow-400 flex-shrink-0"></div> 국민
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-bold text-teal-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]" rowSpan={5}>2~3개월</td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 border-[3px] border-gray-800 bg-white flex-shrink-0"></div> 현대
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-teal-500 flex-shrink-0"></div> 하나
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-blue-600 flex-shrink-0"></div> 신한
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-blue-800 flex-shrink-0"></div> 삼성
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0"></div> 농협
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-bold text-amber-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]">2~6개월</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                          
-                          <div className="bg-gray-50 p-2.5 rounded-lg text-[11px] text-gray-600 flex gap-2 items-start">
-                            <span className="text-gray-400 shrink-0 mt-0.5">※</span>
-                            <div className="space-y-0.5">
-                              <div>무이자 할부는 카드사 정책에 따라 변동될 수 있습니다.</div>
-                              <div>일부 카드 및 가맹점 사정에 따라 제외될 수 있습니다.</div>
-                            </div>
-                          </div>
-                        </div>
+                          <span className="text-xl leading-none">{showInstallmentGuide ? '−' : '+'}</span>
+                        </button>
+                        <AnimatePresence>
+                          {showInstallmentGuide && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="p-3 space-y-3 bg-white">
+                                <div className="bg-gray-50 p-2.5 rounded-lg text-[13px] text-gray-700 leading-relaxed border border-gray-100">
+                                  <span className="font-bold text-gray-900 mb-0.5 block">대상카드</span>
+                                  BC / 신한 / 삼성 / 현대 / 국민 / 농협 / 하나 / 롯데 / 우리
+                                  <div className="text-[11px] text-gray-500 mt-0.5">(법인(기업), 체크, 선불, 기프트카드 제외)</div>
+                                </div>
+                                
+                                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                  <table className="w-full text-[13px] border-collapse">
+                                    <thead>
+                                      <tr className="bg-[#0b2b6d] text-white">
+                                        <th className="py-2 px-2 text-center font-bold w-1/2 border-r border-blue-800">카드사</th>
+                                        <th className="py-2 px-2 text-center font-bold w-1/2">무이자 할부 기간</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                      <tr>
+                                        <td className="py-2.5 px-3 font-medium text-gray-800 border-r border-gray-200">
+                                          <span className="text-red-600 font-bold mr-1 text-[14px]">BC</span>
+                                          <div className="text-[11px] text-gray-500 mt-0.5 font-normal leading-tight">
+                                            (우리, IBK, 농협, SC, 대구, 부산, 경남, 신한, 하나, KB국민, 씨티)
+                                          </div>
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-bold text-blue-700 align-middle text-[14px]" rowSpan={3}>2~5개월</td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0"></div> 우리
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-red-500 flex-shrink-0"></div> 롯데
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-yellow-400 flex-shrink-0"></div> 국민
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-bold text-teal-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]" rowSpan={5}>2~3개월</td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 border-[3px] border-gray-800 bg-white flex-shrink-0"></div> 현대
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-teal-500 flex-shrink-0"></div> 하나
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-blue-600 flex-shrink-0"></div> 신한
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-blue-800 flex-shrink-0"></div> 삼성
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0"></div> 농협
+                                        </td>
+                                        <td className="py-2 px-3 text-center font-bold text-amber-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]">2~6개월</td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-2.5 rounded-lg text-[11px] text-gray-600 flex gap-2 items-start">
+                                  <span className="text-gray-400 shrink-0 mt-0.5">※</span>
+                                  <div className="space-y-0.5">
+                                    <div>무이자 할부는 카드사 정책에 따라 변동될 수 있습니다.</div>
+                                    <div>일부 카드 및 가맹점 사정에 따라 제외될 수 있습니다.</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>
