@@ -13,21 +13,22 @@ function formatBirth8(birth: string) {
 }
 
 function getKoreanDateTime() {
-  const now = new Date();
-  const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
   
-  const year = kst.getUTCFullYear();
-  const month = String(kst.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(kst.getUTCDate()).padStart(2, '0');
-  let hour = kst.getUTCHours();
-  const minute = String(kst.getUTCMinutes()).padStart(2, '0');
-  const second = String(kst.getUTCSeconds()).padStart(2, '0');
-
-  const ampm = hour < 12 ? '오전' : '오후';
-  if (hour > 12) hour -= 12;
-  if (hour === 0) hour = 12;
-
-  return `${year}. ${month}. ${day}. ${ampm} ${hour}:${minute}:${second}`;
+  const parts = formatter.formatToParts(new Date());
+  const dateObj: any = {};
+  parts.forEach(p => { dateObj[p.type] = p.value; });
+  
+  return `${dateObj.year}-${dateObj.month}-${dateObj.day} ${dateObj.hour}:${dateObj.minute}:${dateObj.second}`;
 }
 
 export async function registerAction(data: any) {
