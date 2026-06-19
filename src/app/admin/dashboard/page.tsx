@@ -111,6 +111,13 @@ export default function AdminDashboard() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sheetFilter, setSheetFilter] = useState('ALL');
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
 
   // 상품 설정 상태
   const [products, setProducts] = useState<ProductConfig[]>([]);
@@ -341,7 +348,39 @@ export default function AdminDashboard() {
     }
   };
 
-  // 필터링된 로그 목록
+  // 날짜 파싱 헬퍼 함수
+  const parseLogDate = (dt: string | undefined | null) => {
+    if (!dt || dt === '-') return null;
+    const regex = /(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})[\.\-\/]?\s*(AM|PM|오전|오후)?\s*(\d{1,2}):(\d{1,2}):?(\d{1,2})?/i;
+    const match = dt.match(regex);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      const ampm = (match[4] || '').toUpperCase();
+      let hour = parseInt(match[5], 10);
+      const minute = parseInt(match[6], 10);
+      const second = parseInt(match[7] || '0', 10);
+
+      if ((ampm === 'PM' || ampm === '오후') && hour < 12) hour += 12;
+      if ((ampm === 'AM' || ampm === '오전') && hour === 12) hour = 0;
+
+      return new Date(year, month, day, hour + 9, minute, second);
+    }
+    
+    const dateRegex = /(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})/i;
+    const dateMatch = dt.match(dateRegex);
+    if (dateMatch) {
+      const year = parseInt(dateMatch[1], 10);
+      const month = parseInt(dateMatch[2], 10) - 1;
+      const day = parseInt(dateMatch[3], 10);
+      return new Date(year, month, day);
+    }
+    
+    return null;
+  };
+
+  // 필터링 및 정렬된 로그 목록
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
       (log['계약자'] && log['계약자'].includes(searchTerm)) ||
@@ -350,7 +389,27 @@ export default function AdminDashboard() {
       (log['상품명'] && log['상품명'].includes(searchTerm));
       
     const matchesSheet = sheetFilter === 'ALL' || log['시트구분'] === sheetFilter;
-    return matchesSearch && matchesSheet;
+    
+    let matchesDate = true;
+    if (selectedDate) {
+      const logDateObj = parseLogDate(log['신청일시']);
+      if (logDateObj) {
+        const year = logDateObj.getFullYear();
+        const month = String(logDateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(logDateObj.getDate()).padStart(2, '0');
+        matchesDate = `${year}-${month}-${day}` === selectedDate;
+      } else {
+        matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesSheet && matchesDate;
+  }).sort((a, b) => {
+    const dateA = parseLogDate(a['신청일시']);
+    const dateB = parseLogDate(b['신청일시']);
+    const timeA = dateA ? dateA.getTime() : 0;
+    const timeB = dateB ? dateB.getTime() : 0;
+    return timeB - timeA;
   });
 
   const handleLogin = (e: React.FormEvent) => {
@@ -848,15 +907,25 @@ export default function AdminDashboard() {
             >
               {/* 필터 및 검색 바 */}
               <div className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm">
-                <div className="relative w-full lg:max-w-md group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder="계약자명, 연락처, 상품명, 영업사원 검색" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-400 transition-all"
-                  />
+                <div className="flex gap-2 w-full lg:max-w-xl">
+                  <div className="relative w-1/3 min-w-[140px] group">
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-xs font-bold text-slate-800 transition-all cursor-pointer"
+                    />
+                  </div>
+                  <div className="relative flex-1 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                    <input 
+                      type="text" 
+                      placeholder="계약자명, 연락처 등 검색" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-400 transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
@@ -910,23 +979,8 @@ export default function AdminDashboard() {
                                 const dt = log['신청일시'];
                                 if (!dt || dt === '-') return '-';
                                 
-                                // UTC 기반으로 저장된 시간을 KST(+9시간)로 보정
-                                const regex = /(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})[\.\-\/]?\s*(AM|PM|오전|오후)?\s*(\d{1,2}):(\d{1,2}):?(\d{1,2})?/i;
-                                const match = dt.match(regex);
-                                if (match) {
-                                  const year = parseInt(match[1], 10);
-                                  const month = parseInt(match[2], 10) - 1;
-                                  const day = parseInt(match[3], 10);
-                                  const ampm = (match[4] || '').toUpperCase();
-                                  let hour = parseInt(match[5], 10);
-                                  const minute = parseInt(match[6], 10);
-                                  const second = parseInt(match[7] || '0', 10);
-
-                                  if ((ampm === 'PM' || ampm === '오후') && hour < 12) hour += 12;
-                                  if ((ampm === 'AM' || ampm === '오전') && hour === 12) hour = 0;
-
-                                  const date = new Date(year, month, day, hour + 9, minute, second);
-                                  
+                                const date = parseLogDate(dt);
+                                if (date) {
                                   const outYear = date.getFullYear();
                                   const outMonth = date.getMonth() + 1;
                                   const outDay = date.getDate();
