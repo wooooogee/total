@@ -32,7 +32,7 @@ interface ProductConfig {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products'>('links');
+  const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products'>('logs');
   
   // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -111,6 +111,7 @@ export default function AdminDashboard() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const AVAILABLE_SHEETS = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '헬스케어580', '통신결합'];
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
@@ -473,6 +474,12 @@ export default function AdminDashboard() {
         {/* Navigation Tabs */}
         <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl self-start md:self-center">
           <button 
+            onClick={() => setActiveTab('logs')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+          >
+            <UserCheck size={14} /> 통합 신청 내역
+          </button>
+          <button 
             onClick={() => setActiveTab('links')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
@@ -483,12 +490,6 @@ export default function AdminDashboard() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
             <Settings size={14} /> 상품/약관 매니저
-          </button>
-          <button 
-            onClick={() => setActiveTab('logs')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <UserCheck size={14} /> 통합 신청 내역
           </button>
         </div>
       </header>
@@ -998,28 +999,52 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
-                  <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-xl overflow-x-auto max-w-full font-sans">
-                    <button 
-                      onClick={() => setSelectedSheets([])}
-                      className={`px-3 py-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedSheets.length === 0 ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  <div className="relative font-sans text-xs">
+                    <button
+                      onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
+                      className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 focus:border-indigo-600 outline-none rounded-xl py-3 px-4 text-xs font-bold text-slate-800 min-w-[140px] transition-all"
                     >
-                      전체
+                      <span>
+                        상품: {selectedSheets.length === 0 ? '전체' : `${selectedSheets[0]}${selectedSheets.length > 1 ? ` 외 ${selectedSheets.length - 1}건` : ''}`}
+                      </span>
+                      <svg className={`w-4 h-4 transition-transform text-slate-400 ${isProductDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
-                    {AVAILABLE_SHEETS.map(sheet => (
-                      <button 
-                        key={sheet}
-                        onClick={() => {
-                          if (selectedSheets.includes(sheet)) {
-                            setSelectedSheets(selectedSheets.filter(s => s !== sheet));
-                          } else {
-                            setSelectedSheets([...selectedSheets, sheet]);
-                          }
-                        }}
-                        className={`px-3 py-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedSheets.includes(sheet) ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-200' : 'text-slate-500 hover:text-slate-800'}`}
-                      >
-                        {sheet}
-                      </button>
-                    ))}
+                    
+                    {isProductDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsProductDropdownOpen(false)}></div>
+                        <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                          <div className="max-h-60 overflow-y-auto py-1">
+                            <label className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedSheets.length === 0}
+                                onChange={() => setSelectedSheets([])}
+                                className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
+                              />
+                              <span className={`text-xs font-bold ${selectedSheets.length === 0 ? 'text-indigo-600' : 'text-slate-700'}`}>전체</span>
+                            </label>
+                            {AVAILABLE_SHEETS.map(sheet => (
+                              <label key={sheet} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSheets.includes(sheet)}
+                                  onChange={() => {
+                                    if (selectedSheets.includes(sheet)) {
+                                      setSelectedSheets(selectedSheets.filter(s => s !== sheet));
+                                    } else {
+                                      setSelectedSheets([...selectedSheets, sheet]);
+                                    }
+                                  }}
+                                  className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
+                                />
+                                <span className={`text-xs font-bold ${selectedSheets.includes(sheet) ? 'text-indigo-600' : 'text-slate-700'}`}>{sheet}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <button onClick={fetchLogs} className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm">
                     <RefreshCw size={14} />
