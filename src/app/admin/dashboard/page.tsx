@@ -365,7 +365,7 @@ export default function AdminDashboard() {
       if ((ampm === 'PM' || ampm === '오후') && hour < 12) hour += 12;
       if ((ampm === 'AM' || ampm === '오전') && hour === 12) hour = 0;
 
-      return new Date(year, month, day, hour + 9, minute, second);
+      return new Date(year, month, day, hour, minute, second);
     }
     
     const dateRegex = /(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})/i;
