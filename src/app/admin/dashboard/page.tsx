@@ -110,7 +110,8 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sheetFilter, setSheetFilter] = useState('ALL');
+  const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+  const AVAILABLE_SHEETS = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '헬스케어580', '통신결합'];
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
     const year = today.getFullYear();
@@ -388,7 +389,7 @@ export default function AdminDashboard() {
       (log['영업자'] && log['영업자'].includes(searchTerm)) ||
       (log['상품명'] && log['상품명'].includes(searchTerm));
       
-    const matchesSheet = sheetFilter === 'ALL' || log['시트구분'] === sheetFilter;
+    const matchesSheet = selectedSheets.length === 0 || selectedSheets.includes(log['시트구분']);
     
     let matchesDate = true;
     if (selectedDate) {
@@ -905,6 +906,74 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, y: -15 }}
               className="space-y-6"
             >
+              {/* 대시보드 요약 (필터링된 결과 기준) */}
+              {(() => {
+                const totalRegistrations = filteredLogs.length;
+                let totalAccounts = 0;
+                const accountsByProduct: Record<string, number> = {};
+                const accountsByHQ: Record<string, number> = {};
+
+                filteredLogs.forEach(log => {
+                  const rawAccount = log['구좌수'] || log['수량'];
+                  let count = 1;
+                  if (rawAccount) {
+                    const parsed = parseInt(String(rawAccount).replace(/[^0-9]/g, ''), 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      count = parsed;
+                    }
+                  }
+                  totalAccounts += count;
+
+                  const product = log['시트구분'] || log['상품명'] || '기타';
+                  accountsByProduct[product] = (accountsByProduct[product] || 0) + count;
+
+                  let hq = log['영업자소속'] || log['영업소속'] || '';
+                  hq = String(hq).trim();
+                  if (!hq) hq = '소속 미지정/본인';
+                  accountsByHQ[hq] = (accountsByHQ[hq] || 0) + count;
+                });
+
+                const sortedProducts = Object.entries(accountsByProduct).sort((a, b) => b[1] - a[1]);
+                const sortedHQs = Object.entries(accountsByHQ).sort((a, b) => b[1] - a[1]);
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-[2rem] p-6 text-white shadow-sm flex flex-col justify-center">
+                      <p className="text-indigo-100 font-bold text-xs uppercase tracking-wider mb-2">총 가입 건수</p>
+                      <div className="text-4xl font-black">{totalRegistrations.toLocaleString()}<span className="text-xl font-bold ml-1 opacity-80">건</span></div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[2rem] p-6 text-white shadow-sm flex flex-col justify-center">
+                      <p className="text-blue-100 font-bold text-xs uppercase tracking-wider mb-2">총 구좌 수</p>
+                      <div className="text-4xl font-black">{totalAccounts.toLocaleString()}<span className="text-xl font-bold ml-1 opacity-80">구좌</span></div>
+                    </div>
+                    
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col">
+                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">상품별 구좌수</p>
+                      <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[100px] custom-scrollbar">
+                        {sortedProducts.length > 0 ? sortedProducts.map(([p, c]) => (
+                          <div key={p} className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-700 truncate mr-2">{p}</span>
+                            <span className="font-black text-indigo-600 whitespace-nowrap">{c.toLocaleString()}구좌</span>
+                          </div>
+                        )) : <div className="text-slate-400 text-xs">데이터 없음</div>}
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col">
+                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">본부별 구좌수</p>
+                      <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[100px] custom-scrollbar">
+                        {sortedHQs.length > 0 ? sortedHQs.map(([h, c]) => (
+                          <div key={h} className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-700 truncate mr-2">{h}</span>
+                            <span className="font-black text-blue-600 whitespace-nowrap">{c.toLocaleString()}구좌</span>
+                          </div>
+                        )) : <div className="text-slate-400 text-xs">데이터 없음</div>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 필터 및 검색 바 */}
               <div className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm">
                 <div className="flex gap-2 w-full lg:max-w-xl">
@@ -930,13 +999,25 @@ export default function AdminDashboard() {
 
                 <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
                   <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-xl overflow-x-auto max-w-full font-sans">
-                    {['ALL', '하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '헬스케어580', '통신결합'].map(sheet => (
+                    <button 
+                      onClick={() => setSelectedSheets([])}
+                      className={`px-3 py-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedSheets.length === 0 ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                      전체
+                    </button>
+                    {AVAILABLE_SHEETS.map(sheet => (
                       <button 
                         key={sheet}
-                        onClick={() => setSheetFilter(sheet)}
-                        className={`px-3 py-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${sheetFilter === sheet ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        onClick={() => {
+                          if (selectedSheets.includes(sheet)) {
+                            setSelectedSheets(selectedSheets.filter(s => s !== sheet));
+                          } else {
+                            setSelectedSheets([...selectedSheets, sheet]);
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedSheets.includes(sheet) ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-200' : 'text-slate-500 hover:text-slate-800'}`}
                       >
-                        {sheet === 'ALL' ? '전체' : sheet}
+                        {sheet}
                       </button>
                     ))}
                   </div>
