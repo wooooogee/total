@@ -24,6 +24,7 @@ interface ProductConfig {
   monthlyPayment2: string;
   refundNotice: string;
   eformTemplateId: string;
+  targetSheetName?: string;
   productNoticeTerm: string;
   privacyTerm: string;
   thirdPartyTerm: string;
@@ -647,6 +648,7 @@ export default function AdminDashboard() {
                           monthlyPayment2: '',
                           refundNotice: '',
                           eformTemplateId: '',
+                          targetSheetName: '',
                           productNoticeTerm: '',
                           privacyTerm: '',
                           thirdPartyTerm: '',
@@ -721,6 +723,16 @@ export default function AdminDashboard() {
                             onChange={(e) => updateEditField('eformTemplateId', e.target.value)}
                             placeholder="예: 413d37beb6e8476498026303b14a6718"
                             className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-805 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-500">구글 시트 연결 대상 (입력하지 않으면 기본 시트)</label>
+                          <input
+                            type="text"
+                            value={selectedProductForEdit.targetSheetName || ''}
+                            onChange={(e) => updateEditField('targetSheetName', e.target.value)}
+                            placeholder="예: 신규상품_현황"
+                            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
                           />
                         </div>
                         <div className="space-y-1">

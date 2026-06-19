@@ -106,7 +106,7 @@ export async function createEformsignDocument(data: any) {
             else if (data.product === '더좋은프리미엄540') templateId = EFORMSIGN_TEMPLATE_ID_Premium540;
             else if (data.product === '더좋은통신결합') templateId = EFORMSIGN_TEMPLATE_ID_Tongsin;
             else if (data.product === '더좋은라이즈498') templateId = EFORMSIGN_TEMPLATE_ID_Rise498;
-            else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈') templateId = EFORMSIGN_TEMPLATE_ID_Cruise;
+            else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) templateId = EFORMSIGN_TEMPLATE_ID_Cruise;
             else if (data.product === '굿라이프헬스케어') templateId = EFORMSIGN_TEMPLATE_ID_Goodlife;
             else templateId = EFORMSIGN_TEMPLATE_ID_Health580;
         }
@@ -249,12 +249,12 @@ export async function createEformsignDocument(data: any) {
                 { id: '영업자성명', value: data.salesName || '' },
                 { id: '영업자연락처', value: data.salesPhone || '' }
             ];
-        } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈') {
+        } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [
                 { id: '구좌수', value: `${data.productCount}구좌` },
-                { id: '상품명', value: data.product === '좋은건강크루즈' ? '좋은건강크루즈330 결합상품' : '더좋은크루즈 선불식 할부거래' },
+                { id: '상품명', value: data.product === '좋은건강크루즈' ? '좋은건강크루즈330 결합상품' : (data.product === '크루즈' ? '크루즈 선불식 할부거래' : '더좋은크루즈 선불식 할부거래') },
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },

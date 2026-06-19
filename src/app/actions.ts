@@ -2,6 +2,7 @@
 
 import { createEformsignDocument } from '@/lib/eformsign';
 import { addRegistrationToSheet } from '@/lib/googleSheets';
+import { getProductConfigs } from '@/lib/db';
 
 function formatBirth8(birth: string) {
   if (!birth || birth.length !== 6) return birth;
@@ -79,18 +80,25 @@ export async function registerAction(data: any) {
       }
       
       let sheetName = '헬스케어580';
-      if (data.product === '더좋은하이브리드698') {
-        sheetName = '하이브리드698';
-      } else if (data.product === '더좋은프리미엄540') {
-        sheetName = '프리미엄540';
-      } else if (data.product === '더좋은통신결합') {
-        sheetName = '통신결합';
-      } else if (data.product === '더좋은라이즈498') {
-        sheetName = '라이즈498';
-      } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈') {
-        sheetName = '크루즈';
-      } else if (data.product === '굿라이프헬스케어') {
-        sheetName = '굿라이프헬스케어';
+      const configs = getProductConfigs();
+      const productConfig = configs.find(c => c.name === data.product);
+      
+      if (productConfig && productConfig.targetSheetName) {
+        sheetName = productConfig.targetSheetName;
+      } else {
+        if (data.product === '더좋은하이브리드698') {
+          sheetName = '하이브리드698';
+        } else if (data.product === '더좋은프리미엄540') {
+          sheetName = '프리미엄540';
+        } else if (data.product === '더좋은통신결합') {
+          sheetName = '통신결합';
+        } else if (data.product === '더좋은라이즈498') {
+          sheetName = '라이즈498';
+        } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
+          sheetName = '크루즈';
+        } else if (data.product === '굿라이프헬스케어') {
+          sheetName = '굿라이프헬스케어';
+        }
       }
 
       await addRegistrationToSheet(sheetData, sheetName);

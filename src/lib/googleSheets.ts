@@ -336,7 +336,7 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
       await doc.addSheet({
         title: '상품설정',
         headerValues: [
-          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID',
+          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
           '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
         ]
       });
@@ -352,6 +352,7 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
       monthlyPayment2: row.get('2차납입금') || '',
       refundNotice: row.get('환급금안내') || '',
       eformTemplateId: row.get('이폼사인템플릿ID') || '',
+      targetSheetName: row.get('연결시트명') || '',
       productNoticeTerm: row.get('상품내용고지약관') || '',
       privacyTerm: row.get('개인정보수집이용약관') || '',
       thirdPartyTerm: row.get('제3자제공동의약관') || '',
@@ -381,7 +382,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       sheet = await doc.addSheet({
         title: '상품설정',
         headerValues: [
-          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID',
+          '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
           '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
         ]
       });
@@ -398,6 +399,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       '2차납입금': config.monthlyPayment2,
       '환급금안내': config.refundNotice,
       '이폼사인템플릿ID': config.eformTemplateId,
+      '연결시트명': config.targetSheetName,
       '상품내용고지약관': config.productNoticeTerm,
       '개인정보수집이용약관': config.privacyTerm,
       '제3자제공동의약관': config.thirdPartyTerm,
@@ -411,6 +413,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       existingRow.set('2차납입금', rowData['2차납입금']);
       existingRow.set('환급금안내', rowData['환급금안내']);
       existingRow.set('이폼사인템플릿ID', rowData['이폼사인템플릿ID']);
+      existingRow.set('연결시트명', rowData['연결시트명']);
       existingRow.set('상품내용고지약관', rowData['상품내용고지약관']);
       existingRow.set('개인정보수집이용약관', rowData['개인정보수집이용약관']);
       existingRow.set('제3자제공동의약관', rowData['제3자제공동의약관']);
