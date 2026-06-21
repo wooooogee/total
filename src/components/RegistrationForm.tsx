@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon } from 'lucide-react';
+import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon, Copy, Check } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import TermsAgreement from './TermsAgreement';
 import { registerAction } from '@/app/actions';
@@ -304,6 +304,118 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [isCustomProductCount, setIsCustomProductCount] = useState(false);
   const [showInstallmentGuide, setShowInstallmentGuide] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAccount = () => {
+    navigator.clipboard.writeText('476101-01-413681');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const renderInstallmentGuide = () => (
+    <div className="mt-4 border border-blue-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setShowInstallmentGuide(!showInstallmentGuide)}
+        className="w-full bg-[#0b2b6d] text-white p-2.5 text-center font-bold flex items-center justify-between px-4 text-sm"
+      >
+        <div className="flex items-center gap-2">
+          <CreditCard size={16} /> 무이자 할부 안내
+        </div>
+        <span className="text-xl leading-none">{showInstallmentGuide ? '−' : '+'}</span>
+      </button>
+      <AnimatePresence>
+        {showInstallmentGuide && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-3 space-y-3 bg-white">
+              <div className="bg-gray-50 p-2.5 rounded-lg text-[13px] text-gray-700 leading-relaxed border border-gray-100">
+                <span className="font-bold text-gray-900 mb-0.5 block">대상카드</span>
+                BC / 신한 / 삼성 / 현대 / 국민 / 농협 / 하나 / 롯데 / 우리
+                <div className="text-[11px] text-gray-500 mt-0.5">(법인(기업), 체크, 선불, 기프트카드 제외)</div>
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-[13px] border-collapse text-left">
+                  <thead>
+                    <tr className="bg-[#0b2b6d] text-white">
+                      <th className="py-2 px-2 text-center font-bold w-1/2 border-r border-blue-800">카드사</th>
+                      <th className="py-2 px-2 text-center font-bold w-1/2">무이자 할부 기간</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    <tr>
+                      <td className="py-2.5 px-3 font-medium text-gray-800 border-r border-gray-200">
+                        <span className="text-red-600 font-bold mr-1 text-[14px]">BC</span>
+                        <div className="text-[11px] text-gray-500 mt-0.5 font-normal leading-tight">
+                          (우리, IBK, 농협, SC, 대구, 부산, 경남, 신한, 하나, KB국민, 씨티)
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center font-bold text-blue-700 align-middle text-[14px]" rowSpan={3}>2~5개월</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0"></div> 우리
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-red-500 flex-shrink-0"></div> 롯데
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-yellow-400 flex-shrink-0"></div> 국민
+                      </td>
+                      <td className="py-2 px-3 text-center font-bold text-teal-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]" rowSpan={5}>2~3개월</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 border-[3px] border-gray-800 bg-white flex-shrink-0"></div> 현대
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-teal-500 flex-shrink-0"></div> 하나
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-600 flex-shrink-0"></div> 신한
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-800 flex-shrink-0"></div> 삼성
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0"></div> 농협
+                      </td>
+                      <td className="py-2 px-3 text-center font-bold text-amber-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]">2~6개월</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="bg-gray-50 p-2.5 rounded-lg text-[11px] text-gray-600 flex gap-2 items-start">
+                <span className="text-gray-400 shrink-0 mt-0.5">※</span>
+                <div className="space-y-0.5">
+                  <div>무이자 할부는 카드사 정책에 따라 변동될 수 있습니다.</div>
+                  <div>일부 카드 및 가맹점 사정에 따라 제외될 수 있습니다.</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
 
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어'];
@@ -406,6 +518,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       accountHolder: '',
       installmentPeriod: '일시불',
     },
+    // 크루즈 전용 결제수단 추가
+    paymentMethod1: 'card',
+    paymentInfo1: {
+      cardCompany: '',
+      cardNumber: '',
+      cardExpiry: '',
+      bankName: '국민은행',
+      accountNumber: '476101-01-413681',
+      accountHolder: '더좋은라이프앤바이오',
+      installmentPeriod: '일시불',
+    },
+    paymentMethod2: 'card',
+    paymentInfo2: {
+      cardCompany: '',
+      cardNumber: '',
+      cardExpiry: '',
+      bankName: '',
+      accountNumber: '',
+      accountHolder: '',
+      installmentPeriod: '일시불',
+    },
     agreement: {},
     signature: '', // Base64 signature
     gender: '남', // '남' or '여'
@@ -428,6 +561,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     setFormData((prev) => ({
       ...prev,
       paymentInfo: { ...prev.paymentInfo, [field]: value }
+    }));
+  };
+
+  const updatePaymentInfo1 = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentInfo1: { ...prev.paymentInfo1, [field]: value }
+    }));
+  };
+
+  const updatePaymentInfo2 = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      paymentInfo2: { ...prev.paymentInfo2, [field]: value }
     }));
   };
 
@@ -606,16 +753,40 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       }
     }
     if (currentStep === 4) { // Payment Details step
-      if (formData.paymentMethod === 'card') {
-        const pureCard = formData.paymentInfo.cardNumber.replace(/[^0-9]/g, '');
-        if (pureCard.length < 11 || !formData.paymentInfo.cardCompany || !formData.paymentInfo.cardExpiry) {
-          alert('카드 정보를 모두 정확히 입력해 주세요 (번호는 11~16자리 가능).');
-          return;
+      if (formData.product === '좋은건강크루즈') {
+        // 1회차 검증
+        if (formData.paymentMethod1 === 'card') {
+          const pureCard = formData.paymentInfo1.cardNumber.replace(/[^0-9]/g, '');
+          if (pureCard.length < 11 || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
+            alert('1회차 카드 정보를 모두 정확히 입력해 주세요.');
+            return;
+          }
+        }
+        // 2~101회차 검증
+        if (formData.paymentMethod2 === 'card') {
+          const pureCard = formData.paymentInfo2.cardNumber.replace(/[^0-9]/g, '');
+          if (pureCard.length < 11 || !formData.paymentInfo2.cardCompany || !formData.paymentInfo2.cardExpiry) {
+            alert('2~101회차 카드 정보를 모두 정확히 입력해 주세요.');
+            return;
+          }
+        } else if (formData.paymentMethod2 === 'cms') {
+          if (!formData.paymentInfo2.accountNumber || !formData.paymentInfo2.bankName) {
+            alert('2~101회차 계좌 정보를 모두 입력해 주세요.');
+            return;
+          }
         }
       } else {
-        if (!formData.paymentInfo.accountNumber || !formData.paymentInfo.bankName) {
-          alert('계좌 정보를 모두 입력해 주세요.');
-          return;
+        if (formData.paymentMethod === 'card') {
+          const pureCard = formData.paymentInfo.cardNumber.replace(/[^0-9]/g, '');
+          if (pureCard.length < 11 || !formData.paymentInfo.cardCompany || !formData.paymentInfo.cardExpiry) {
+            alert('카드 정보를 모두 정확히 입력해 주세요 (번호는 11~16자리 가능).');
+            return;
+          }
+        } else {
+          if (!formData.paymentInfo.accountNumber || !formData.paymentInfo.bankName) {
+            alert('계좌 정보를 모두 입력해 주세요.');
+            return;
+          }
         }
       }
     }
@@ -1280,198 +1451,271 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
               </div>
 
-              <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                <button type="button" onClick={() => updateFormData('paymentMethod', 'card')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
-                <button type="button" onClick={() => updateFormData('paymentMethod', 'bank')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
-              </div>
+              {formData.product === '좋은건강크루즈' ? (
+                // --- 좋은건강크루즈 전용 결제수단 UI (1회차 & 2~101회차 분리) ---
+                <div className="space-y-6">
+                  {/* --- 1회차 건강보조식품 --- */}
+                  <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
+                    <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                      1회차 건강보조식품 납부방법
+                    </h3>
+                    <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                      <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                      <button type="button" onClick={() => updateFormData('paymentMethod1', 'bank')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
+                    </div>
 
-              <div className="space-y-4">
-                {formData.paymentMethod === 'card' ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><CreditCard size={14} /> 카드사</label>
-                        <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo.cardCompany} onChange={(e) => updatePaymentInfo('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 유효기간</label>
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          maxLength={5}
-                          value={formData.paymentInfo.cardExpiry}
-                          onChange={(e) => {
-                            let val = e.target.value.replace(/[^0-9]/g, '');
-                            if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
-                            updatePaymentInfo('cardExpiry', val);
-                          }}
-                          className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-sub ml-1">카드번호</label>
-                      <input
-                        type="text"
-                        placeholder="0000-0000-0000-0000"
-                        value={formData.paymentInfo.cardNumber}
-                        onChange={(e) => {
-                          let val = e.target.value.replace(/[^0-9]/g, '');
-                          if (val.length > 16) val = val.substring(0, 16);
-                          let formatted = '';
-                          for (let i = 0; i < val.length; i++) {
-                            if (i > 0 && i % 4 === 0) formatted += '-';
-                            formatted += val[i];
-                          }
-                          updatePaymentInfo('cardNumber', formatted);
-                        }}
-                        className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold"
-                      />
-                    </div>
-                    {formData.product === '좋은건강크루즈' && (
-                      <div className="space-y-2">
-                        <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><CreditCard size={14} /> 할부기간</label>
-                        <select
-                          value={formData.paymentInfo.installmentPeriod || '일시불'}
-                          onChange={(e) => updatePaymentInfo('installmentPeriod', e.target.value)}
-                          className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold text-base"
-                        >
-                          <option value="일시불">일시불</option>
-                          {[2,3,4,5,6,7,8,9,10,11,12].map(m => (
-                            <option key={m} value={`${m}개월`}>{m}개월</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    
-                    {formData.product === '좋은건강크루즈' && (
-                      <div className="mt-4 border border-blue-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => setShowInstallmentGuide(!showInstallmentGuide)}
-                          className="w-full bg-[#0b2b6d] text-white p-2.5 text-center font-bold flex items-center justify-between px-4 text-sm"
-                        >
-                          <div className="flex items-center gap-2">
-                            <CreditCard size={16} /> 무이자 할부 안내
+                    {formData.paymentMethod1 === 'card' ? (
+                      <div className="space-y-4 mt-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
+                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo1.cardCompany} onChange={(e) => updatePaymentInfo1('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
                           </div>
-                          <span className="text-xl leading-none">{showInstallmentGuide ? '−' : '+'}</span>
-                        </button>
-                        <AnimatePresence>
-                          {showInstallmentGuide && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
+                            <input
+                              type="text"
+                              placeholder="MM/YY"
+                              maxLength={5}
+                              value={formData.paymentInfo1.cardExpiry}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(/[^0-9]/g, '');
+                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                updatePaymentInfo1('cardExpiry', val);
+                              }}
+                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
+                          <input
+                            type="text"
+                            placeholder="0000-0000-0000-0000"
+                            value={formData.paymentInfo1.cardNumber}
+                            onChange={(e) => {
+                              let val = e.target.value.replace(/[^0-9]/g, '');
+                              if (val.length > 16) val = val.substring(0, 16);
+                              let formatted = '';
+                              for (let i = 0; i < val.length; i++) {
+                                if (i > 0 && i % 4 === 0) formatted += '-';
+                                formatted += val[i];
+                              }
+                              updatePaymentInfo1('cardNumber', formatted);
+                            }}
+                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
+                          />
+                        </div>
+                        {renderInstallmentGuide()}
+                      </div>
+                    ) : (
+                      <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl text-center space-y-4 mt-3 shadow-inner">
+                        <div className="inline-flex w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 rounded-full items-center justify-center text-indigo-600 dark:text-indigo-400">
+                          <Landmark size={20} />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-bold text-sub uppercase tracking-wider">입금 계좌번호</p>
+                          <div className="flex items-center justify-center gap-2 bg-theme/50 px-4 py-2.5 rounded-2xl border border-theme/60 max-w-[280px] mx-auto">
+                            <span className="text-sm font-black tracking-tight text-indigo-600 dark:text-indigo-400 font-mono">국민 476101-01-413681</span>
+                            <button
+                              type="button"
+                              onClick={handleCopyAccount}
+                              className={`p-1.5 rounded-lg transition-all ${copied ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-theme-hover text-sub hover:text-indigo-600'}`}
+                              title="계좌번호 복사"
                             >
-                              <div className="p-3 space-y-3 bg-white">
-                                <div className="bg-gray-50 p-2.5 rounded-lg text-[13px] text-gray-700 leading-relaxed border border-gray-100">
-                                  <span className="font-bold text-gray-900 mb-0.5 block">대상카드</span>
-                                  BC / 신한 / 삼성 / 현대 / 국민 / 농협 / 하나 / 롯데 / 우리
-                                  <div className="text-[11px] text-gray-500 mt-0.5">(법인(기업), 체크, 선불, 기프트카드 제외)</div>
-                                </div>
-                                
-                                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                  <table className="w-full text-[13px] border-collapse">
-                                    <thead>
-                                      <tr className="bg-[#0b2b6d] text-white">
-                                        <th className="py-2 px-2 text-center font-bold w-1/2 border-r border-blue-800">카드사</th>
-                                        <th className="py-2 px-2 text-center font-bold w-1/2">무이자 할부 기간</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                      <tr>
-                                        <td className="py-2.5 px-3 font-medium text-gray-800 border-r border-gray-200">
-                                          <span className="text-red-600 font-bold mr-1 text-[14px]">BC</span>
-                                          <div className="text-[11px] text-gray-500 mt-0.5 font-normal leading-tight">
-                                            (우리, IBK, 농협, SC, 대구, 부산, 경남, 신한, 하나, KB국민, 씨티)
-                                          </div>
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-bold text-blue-700 align-middle text-[14px]" rowSpan={3}>2~5개월</td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0"></div> 우리
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-red-500 flex-shrink-0"></div> 롯데
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-yellow-400 flex-shrink-0"></div> 국민
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-bold text-teal-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]" rowSpan={5}>2~3개월</td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 border-[3px] border-gray-800 bg-white flex-shrink-0"></div> 현대
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-teal-500 flex-shrink-0"></div> 하나
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-blue-600 flex-shrink-0"></div> 신한
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-r border-gray-200 flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-blue-800 flex-shrink-0"></div> 삼성
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td className="py-2 px-3 font-medium text-gray-800 border-t-2 border-dashed border-gray-200 border-r flex items-center gap-2">
-                                          <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0"></div> 농협
-                                        </td>
-                                        <td className="py-2 px-3 text-center font-bold text-amber-600 align-middle border-t-2 border-dashed border-gray-200 text-[14px]">2~6개월</td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-2.5 rounded-lg text-[11px] text-gray-600 flex gap-2 items-start">
-                                  <span className="text-gray-400 shrink-0 mt-0.5">※</span>
-                                  <div className="space-y-0.5">
-                                    <div>무이자 할부는 카드사 정책에 따라 변동될 수 있습니다.</div>
-                                    <div>일부 카드 및 가맹점 사정에 따라 제외될 수 있습니다.</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                              {copied ? <Check size={14} /> : <Copy size={14} />}
+                            </button>
+                          </div>
+                          <p className="text-xs font-black text-gray-800 dark:text-zinc-200">예금주: 더좋은라이프앤바이오</p>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                            납입금액: <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{(600000 * (Number(formData.productCount) || 1)).toLocaleString()}원</span> ({formData.productCount || 1}구좌 기준)
+                          </p>
+                        </div>
+
+                        {/* 토스 앱 바로 송금 버튼 */}
+                        <div className="pt-1">
+                          <a
+                            href={`supertoss://send?bank=KB국민&account=47610101413681&amount=${600000 * (Number(formData.productCount) || 1)}`}
+                            className="inline-flex w-full items-center justify-center gap-2 py-3.5 px-6 bg-[#0050ff] hover:bg-[#0040cc] text-white rounded-2xl font-black text-sm tracking-tight shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+                          >
+                            <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                            </svg>
+                            토스 앱으로 바로 송금하기
+                          </a>
+                          <p className="text-[10px] text-sub mt-1.5 opacity-80">
+                            * 모바일 기기에 토스 앱이 설치된 경우에만 자동으로 연동됩니다.
+                          </p>
+                        </div>
+
+                        <p className="text-[11px] text-sub font-bold bg-gray-50 dark:bg-zinc-850 p-3 rounded-2xl leading-relaxed text-indigo-500">
+                          ※ 1회차 상품대금은 위 계좌로 직접 입금해 주셔야 최종 접수가 완료됩니다.
+                        </p>
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Landmark size={14} /> 은행명</label>
-                      <input type="text" placeholder="예: 국민은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+
+                  {/* --- 2~101회차 --- */}
+                  <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
+                    <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                      2~101회차 납부방법
+                    </h3>
+                    <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                      <button type="button" onClick={() => updateFormData('paymentMethod2', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                      <button type="button" onClick={() => updateFormData('paymentMethod2', 'cms')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'cms' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>CMS (계좌)</button>
                     </div>
+
+                    {formData.paymentMethod2 === 'card' ? (
+                      <div className="space-y-4 mt-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
+                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo2.cardCompany} onChange={(e) => updatePaymentInfo2('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
+                            <input
+                              type="text"
+                              placeholder="MM/YY"
+                              maxLength={5}
+                              value={formData.paymentInfo2.cardExpiry}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(/[^0-9]/g, '');
+                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                updatePaymentInfo2('cardExpiry', val);
+                              }}
+                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
+                          <input
+                            type="text"
+                            placeholder="0000-0000-0000-0000"
+                            value={formData.paymentInfo2.cardNumber}
+                            onChange={(e) => {
+                              let val = e.target.value.replace(/[^0-9]/g, '');
+                              if (val.length > 16) val = val.substring(0, 16);
+                              let formatted = '';
+                              for (let i = 0; i < val.length; i++) {
+                                if (i > 0 && i % 4 === 0) formatted += '-';
+                                formatted += val[i];
+                              }
+                              updatePaymentInfo2('cardNumber', formatted);
+                            }}
+                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 mt-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Landmark size={14} /> 은행명</label>
+                            <input type="text" placeholder="예: 국민은행" value={formData.paymentInfo2.bankName} onChange={(e) => updatePaymentInfo2('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1">계좌번호</label>
+                            <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo2.accountNumber} onChange={(e) => updatePaymentInfo2('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 결제일 */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-sub ml-1">매월 결제일</label>
+                    <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
+                      <option value="5">매월 5일</option>
+                      <option value="10">매월 10일</option>
+                      <option value="15">매월 15일</option>
+                      <option value="20">매월 20일</option>
+                      <option value="25">매월 25일</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                // --- 일반 상품 결제수단 UI (기존 코드) ---
+                <div className="space-y-4">
+                  <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                    <button type="button" onClick={() => updateFormData('paymentMethod', 'card')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                    <button type="button" onClick={() => updateFormData('paymentMethod', 'bank')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {formData.paymentMethod === 'card' ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><CreditCard size={14} /> 카드사</label>
+                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo.cardCompany} onChange={(e) => updatePaymentInfo('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 유효기간</label>
+                            <input
+                              type="text"
+                              placeholder="MM/YY"
+                              maxLength={5}
+                              value={formData.paymentInfo.cardExpiry}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(/[^0-9]/g, '');
+                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                updatePaymentInfo('cardExpiry', val);
+                              }}
+                              className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-sub ml-1">카드번호</label>
+                          <input
+                            type="text"
+                            placeholder="0000-0000-0000-0000"
+                            value={formData.paymentInfo.cardNumber}
+                            onChange={(e) => {
+                              let val = e.target.value.replace(/[^0-9]/g, '');
+                              if (val.length > 16) val = val.substring(0, 16);
+                              let formatted = '';
+                              for (let i = 0; i < val.length; i++) {
+                                if (i > 0 && i % 4 === 0) formatted += '-';
+                                formatted += val[i];
+                              }
+                              updatePaymentInfo('cardNumber', formatted);
+                            }}
+                            className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold"
+                          />
+                        </div>
+                        {renderInstallmentGuide()}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Landmark size={14} /> 은행명</label>
+                          <input type="text" placeholder="예: 국민은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-sub ml-1">계좌번호</label>
+                          <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo.accountNumber} onChange={(e) => updatePaymentInfo('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                        </div>
+                      </div>
+                    )}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-sub ml-1">계좌번호</label>
-                      <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo.accountNumber} onChange={(e) => updatePaymentInfo('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                      <label className="text-xs font-bold text-sub ml-1">매월 결제일</label>
+                      <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
+                        <option value="5">매월 5일</option>
+                        <option value="10">매월 10일</option>
+                        <option value="15">매월 15일</option>
+                        <option value="20">매월 20일</option>
+                        <option value="25">매월 25일</option>
+                      </select>
                     </div>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-sub ml-1">매월 결제일</label>
-                  <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
-                    <option value="5">매월 5일</option>
-                    <option value="10">매월 10일</option>
-                    <option value="15">매월 15일</option>
-                    <option value="20">매월 20일</option>
-                    <option value="25">매월 25일</option>
-                  </select>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button onClick={handleBack} className="flex-1 py-5 bg-card text-sub rounded-2xl font-bold border border-theme">이전</button>

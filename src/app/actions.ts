@@ -46,7 +46,7 @@ export async function registerAction(data: any) {
 
     // Google Sheets에 데이터 기록
     try {
-      const sheetData: any = {
+      let sheetData: any = {
         '신청일시': getKoreanDateTime(),
         '유입링크': data.linkId || '직접접속',
         '상품명': data.product,
@@ -57,17 +57,40 @@ export async function registerAction(data: any) {
         '기업명': data.companyName || '',
         '사업자등록번호': data.businessNumber || '',
         '구좌수': data.productCount,
-        '결제정보(카드/cms)': data.paymentMethod === 'card' ? '카드' : 'CMS',
-        '카드사/은행명': data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName,
-        '카드번호/계좌번호': data.paymentMethod === 'card' ? data.paymentInfo.cardNumber : data.paymentInfo.accountNumber,
-        '유효기간': data.paymentMethod === 'card' ? data.paymentInfo.cardExpiry : '',
-        '결제일': data.paymentDate,
         '영업자소속': data.salesAffiliation,
         '영업자': data.salesName,
         '영업자연락처': data.salesPhone,
         'document_id': eformResult.document_id,
         '상태': '신청완료'
       };
+
+      if (data.product === '좋은건강크루즈') {
+        // 크루즈 상품인 경우: 1회차 및 2~101회차 분리 저장
+        // 1) 기존 컬럼과의 호환을 위해 공통 결제 컬럼에는 2~101회차 정보 매핑
+        sheetData['결제정보(카드/cms)'] = data.paymentMethod2 === 'card' ? '카드' : 'CMS';
+        sheetData['카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardCompany : data.paymentInfo2.bankName;
+        sheetData['카드번호/계좌번호'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardNumber : data.paymentInfo2.accountNumber;
+        sheetData['유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
+        sheetData['결제일'] = data.paymentDate;
+
+        // 2) 크루즈 상세 컬럼 추가 기록
+        sheetData['1회차 납부방법'] = data.paymentMethod1 === 'card' ? '카드결제' : '계좌이체';
+        sheetData['1회차 카드사/은행명'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardCompany : '국민은행';
+        sheetData['1회차 계좌/카드번호'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardNumber : '476101-01-413681';
+        sheetData['1회차 유효기간'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardExpiry : '';
+
+        sheetData['2~101회차 납부방법'] = data.paymentMethod2 === 'card' ? '카드결제' : 'CMS';
+        sheetData['2~101회차 카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardCompany : data.paymentInfo2.bankName;
+        sheetData['2~101회차 계좌/카드번호'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardNumber : data.paymentInfo2.accountNumber;
+        sheetData['2~101회차 유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
+      } else {
+        // 일반 상품인 경우 기존 매핑 유지
+        sheetData['결제정보(카드/cms)'] = data.paymentMethod === 'card' ? '카드' : 'CMS';
+        sheetData['카드사/은행명'] = data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName;
+        sheetData['카드번호/계좌번호'] = data.paymentMethod === 'card' ? data.paymentInfo.cardNumber : data.paymentInfo.accountNumber;
+        sheetData['유효기간'] = data.paymentMethod === 'card' ? data.paymentInfo.cardExpiry : '';
+        sheetData['결제일'] = data.paymentDate;
+      }
 
       // 헬스케어 대상자 정보 추가
       if (data.healthcareTargets && Array.isArray(data.healthcareTargets)) {
@@ -84,7 +107,10 @@ export async function registerAction(data: any) {
       const configs = getProductConfigs();
       const productConfig = configs.find(c => c.name === data.product);
       
-      if (productConfig && productConfig.targetSheetName) {
+      // 크루즈 상품은 최우선적으로 '크루즈' 시트로 강제 라우팅 처리
+      if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
+        sheetName = '크루즈';
+      } else if (productConfig && productConfig.targetSheetName) {
         sheetName = productConfig.targetSheetName;
       } else {
         if (data.product === '더좋은하이브리드698') {
@@ -95,8 +121,6 @@ export async function registerAction(data: any) {
           sheetName = '통신결합';
         } else if (data.product === '더좋은라이즈498') {
           sheetName = '라이즈498';
-        } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
-          sheetName = '크루즈';
         } else if (data.product === '굿라이프헬스케어') {
           sheetName = '굿라이프헬스케어';
         }
