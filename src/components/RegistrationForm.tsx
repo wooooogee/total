@@ -292,10 +292,17 @@ const STEPS = [
 interface RegistrationFormProps {
   allowedProducts?: string[];
   linkId?: string;
+  initialProduct?: string;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct }) => {
+  const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어'];
+  const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
+
+  const isValidInitialProduct = initialProduct && productsToDisplay.includes(initialProduct);
+  const defaultProduct = isValidInitialProduct ? initialProduct : (productsToDisplay[0] || '더좋은헬스케어580');
+
+  const [currentStep, setCurrentStep] = useState(isValidInitialProduct ? 1 : 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState('');
   const [createdDocumentId, setCreatedDocumentId] = useState<string | null>(null);
@@ -418,9 +425,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   );
 
 
-  const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어'];
-  const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
-
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
     setTheme(savedTheme);
@@ -500,7 +504,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     contractorType: 'individual', // 'individual' or 'corporate'
     companyName: '',
     businessNumber: '',
-    product: productsToDisplay[0] || '더좋은헬스케어580', 
+    product: defaultProduct, 
     productName: '', // For 698, 통신결합, 라이즈, 굿라이프 제품명
     productName2: '', // For 라이즈 제품명2
     hasMultipleProducts: false, // For 라이즈498 제품 2개 선택 여부
