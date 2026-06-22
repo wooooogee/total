@@ -946,7 +946,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         if (result.documentId) {
           setCreatedDocumentId(result.documentId);
           setTimeout(() => {
-            window.open(`/api/download?id=${result.documentId}`, '_blank');
+            // 브라우저 팝업 차단을 피하고, 페이지 이동 없이 바로 다운로드되도록 location.href 사용
+            window.location.href = `/api/download?id=${result.documentId}&action=download`;
           }, 2000);
         }
         setCurrentStep(8); // Final step
