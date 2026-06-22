@@ -255,6 +255,42 @@ export async function createEformsignDocument(data: any) {
         } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
+            const hasSplit = !!data.paymentMethod1;
+            
+            const paymentMethod1 = hasSplit 
+                ? (data.paymentMethod1 === 'card' ? '카드' : '계좌이체') 
+                : '';
+            const cardCompany1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardCompany || '') 
+                : '';
+            const cardNumber1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardNumber || '') 
+                : '';
+            const cardExpiry1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardExpiry || '') 
+                : '';
+            const installmentPeriod1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.installmentPeriod || '') 
+                : '';
+
+            const isCard2 = hasSplit 
+                ? data.paymentMethod2 === 'card' 
+                : data.paymentMethod === 'card';
+            
+            const paymentMethod2 = isCard2 ? '카드' : 'CMS(계좌)';
+            const paymentInfo2 = hasSplit ? data.paymentInfo2 : data.paymentInfo;
+            
+            const cardOrBank2 = isCard2 
+                ? (paymentInfo2?.cardCompany || '') 
+                : (paymentInfo2?.bankName || '');
+            const cardOrAccount2 = isCard2 
+                ? (paymentInfo2?.cardNumber || '') 
+                : (paymentInfo2?.accountNumber || '');
+            const cardExpiry2 = isCard2 
+                ? (paymentInfo2?.cardExpiry || '') 
+                : '-';
+            const paymentDay = `${(data.paymentDate || '05').toString().padStart(2, '0')}일`;
+
             fields = [
                 { id: '구좌수', value: `${data.productCount}구좌` },
                 { id: '상품명', value: data.product === '좋은건강크루즈' ? '좋은건강크루즈330 결합상품' : (data.product === '크루즈' ? '크루즈 선불식 할부거래' : '더좋은크루즈 선불식 할부거래') },
@@ -263,12 +299,21 @@ export async function createEformsignDocument(data: any) {
                 { id: '성별', value: data.gender || '남' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
-                { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
-                { id: '카드/은행명', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardCompany || '') : (data.paymentInfo?.bankName || '') },
-                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : (data.paymentInfo?.accountNumber || '') },
-                { id: '유효기간', value: (data.paymentMethod === 'card' && data.paymentInfo?.cardExpiry) ? data.paymentInfo.cardExpiry : '-' },
-                { id: '카드할부', value: (data.paymentMethod === 'card' && data.paymentInfo?.installmentPeriod) ? data.paymentInfo.installmentPeriod : '' },
-                { id: '이체일', value: `${(data.paymentDate || '05').toString().padStart(2, '0')}일` },
+                
+                // 1회차 결제정보
+                { id: '결제방법1', value: paymentMethod1 },
+                { id: '카드사', value: cardCompany1 },
+                { id: '카드번호', value: cardNumber1 },
+                { id: '유효기간1', value: cardExpiry1 },
+                { id: '카드할부', value: installmentPeriod1 },
+                
+                // 2~101회차 결제정보
+                { id: '결제방법2', value: paymentMethod2 },
+                { id: '카드사/은행명', value: cardOrBank2 },
+                { id: '카드번호/계좌번호', value: cardOrAccount2 },
+                { id: '유효기간2', value: cardExpiry2 },
+                { id: '결제일', value: paymentDay },
+                
                 { id: '상품내용고지', value: data.agreement?.product_notice ? '1' : '' },
                 { id: '개인정보수집', value: data.agreement?.privacy ? '1' : '' },
                 { id: '제3자제공', value: data.agreement?.third_party ? '1' : '' },
