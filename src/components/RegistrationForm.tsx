@@ -1861,7 +1861,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                             className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold"
                           />
                         </div>
-                        {renderInstallmentGuide()}
                       </div>
                     ) : (
                       <div className="space-y-4">
