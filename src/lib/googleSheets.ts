@@ -118,10 +118,18 @@ export async function addRegistrationToSheet(data: any, sheetTitle: string = 'ì‹
       const missingHeaders = dataKeys.filter(key => !existingHeaders.includes(key));
       
       if (missingHeaders.length > 0) {
-        await sheet.setHeaderRow([...existingHeaders, ...missingHeaders]);
+        const newHeaders = [...existingHeaders, ...missingHeaders];
+        if (newHeaders.length > sheet.columnCount) {
+          await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length });
+        }
+        await sheet.setHeaderRow(newHeaders);
       }
     } catch (e) {
-      await sheet.setHeaderRow(Object.keys(data));
+      const newHeaders = Object.keys(data);
+      if (newHeaders.length > sheet.columnCount) {
+        await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length });
+      }
+      await sheet.setHeaderRow(newHeaders);
     }
 
     const result = await sheet.addRow(data);
