@@ -1477,6 +1477,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
+                    if (formData.product === '좋은건강크루즈') {
+                      const count = Number(formData.productCount) || 1;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">1차 납입금</span>
+                            <span className="text-lg font-black text-indigo-500">선결제 {(600000 * count).toLocaleString()}원 (건강식품)</span>
+                          </div>
+                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <span className="text-xs font-bold">2차 납입금</span>
+                            <span className="text-lg font-black text-indigo-500">{(27000 * count).toLocaleString()}원 (100회 납입)</span>
+                          </div>
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
+                            <span className="text-emerald-600 font-black text-sm italic">
+                              완납 후 5년예치 시 {(3300000 * count).toLocaleString()}원 100% 환급
+                            </span>
+                          </div>
+                        </>
+                      );
+                    }
+
                     if (formData.product?.includes('크루즈') && formData.product !== '좋은건강크루즈') {
                       const count = Number(formData.productCount) || 1;
                       return (
@@ -1488,7 +1509,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                             </div>
                             <span className="text-lg font-black text-indigo-500">{(27000 * count).toLocaleString()}원</span>
                           </div>
-                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
+                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
                             <span className="text-emerald-600 font-black text-sm italic">완납 후 5년예치 만기 시 100% 전액 환급</span>
                           </div>
                         </>
@@ -1554,7 +1575,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
                     <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      1회차 납부방법 (600,000원)
+                      1회차 납부방법 ({(600000 * (Number(formData.productCount) || 1)).toLocaleString()}원)
                     </h3>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
                       <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
@@ -1680,7 +1701,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
                     <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      2~101회차 납부방법 (27,000원)
+                      2~101회차 납부방법 ({(27000 * (Number(formData.productCount) || 1)).toLocaleString()}원)
                     </h3>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
                       <button type="button" onClick={() => updateFormData('paymentMethod2', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
