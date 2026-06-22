@@ -66,11 +66,11 @@ export async function registerAction(data: any) {
 
       if (data.product === '좋은건강크루즈') {
         // 크루즈 상품인 경우: 1회차 및 2~101회차 분리 저장
-        // 1) 기존 컬럼과의 호환을 위해 공통 결제 컬럼에는 2~101회차 정보 매핑
-        sheetData['결제정보(카드/cms)'] = data.paymentMethod2 === 'card' ? '카드' : 'CMS';
-        sheetData['카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardCompany : data.paymentInfo2.bankName;
-        sheetData['카드번호/계좌번호'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardNumber : data.paymentInfo2.accountNumber;
-        sheetData['유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
+        // 1) 기존 컬럼(결제정보, 카드사 등)은 크루즈에서는 1,2차로 분리되어 있으므로 중복 방지를 위해 비워둠 (결제일은 유지)
+        sheetData['결제정보(카드/cms)'] = '';
+        sheetData['카드사/은행명'] = '';
+        sheetData['카드번호/계좌번호'] = '';
+        sheetData['유효기간'] = '';
         sheetData['결제일'] = data.paymentDate;
 
         // 2) 크루즈 상세 컬럼 추가 기록
