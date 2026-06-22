@@ -557,6 +557,57 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     salesPhone: '',
   });
 
+  // 작성 중인 폼 데이터 로컬스토리지 임시 저장 및 복구 로직
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedDraft = localStorage.getItem('registration_form_draft');
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          
+          if (isValidInitialProduct && parsed.product !== initialProduct) {
+            parsed.product = initialProduct;
+            parsed.productName = '';
+            parsed.productName2 = '';
+          }
+          
+          setFormData((prev) => ({
+            ...prev,
+            ...parsed,
+            signature: '', // 서명은 항상 비움
+          }));
+          
+          const savedStep = localStorage.getItem('registration_form_step');
+          if (savedStep) {
+            const stepNum = parseInt(savedStep);
+            if (!isNaN(stepNum) && stepNum >= 0 && stepNum < STEPS.length) {
+              if (!isValidInitialProduct || parsed.product === initialProduct) {
+                setCurrentStep(stepNum);
+              } else {
+                setCurrentStep(1);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to restore form draft:', e);
+        }
+      }
+    }
+  }, [initialProduct, isValidInitialProduct]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { signature, ...restData } = formData;
+      localStorage.setItem('registration_form_draft', JSON.stringify(restData));
+    }
+  }, [formData]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('registration_form_step', currentStep.toString());
+    }
+  }, [currentStep]);
+
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -850,6 +901,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     try {
       const result = await registerAction({ ...formData, linkId });
       if (result.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('registration_form_draft');
+          localStorage.removeItem('registration_form_step');
+        }
         setSubmittingMessage('계약서 PDF를 생성하고 있습니다. 잠시만 기다려 주세요...');
         if (result.documentId) {
           setCreatedDocumentId(result.documentId);
@@ -1564,7 +1619,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                         {/* 토스 앱 바로 송금 버튼 */}
                         <div className="pt-1">
                           <a
-                            href={`supertoss://send?bank=KB국민&account=47610101413681&amount=${600000 * (Number(formData.productCount) || 1)}`}
+                            href={`supertoss://send?bank=국민&accountNo=47610101413681&amount=${600000 * (Number(formData.productCount) || 1)}`}
                             className="inline-flex w-full items-center justify-center gap-2 py-3.5 px-6 bg-[#0050ff] hover:bg-[#0040cc] text-white rounded-2xl font-black text-sm tracking-tight shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
                           >
                             <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
