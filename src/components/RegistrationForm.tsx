@@ -1554,7 +1554,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
                     <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      1회차 건강보조식품 납부방법
+                      1회차 납부방법 (600,000원)
                     </h3>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
                       <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
@@ -1680,7 +1680,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
                     <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      2~101회차 납부방법
+                      2~101회차 납부방법 (27,000원)
                     </h3>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
                       <button type="button" onClick={() => updateFormData('paymentMethod2', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
