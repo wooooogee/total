@@ -942,15 +942,22 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           localStorage.removeItem('registration_form_draft');
           localStorage.removeItem('registration_form_step');
         }
-        setSubmittingMessage('계약서 PDF를 생성하고 있습니다. 잠시만 기다려 주세요...');
+        setSubmittingMessage('안전하게 계약서 PDF를 생성하고 있습니다. (약 5초 소요)');
         if (result.documentId) {
           setCreatedDocumentId(result.documentId);
+          
+          // PDF 생성이 완료될 때까지 약 5초간 로딩 화면 유지
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          setCurrentStep(8); // 완료 화면으로 이동
+          
+          // 완료 화면 렌더링 후 약간의 시차를 두고 다운로드 시작
           setTimeout(() => {
-            // 브라우저 팝업 차단을 피하고, 페이지 이동 없이 바로 다운로드되도록 location.href 사용
             window.location.href = `/api/download?id=${result.documentId}&action=download`;
-          }, 2000);
+          }, 500);
+        } else {
+          setCurrentStep(8); // Final step
         }
-        setCurrentStep(8); // Final step
       } else {
         alert(result.message || '등록 중 오류가 발생했습니다.');
       }
