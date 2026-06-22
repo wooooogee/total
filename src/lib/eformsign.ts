@@ -309,7 +309,7 @@ export async function createEformsignDocument(data: any) {
                 
                 // 2~101회차 결제정보
                 { id: '결제방법2', value: paymentMethod2 },
-                { id: '카드사/은행명', value: cardOrBank2 },
+                { id: '카드/은행명', value: cardOrBank2 },
                 { id: '카드번호/계좌번호', value: cardOrAccount2 },
                 { id: '유효기간2', value: cardExpiry2 },
                 { id: '결제일', value: paymentDay },
