@@ -1511,6 +1511,30 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                             className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
                           />
                         </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[12px] font-bold text-sub ml-1">할부 기간</label>
+                          <select 
+                            value={formData.paymentInfo1.installmentPeriod || '일시불'} 
+                            onChange={(e) => updatePaymentInfo1('installmentPeriod', e.target.value)} 
+                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center] bg-[length:1em]"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`
+                            }}
+                          >
+                            <option value="일시불">일시불</option>
+                            <option value="2개월">2개월</option>
+                            <option value="3개월">3개월</option>
+                            <option value="4개월">4개월</option>
+                            <option value="5개월">5개월</option>
+                            <option value="6개월">6개월</option>
+                            <option value="7개월">7개월</option>
+                            <option value="8개월">8개월</option>
+                            <option value="9개월">9개월</option>
+                            <option value="10개월">10개월</option>
+                            <option value="11개월">11개월</option>
+                            <option value="12개월">12개월</option>
+                          </select>
+                        </div>
                         {renderInstallmentGuide()}
                       </div>
                     ) : (
