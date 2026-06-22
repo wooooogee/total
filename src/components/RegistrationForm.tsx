@@ -608,6 +608,43 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
   }, [currentStep]);
 
+  const [isSameCard, setIsSameCard] = useState(false);
+
+  // 1회차 카드 정보가 바뀌고 '동일' 체크 상태일 때 2회차 정보 실시간 동기화
+  useEffect(() => {
+    if (isSameCard) {
+      setFormData(prev => ({
+        ...prev,
+        paymentInfo2: {
+          ...prev.paymentInfo2,
+          cardCompany: prev.paymentInfo1.cardCompany,
+          cardNumber: prev.paymentInfo1.cardNumber,
+          cardExpiry: prev.paymentInfo1.cardExpiry,
+        }
+      }));
+    }
+  }, [
+    isSameCard, 
+    formData.paymentInfo1.cardCompany, 
+    formData.paymentInfo1.cardNumber, 
+    formData.paymentInfo1.cardExpiry
+  ]);
+
+  const handleSameCardToggle = (checked: boolean) => {
+    setIsSameCard(checked);
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        paymentInfo2: {
+          ...prev.paymentInfo2,
+          cardCompany: prev.paymentInfo1.cardCompany,
+          cardNumber: prev.paymentInfo1.cardNumber,
+          cardExpiry: prev.paymentInfo1.cardExpiry,
+        }
+      }));
+    }
+  };
+
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -1652,10 +1689,31 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
                     {formData.paymentMethod2 === 'card' ? (
                       <div className="space-y-4 mt-3">
+                        {formData.paymentMethod1 === 'card' && (
+                          <div className="flex items-center gap-2 mb-1 pl-1">
+                            <input 
+                              type="checkbox" 
+                              id="sameCardCheckbox"
+                              checked={isSameCard}
+                              onChange={(e) => handleSameCardToggle(e.target.checked)}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <label htmlFor="sameCardCheckbox" className="text-xs font-bold text-sub cursor-pointer select-none flex items-center gap-1.5">
+                              1회차 카드 정보와 동일
+                            </label>
+                          </div>
+                        )}
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
-                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo2.cardCompany} onChange={(e) => updatePaymentInfo2('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            <input 
+                              type="text" 
+                              placeholder="예: 현대카드" 
+                              value={formData.paymentInfo2.cardCompany} 
+                              onChange={(e) => updatePaymentInfo2('cardCompany', e.target.value)} 
+                              disabled={isSameCard}
+                              className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
+                            />
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
@@ -1669,7 +1727,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                                 if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
                                 updatePaymentInfo2('cardExpiry', val);
                               }}
-                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold"
+                              disabled={isSameCard}
+                              className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
                             />
                           </div>
                         </div>
@@ -1689,7 +1748,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                               }
                               updatePaymentInfo2('cardNumber', formatted);
                             }}
-                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
+                            disabled={isSameCard}
+                            className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
                           />
                         </div>
                       </div>
