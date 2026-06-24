@@ -46,10 +46,13 @@ export async function registerAction(data: any) {
 
     // Google Sheets에 데이터 기록
     try {
+      const configs = getProductConfigs();
+      const productConfig = configs.find(c => c.id === data.product);
+
       let sheetData: any = {
         '신청일시': getKoreanDateTime(),
         '유입링크': data.linkId || '직접접속',
-        '상품명': data.product,
+        '상품명': productConfig ? productConfig.name : data.product,
         '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
         '계약자': data.name,
         '연락처': data.phone,
@@ -104,8 +107,6 @@ export async function registerAction(data: any) {
       }
       
       let sheetName = '헬스케어580';
-      const configs = getProductConfigs();
-      const productConfig = configs.find(c => c.name === data.product);
       
       // 크루즈 상품은 최우선적으로 '크루즈' 시트로 강제 라우팅 처리
       if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
@@ -121,8 +122,15 @@ export async function registerAction(data: any) {
           sheetName = '통신결합';
         } else if (data.product === '더좋은라이즈498') {
           sheetName = '라이즈498';
-        } else if (data.product === '굿라이프헬스케어') {
+        } else if (data.product === '굿라이프헬스케어' || data.product === '굿라이프헬스케어골드') {
           sheetName = '굿라이프헬스케어';
+        } else if (data.product === '더좋은헬스케어580') {
+          sheetName = '헬스케어580';
+        } else if (productConfig) {
+          // 신규 등록 상품 중 targetSheetName이 없으면 상품명을 시트 이름으로 폴백
+          sheetName = productConfig.name;
+        } else {
+          sheetName = data.product;
         }
       }
 

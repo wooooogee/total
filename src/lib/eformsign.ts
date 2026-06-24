@@ -110,16 +110,23 @@ export async function createEformsignDocument(data: any) {
             else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) templateId = EFORMSIGN_TEMPLATE_ID_Cruise;
             else if (data.product === '굿라이프헬스케어') templateId = EFORMSIGN_TEMPLATE_ID_Goodlife;
             else if (data.product === '굿라이프헬스케어골드') templateId = EFORMSIGN_TEMPLATE_ID_GoodlifeGold;
-            else templateId = EFORMSIGN_TEMPLATE_ID_Health580;
+            else templateId = EFORMSIGN_TEMPLATE_ID_Premium540; // Default fallback
         }
+
+        const isTongsin = data.product === '더좋은통신결합';
+        const isRise = data.product === '더좋은라이즈498';
+        const isCruise = data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈');
+        const isHealth580 = data.product === '더좋은헬스케어580';
+        
+        const productNameDisplay = config ? config.name : data.product;
 
         let fields: any[] = [];
 
-        if (data.product === '더좋은하이브리드698' || data.product === '더좋은프리미엄540' || data.product === '굿라이프헬스케어' || data.product === '굿라이프헬스케어골드') {
+        if (!isTongsin && !isRise && !isCruise && !isHealth580) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [
-                { id: '상품명', value: `${data.product}(${data.productCount}구좌) ${data.productName || ''}`.trim() },
+                { id: '상품명', value: `${productNameDisplay}(${data.productCount}구좌) ${data.productName || ''}`.trim() },
                 { id: '제품명', value: data.productName || '' },
                 { id: '구좌수', value: `${data.productCount}구좌` },
                 { id: '계약자이름', value: data.name },
@@ -162,7 +169,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '영업자성명', value: data.salesName || '' },
                 { id: '영업자연락처', value: data.salesPhone || '' }
             ];
-        } else if (data.product === '더좋은통신결합') {
+        } else if (isTongsin) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [
@@ -192,7 +199,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '영업자성명', value: data.salesName || '' },
                 { id: '영업자연락처', value: data.salesPhone || '' }
             ];
-        } else if (data.product === '더좋은라이즈498') {
+        } else if (isRise) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
@@ -254,7 +261,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '영업자성명', value: data.salesName || '' },
                 { id: '영업자연락처', value: data.salesPhone || '' }
             ];
-        } else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
+        } else if (isCruise) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             const hasSplit = !!data.paymentMethod1;
@@ -338,7 +345,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '대상자2_성별', value: data.healthcareTargets?.[1]?.gender || '' },
                 { id: '대상자2_연락처', value: data.healthcareTargets?.[1]?.phone || '' }
             ];
-        } else {
+        } else if (isHealth580) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             const count = Number(data.productCount) || 1;
