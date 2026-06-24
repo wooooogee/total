@@ -467,3 +467,462 @@ export async function deleteProductConfigFromSheet(id: string): Promise<boolean>
   }
 }
 
+export async function getSuppliersFromSheet(): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return [];
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['공급사설정'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '공급사설정',
+        headerValues: ['공급사명', '정산방식', '은행명', '계좌번호', '예금주', '발주서양식']
+      });
+      return [];
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['공급사명', '공급사', '업체명']) || '공급사명';
+    const typeKey = findHeader(['정산방식', '정산구분', '정산']) || '정산방식';
+    const bankKey = findHeader(['은행명', '은행']) || '은행명';
+    const accountKey = findHeader(['계좌번호', '계좌']) || '계좌번호';
+    const holderKey = findHeader(['예금주']) || '예금주';
+    const templateKey = findHeader(['발주서양식', '발주서템플릿', '양식', '템플릿']) || '발주서양식';
+
+    return rows.map(row => ({
+      name: row.get(nameKey) || '',
+      settlementType: row.get(typeKey) || '',
+      bankName: row.get(bankKey) || '',
+      accountNumber: row.get(accountKey) || '',
+      accountHolder: row.get(holderKey) || '',
+      template: row.get(templateKey) || ''
+    }));
+  } catch (error) {
+    console.error('Failed to get suppliers from Sheet:', error);
+    return [];
+  }
+}
+
+export async function saveSupplierToSheet(supplier: any): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['공급사설정'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '공급사설정',
+        headerValues: ['공급사명', '정산방식', '은행명', '계좌번호', '예금주', '발주서양식']
+      });
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['공급사명', '공급사', '업체명']) || '공급사명';
+    const existingRow = rows.find(r => r.get(nameKey) === supplier.name);
+    const rowData = {
+      '공급사명': supplier.name,
+      '정산방식': supplier.settlementType,
+      '은행명': supplier.bankName,
+      '계좌번호': supplier.accountNumber,
+      '예금주': supplier.accountHolder,
+      '발주서양식': supplier.template
+    };
+    if (existingRow) {
+      existingRow.set('정산방식', rowData['정산방식']);
+      existingRow.set('은행명', rowData['은행명']);
+      existingRow.set('계좌번호', rowData['계좌번호']);
+      existingRow.set('예금주', rowData['예금주']);
+      existingRow.set('발주서양식', rowData['발주서양식']);
+      await existingRow.save();
+    } else {
+      await sheet.addRow(rowData);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save supplier to Sheet:', error);
+    return false;
+  }
+}
+
+export async function deleteSupplierFromSheet(name: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle['공급사설정'];
+    if (!sheet) return false;
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['공급사명', '공급사', '업체명']) || '공급사명';
+    const existingRow = rows.find(r => r.get(nameKey) === name);
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete supplier from Sheet:', error);
+    return false;
+  }
+}
+
+export async function getSupplyProductsFromSheet(): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return [];
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['공급제품리스트'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '공급제품리스트',
+        headerValues: ['제품명', '공급사명', '공급가']
+      });
+      return [];
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
+    const supplierKey = findHeader(['공급사명', '공급사', '제조사', '업체명', '업체']) || '공급사명';
+    const priceKey = findHeader(['공급가', '공급가격', '원가', '단가', '가격']) || '공급가';
+
+    return rows.map(row => ({
+      name: row.get(nameKey) || '',
+      supplierName: row.get(supplierKey) || '',
+      price: row.get(priceKey) || ''
+    }));
+  } catch (error) {
+    console.error('Failed to get supply products from Sheet:', error);
+    return [];
+  }
+}
+
+export async function saveSupplyProductToSheet(product: any): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['공급제품리스트'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '공급제품리스트',
+        headerValues: ['제품명', '공급사명', '공급가']
+      });
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
+    const existingRow = rows.find(r => r.get(nameKey) === product.name);
+    const rowData = {
+      '제품명': product.name,
+      '공급사명': product.supplierName,
+      '공급가': product.price
+    };
+    if (existingRow) {
+      existingRow.set('공급사명', rowData['공급사명']);
+      existingRow.set('공급가', rowData['공급가']);
+      await existingRow.save();
+    } else {
+      await sheet.addRow(rowData);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save supply product to Sheet:', error);
+    return false;
+  }
+}
+
+export async function deleteSupplyProductFromSheet(name: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle['공급제품리스트'];
+    if (!sheet) return false;
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const nameKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
+    const existingRow = rows.find(r => r.get(nameKey) === name);
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete supply product from Sheet:', error);
+    return false;
+  }
+}
+
+export async function getOrdersFromSheet(): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return [];
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['발주내역'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '발주내역',
+        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모', '택배사', '운송장번호']
+      });
+      return [];
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const idKey = findHeader(['발주id', 'id', '발주번호']) || '발주ID';
+    const timeKey = findHeader(['발주일시', '일시', '발주일자', '등록일시']) || '발주일시';
+    const customerKey = findHeader(['고객명', '계약자명', '성명', '고객']) || '고객명';
+    const phoneKey = findHeader(['연락처', '전화번호', '휴대폰', '휴대폰번호']) || '연락처';
+    const addressKey = findHeader(['주소', '배송지', '배송지주소']) || '주소';
+    const supplierKey = findHeader(['공급사명', '공급사', '업체명', '업체']) || '공급사명';
+    const productKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
+    const priceKey = findHeader(['공급가', '공급가격', '원가', '단가', '가격', '금액']) || '공급가';
+    const settlementKey = findHeader(['정산방식', '정산구분', '정산']) || '정산방식';
+    const statusKey = findHeader(['정산상태', '상태']) || '정산상태';
+    const memoKey = findHeader(['메모', '비고', '특이사항']) || '메모';
+    const deliveryCompanyKey = findHeader(['택배사', '배송사']) || '택배사';
+    const trackingNumberKey = findHeader(['운송장번호', '송장번호']) || '운송장번호';
+
+    return rows.map(row => ({
+      id: row.get(idKey) || '',
+      createdAt: row.get(timeKey) || '',
+      customerName: row.get(customerKey) || '',
+      customerPhone: row.get(phoneKey) || '',
+      customerAddress: row.get(addressKey) || '',
+      supplierName: row.get(supplierKey) || '',
+      productName: row.get(productKey) || '',
+      price: row.get(priceKey) || '',
+      settlementType: row.get(settlementKey) || '',
+      status: row.get(statusKey) || '정산대기',
+      memo: row.get(memoKey) || '',
+      deliveryCompany: row.get(deliveryCompanyKey) || '',
+      trackingNumber: row.get(trackingNumberKey) || ''
+    }));
+  } catch (error) {
+    console.error('Failed to get orders from Sheet:', error);
+    return [];
+  }
+}
+
+export async function saveOrderToSheet(order: any): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    let sheet = doc.sheetsByTitle['발주내역'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '발주내역',
+        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모']
+      });
+    }
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const idKey = findHeader(['발주id', 'id', '발주번호']) || '발주ID';
+    const existingRow = rows.find(r => r.get(idKey) === order.id);
+    const rowData = {
+      '발주ID': order.id || `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      '발주일시': order.createdAt || new Date().toISOString(),
+      '고객명': order.customerName || '',
+      '연락처': order.customerPhone || '',
+      '주소': order.customerAddress || '',
+      '공급사명': order.supplierName || '',
+      '제품명': order.productName || '',
+      '공급가': order.price || '',
+      '정산방식': order.settlementType || '',
+      '정산상태': order.status || '정산대기',
+      '메모': order.memo || ''
+    };
+    if (existingRow) {
+      existingRow.set('발주일시', rowData['발주일시']);
+      existingRow.set('고객명', rowData['고객명']);
+      existingRow.set('연락처', rowData['연락처']);
+      existingRow.set('주소', rowData['주소']);
+      existingRow.set('공급사명', rowData['공급사명']);
+      existingRow.set('제품명', rowData['제품명']);
+      existingRow.set('공급가', rowData['공급가']);
+      existingRow.set('정산방식', rowData['정산방식']);
+      existingRow.set('정산상태', rowData['정산상태']);
+      existingRow.set('메모', rowData['메모']);
+      await existingRow.save();
+    } else {
+      await sheet.addRow(rowData);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save order to Sheet:', error);
+    return false;
+  }
+}
+
+export async function updateOrderInSheet(orderId: string, updates: {status?: string, deliveryCompany?: string, trackingNumber?: string}): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle['발주내역'];
+    if (!sheet) return false;
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const idKey = findHeader(['발주id', 'id', '발주번호']) || '발주ID';
+    const statusKey = findHeader(['정산상태', '상태']) || '정산상태';
+    const deliveryCompanyKey = findHeader(['택배사', '배송사']) || '택배사';
+    const trackingNumberKey = findHeader(['운송장번호', '송장번호']) || '운송장번호';
+    
+    const existingRow = rows.find(r => r.get(idKey) === orderId);
+    if (existingRow) {
+      if (updates.status !== undefined) existingRow.set(statusKey, updates.status);
+      if (updates.deliveryCompany !== undefined) existingRow.set(deliveryCompanyKey, updates.deliveryCompany);
+      if (updates.trackingNumber !== undefined) existingRow.set(trackingNumberKey, updates.trackingNumber);
+      await existingRow.save();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to update order in Sheet:', error);
+    return false;
+  }
+}
+
+export async function deleteOrderFromSheet(orderId: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle['발주내역'];
+    if (!sheet) return false;
+    const rows = await sheet.getRows();
+    const headers = sheet.headerValues;
+    const clean = (str: any) => 
+      str ? String(str).normalize('NFC').replace(/[\s\-_]/g, '').toLowerCase() : '';
+
+    const findHeader = (names: string[]) => {
+      return headers.find(h => names.some(n => clean(h).includes(clean(n))));
+    };
+
+    const idKey = findHeader(['발주id', 'id', '발주번호']) || '발주ID';
+    const existingRow = rows.find(r => r.get(idKey) === orderId);
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete order from Sheet:', error);
+    return false;
+  }
+}
+
+
