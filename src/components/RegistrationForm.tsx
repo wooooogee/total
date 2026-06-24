@@ -997,7 +997,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           >
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-sub opacity-60">선택한 상품</span>
-              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{formData.product}</span>
+              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{products.find(p => p.id === formData.product)?.name || formData.product}</span>
             </div>
             <button
               type="button"
@@ -1038,7 +1038,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                         }}
                         className={`w-full py-4 px-6 rounded-2xl font-black text-left transition-all ${formData.product === p ? 'bg-indigo-600 text-white shadow-lg' : 'bg-theme border border-theme text-sub hover:text-indigo-500'}`}
                       >
-                        {p}
+                        {products.find(prod => prod.id === p)?.name || p}
                       </button>
                     ))}
                   </div>
@@ -1360,7 +1360,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div>
                   <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">선택한 상품</p>
                   <h3 className="text-lg font-black italic">
-                    {formData.product} {formData.productCount && `(${formData.productCount}구좌)`}
+                    {products.find(p => p.id === formData.product)?.name || formData.product} {formData.productCount && `(${formData.productCount}구좌)`}
                   </h3>
                   {formData.productName && <p className="text-xs font-bold text-indigo-600 mt-1">제품: {formData.productName} {formData.productName2 && `, ${formData.productName2}`}</p>}
                 </div>
