@@ -345,7 +345,8 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
         title: '상품설정',
         headerValues: [
           '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
-          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
+          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관',
+          '1차납입금제목', '2차납입금제목'
         ]
       });
       return [];
@@ -364,7 +365,9 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
       productNoticeTerm: row.get('상품내용고지약관') || '',
       privacyTerm: row.get('개인정보수집이용약관') || '',
       thirdPartyTerm: row.get('제3자제공동의약관') || '',
-      marketingTerm: row.get('마케팅정보제공동의약관') || ''
+      marketingTerm: row.get('마케팅정보제공동의약관') || '',
+      monthlyPayment1Title: sheet.headerValues.includes('1차납입금제목') ? (row.get('1차납입금제목') || '') : '',
+      monthlyPayment2Title: sheet.headerValues.includes('2차납입금제목') ? (row.get('2차납입금제목') || '') : ''
     }));
   } catch (error) {
     console.error('Failed to get product configs from Sheet:', error);
@@ -391,7 +394,8 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
         title: '상품설정',
         headerValues: [
           '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
-          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관'
+          '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관',
+          '1차납입금제목', '2차납입금제목'
         ]
       });
     }
@@ -414,6 +418,13 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       '마케팅정보제공동의약관': config.marketingTerm
     };
 
+    if (sheet.headerValues.includes('1차납입금제목')) {
+      rowData['1차납입금제목'] = config.monthlyPayment1Title || '';
+    }
+    if (sheet.headerValues.includes('2차납입금제목')) {
+      rowData['2차납입금제목'] = config.monthlyPayment2Title || '';
+    }
+
     if (existingRow) {
       existingRow.set('상품명', rowData['상품명']);
       existingRow.set('총액', rowData['총액']);
@@ -426,6 +437,12 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       existingRow.set('개인정보수집이용약관', rowData['개인정보수집이용약관']);
       existingRow.set('제3자제공동의약관', rowData['제3자제공동의약관']);
       existingRow.set('마케팅정보제공동의약관', rowData['마케팅정보제공동의약관']);
+      if (sheet.headerValues.includes('1차납입금제목')) {
+        existingRow.set('1차납입금제목', rowData['1차납입금제목']);
+      }
+      if (sheet.headerValues.includes('2차납입금제목')) {
+        existingRow.set('2차납입금제목', rowData['2차납입금제목']);
+      }
       await existingRow.save();
     } else {
       await sheet.addRow(rowData);

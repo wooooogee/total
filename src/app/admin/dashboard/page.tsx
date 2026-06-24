@@ -1393,7 +1393,9 @@ export default function AdminDashboard() {
                           id: '',
                           name: '',
                           totalPrice: '',
+                          monthlyPayment1Title: '',
                           monthlyPayment1: '',
+                          monthlyPayment2Title: '',
                           monthlyPayment2: '',
                           refundNotice: '',
                           eformTemplateId: '',
@@ -1538,12 +1540,32 @@ export default function AdminDashboard() {
                           />
                         </div>
                         <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-500">1차 납입금 안내 제목 (입력 안하면 '1차 납입금')</label>
+                          <input
+                            type="text"
+                            value={selectedProductForEdit.monthlyPayment1Title || ''}
+                            onChange={(e) => updateEditField('monthlyPayment1Title', e.target.value)}
+                            placeholder="예: 1차 납입금"
+                            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-[11px] font-bold text-slate-500">1차 납입 요금 안내 (예: 35,000원 (1~60회))</label>
                           <input
                             type="text"
                             value={selectedProductForEdit.monthlyPayment1}
                             onChange={(e) => updateEditField('monthlyPayment1', e.target.value)}
                             placeholder="예: 35,000원 (1~60회)"
+                            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-500">2차 납입금 안내 제목 (입력 안하면 '2차 납입금')</label>
+                          <input
+                            type="text"
+                            value={selectedProductForEdit.monthlyPayment2Title || ''}
+                            onChange={(e) => updateEditField('monthlyPayment2Title', e.target.value)}
+                            placeholder="예: 2차 납입금"
                             className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
                           />
                         </div>

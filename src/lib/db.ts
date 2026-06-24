@@ -13,7 +13,9 @@ export interface ProductConfig {
   id: string;              // 상품 ID (예: '더좋은하이브리드698')
   name: string;            // 상품명
   totalPrice: string;      // 총액 (예: '498만원')
+  monthlyPayment1Title?: string; // 1차 납입금 제목 (예: '1차 납입금')
   monthlyPayment1: string; // 1차 납입금 (예: '35,000원 (1~60회)')
+  monthlyPayment2Title?: string; // 2차 납입금 제목 (예: '2차 납입금')
   monthlyPayment2: string; // 2차 납입금 (예: '16,000원 (61~240회)')
   refundNotice: string;    // 환급금 안내 (예: '만기 시 498만원 100% 환급')
   eformTemplateId: string; // 이폼사인 템플릿 ID (추가)

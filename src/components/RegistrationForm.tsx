@@ -1529,23 +1529,35 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
+                      const count = Number(formData.productCount) || 1;
+                      const multiplyAmounts = (text: string, multiplier: number) => {
+                        if (!text) return text;
+                        return text.replace(/(\d{1,3}(?:,\d{3})*|\d+)\s*(원|만원|만)/g, (match, p1, p2) => {
+                          const num = parseInt(p1.replace(/,/g, ''), 10);
+                          if (!isNaN(num)) {
+                            return (num * multiplier).toLocaleString() + p2;
+                          }
+                          return match;
+                        });
+                      };
+
                       return (
                         <>
                           {currentConfig.monthlyPayment1 && (
                             <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">1차 납입금</span>
-                              <span className="text-lg font-black text-indigo-500">{currentConfig.monthlyPayment1}</span>
+                              <span className="text-xs font-bold">{currentConfig.monthlyPayment1Title || '1차 납입금'}</span>
+                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment1, count)}</span>
                             </div>
                           )}
                           {currentConfig.monthlyPayment2 && (
                             <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">2차 납입금</span>
-                              <span className="text-lg font-black text-indigo-500">{currentConfig.monthlyPayment2}</span>
+                              <span className="text-xs font-bold">{currentConfig.monthlyPayment2Title || '2차 납입금'}</span>
+                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment2, count)}</span>
                             </div>
                           )}
                           {currentConfig.refundNotice && (
                             <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
-                              <span className="text-emerald-600 font-black text-sm italic">{currentConfig.refundNotice}</span>
+                              <span className="text-emerald-600 font-black text-sm italic">{multiplyAmounts(currentConfig.refundNotice, count)}</span>
                             </div>
                           )}
                         </>
