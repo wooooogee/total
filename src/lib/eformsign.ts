@@ -101,6 +101,7 @@ export async function createEformsignDocument(data: any) {
             const EFORMSIGN_TEMPLATE_ID_Rise498 = '413d37beb6e8476498026303b14a6718';
             const EFORMSIGN_TEMPLATE_ID_Cruise = '9c8457e6d8b9433d8e87384d5accdc7b';
             const EFORMSIGN_TEMPLATE_ID_Goodlife = 'd32af2e31ab34cf3932442f278e69ea4';
+            const EFORMSIGN_TEMPLATE_ID_GoodlifeGold = '3c5e55411952432ca2f527659a301468';
             
             if (data.product === '더좋은하이브리드698') templateId = EFORMSIGN_TEMPLATE_ID_Hybrid698;
             else if (data.product === '더좋은프리미엄540') templateId = EFORMSIGN_TEMPLATE_ID_Premium540;
@@ -108,12 +109,13 @@ export async function createEformsignDocument(data: any) {
             else if (data.product === '더좋은라이즈498') templateId = EFORMSIGN_TEMPLATE_ID_Rise498;
             else if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) templateId = EFORMSIGN_TEMPLATE_ID_Cruise;
             else if (data.product === '굿라이프헬스케어') templateId = EFORMSIGN_TEMPLATE_ID_Goodlife;
+            else if (data.product === '굿라이프헬스케어골드') templateId = EFORMSIGN_TEMPLATE_ID_GoodlifeGold;
             else templateId = EFORMSIGN_TEMPLATE_ID_Health580;
         }
 
         let fields: any[] = [];
 
-        if (data.product === '더좋은하이브리드698' || data.product === '더좋은프리미엄540' || data.product === '굿라이프헬스케어') {
+        if (data.product === '더좋은하이브리드698' || data.product === '더좋은프리미엄540' || data.product === '굿라이프헬스케어' || data.product === '굿라이프헬스케어골드') {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [

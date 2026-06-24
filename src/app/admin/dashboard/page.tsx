@@ -1422,7 +1422,30 @@ export default function AdminDashboard() {
                         <h3 className="text-md font-black text-slate-900">
                           {isAddingProduct ? '신규 상품 등록' : `${selectedProductForEdit.name} 설정`}
                         </h3>
-                        <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                        {isAddingProduct && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-500">기존 양식 복사하기</span>
+                            <select
+                              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-400"
+                              onChange={(e) => {
+                                const prod = products.find(p => p.id === e.target.value);
+                                if (prod) {
+                                  setSelectedProductForEdit({
+                                    ...prod,
+                                    id: '', // 식별자는 새로 입력해야 함
+                                    name: prod.name + ' (복사본)'
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="">-- 상품 선택 --</option>
+                              {products.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 font-bold mt-2">
                           {isAddingProduct 
                             ? '신청서 화면에 노출될 새로운 상품 정보 및 약관, 이폼사인 템플릿 ID를 새로 생성합니다.'
                             : '신청서 폼 내에 표시될 약관 문구와 요금 세부사항을 수정합니다.'}
