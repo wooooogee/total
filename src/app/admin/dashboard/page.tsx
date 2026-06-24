@@ -1488,6 +1488,16 @@ export default function AdminDashboard() {
                           />
                         </div>
                         <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-500">상품명 (화면 표시용)</label>
+                          <input
+                            type="text"
+                            value={selectedProductForEdit.name}
+                            onChange={(e) => updateEditField('name', e.target.value)}
+                            placeholder="예: 더좋은라이즈 498"
+                            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-[11px] font-bold text-slate-500">이폼사인 템플릿 ID (e-FormSign Template ID)</label>
                           <input
                             type="text"
