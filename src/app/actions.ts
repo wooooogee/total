@@ -1,7 +1,7 @@
 'use server';
 
 import { createEformsignDocument } from '@/lib/eformsign';
-import { addRegistrationToSheet } from '@/lib/googleSheets';
+import { addRegistrationToSheet, getProductConfigsFromSheet } from '@/lib/googleSheets';
 import { getProductConfigs } from '@/lib/db';
 
 function formatBirth8(birth: string) {
@@ -46,7 +46,16 @@ export async function registerAction(data: any) {
 
     // Google Sheets에 데이터 기록
     try {
-      const configs = getProductConfigs();
+      let configs = getProductConfigs();
+      try {
+        const sheetConfigs = await getProductConfigsFromSheet();
+        if (sheetConfigs && sheetConfigs.length > 0) {
+          configs = sheetConfigs;
+        }
+      } catch (e) {
+        console.error('Failed to get configs from Google Sheets in actions:', e);
+      }
+      
       const productConfig = configs.find(c => c.id === data.product);
 
       let sheetData: any = {

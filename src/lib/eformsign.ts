@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { getProductConfigs } from './db';
+import { getProductConfigsFromSheet } from './googleSheets';
 
 const EFORMSIGN_API_SERVER = 'https://api.eformsign.com'; // Token Auth requires the main api.eformsign.com domain
 const EFORMSIGN_KR_SERVER = 'https://kr-api.eformsign.com'; // KR Server (Production)
@@ -88,8 +89,17 @@ export async function createEformsignDocument(data: any) {
         const today = new Date().toISOString().split('T')[0];
         const cleanPhone = (data.phone || '').replace(/\D/g, '');
 
-        // 1. DB(로컬 및 구글 시트)에 설정된 템플릿 ID 우선 조회
-        const allConfigs = getProductConfigs();
+        // 1. DB(구글 시트 우선, 로컬 폴백)에 설정된 템플릿 ID 우선 조회
+        let allConfigs = getProductConfigs();
+        try {
+            const sheetConfigs = await getProductConfigsFromSheet();
+            if (sheetConfigs && sheetConfigs.length > 0) {
+                allConfigs = sheetConfigs;
+            }
+        } catch (e) {
+            console.error('Failed to get configs from Google Sheets in eformsign:', e);
+        }
+        
         const config = allConfigs.find(c => c.id === data.product);
         let templateId = config?.eformTemplateId;
 
