@@ -403,7 +403,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
     const rows = await sheet.getRows();
     const existingRow = rows.find(r => r.get('상품ID') === config.id);
 
-    const rowData = {
+    const rowData: Record<string, string> = {
       '상품ID': config.id,
       '상품명': config.name,
       '총액': config.totalPrice,

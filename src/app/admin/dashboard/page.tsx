@@ -22,7 +22,9 @@ interface ProductConfig {
   id: string;
   name: string;
   totalPrice: string;
+  monthlyPayment1Title?: string;
   monthlyPayment1: string;
+  monthlyPayment2Title?: string;
   monthlyPayment2: string;
   refundNotice: string;
   eformTemplateId: string;
