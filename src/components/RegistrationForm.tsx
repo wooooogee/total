@@ -803,7 +803,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       }
     }
     if (currentStep === 1) { // Info
-      const requireProdName = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은통신결합', '더좋은라이즈498', '굿라이프헬스케어', '굿라이프헬스케어골드'].includes(formData.product);
+      const requireProdName = !['좋은건강크루즈', '더좋은헬스케어580'].includes(formData.product) && !formData.product?.includes('크루즈');
       if (requireProdName && !formData.productName) {
         alert('제품명을 입력해 주세요.');
         return;
@@ -1063,7 +1063,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               </div>
 
               <div className="space-y-6">
-                {['더좋은하이브리드698', '더좋은프리미엄540', '굿라이프헬스케어', '굿라이프헬스케어골드'].includes(formData.product) && (
+                {!['좋은건강크루즈', '더좋은헬스케어580', '더좋은라이즈498', '더좋은통신결합'].includes(formData.product) && !formData.product?.includes('크루즈') && (
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
                     <input type="text" placeholder="예: LG 스탠바이미" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
@@ -1402,7 +1402,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    if (formData.product === '더좋은프리미엄540' || formData.product === '굿라이프헬스케어골드') {
+                    if (formData.product === '더좋은프리미엄540') {
                       const count = Number(formData.productCount) || 1;
                       return (
                         <>
