@@ -14,11 +14,6 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
 
   // 1. Google Sheets에서 링크 설정 가져오기 시도
   let configs = await getLinkConfigsFromSheet();
-  
-  // 2. Google Sheets에 설정이 없거나 에러가 났다면 로컬 DB에서 가져오기
-  if (!configs || configs.length === 0) {
-    configs = getLinkConfigs();
-  }
 
   const currentConfig = configs.find(c => c.id === linkId && c.isActive);
 

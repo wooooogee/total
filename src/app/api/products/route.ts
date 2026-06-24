@@ -4,48 +4,14 @@ import { getProductConfigsFromSheet, saveProductConfigToSheet, deleteProductConf
 
 export async function GET() {
   try {
-    // 1. 구글 시트에서 가져오기 시도
+    // 구글 시트에서 가져오기 시도
     let products = await getProductConfigsFromSheet();
-    const localProducts = getProductConfigs();
     
-    // 2. 구글 시트에 데이터가 없거나 에러가 났다면 로컬 DB에서 가져옴
-    if (!products || products.length === 0) {
-      products = localProducts;
-      
-      // 로컬 DB 데이터를 구글 시트에 백업용으로 기록 시도 (동기화)
-      try {
-        for (const p of products) {
-          await saveProductConfigToSheet(p);
-        }
-      } catch (syncError) {
-        console.error('Failed to sync default products to Google Sheets:', syncError);
-      }
-    } else {
-      // 구글 시트에 데이터가 있으나, 새로 추가된 eformTemplateId 필드가 비어있을 경우
-      // 로컬 DB의 템플릿 ID를 병합하고 구글 시트에도 업데이트 처리
-      let updatedAny = false;
-      const mergedProducts = await Promise.all(products.map(async (p) => {
-        const localProduct = localProducts.find(lp => lp.id === p.id);
-        if (localProduct && !p.eformTemplateId && localProduct.eformTemplateId) {
-          p.eformTemplateId = localProduct.eformTemplateId;
-          try {
-            await saveProductConfigToSheet(p);
-            updatedAny = true;
-          } catch (syncErr) {
-            console.error(`Failed to sync eformTemplateId for ${p.id} to Google Sheets:`, syncErr);
-          }
-        }
-        return p;
-      }));
-      if (updatedAny) {
-        products = mergedProducts;
-      }
-    }
-    
+    // 시트에서 값을 무사히 가져왔다면 (빈 배열 포함) 그대로 반환합니다.
     return NextResponse.json(products);
   } catch (error) {
     console.error('Failed to get products:', error);
-    // Fallback to local DB
+    // 에러 발생 시에만 Fallback으로 로컬 DB 사용
     return NextResponse.json(getProductConfigs());
   }
 }
