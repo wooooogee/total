@@ -126,7 +126,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
-  const AVAILABLE_SHEETS = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '헬스케어580', '통신결합'];
+  const AVAILABLE_SHEETS = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드', '굿라이프헬스케어실버', '골드', '실버', '헬스케어580', '통신결합'];
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -1879,20 +1879,21 @@ export default function AdminDashboard() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">결제 구분</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
-                          <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제 구분</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">증서 발송</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredLogs.map((log, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
-                            <td className="p-5 whitespace-nowrap text-slate-400 font-mono">
+                            <td className="px-2 py-3 whitespace-nowrap text-slate-400 font-mono">
                               {(() => {
                                 const dt = log['신청일시'];
                                 if (!dt || dt === '-') return '-';
@@ -1940,7 +1941,7 @@ export default function AdminDashboard() {
                                 return dt;
                               })()}
                             </td>
-                            <td className="p-5 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               {log['_targets'] && log['_targets'].length > 0 ? (
                                 <div className="flex flex-col gap-0.5">
                                   {log['_targets'].map((t: string, tIdx: number) => (
@@ -1951,13 +1952,13 @@ export default function AdminDashboard() {
                                 <span className="text-slate-400 font-bold">-</span>
                               )}
                             </td>
-                            <td className="p-5 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-900 font-black text-sm">{log['계약자'] || log['성명'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">{log['연락처'] || '-'}</span>
                               </div>
                             </td>
-                            <td className="p-5">
+                            <td className="px-2 py-3">
                               <div className="flex flex-col">
                                 <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
@@ -1965,7 +1966,7 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                             </td>
-                            <td className="p-5 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
@@ -1973,10 +1974,10 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                             </td>
-                            <td className="p-5 whitespace-nowrap text-slate-700">
+                            <td className="px-2 py-3 whitespace-nowrap text-slate-700">
                               {log['결제일'] || '-'}
                             </td>
-                            <td className="p-5 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700">{log['영업자'] || log['영업담당'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
@@ -1988,7 +1989,10 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                             </td>
-                                                        <td className="p-5 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <span className="text-slate-700 font-bold">{log['회원증서수령방법'] || '-'}</span>
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col gap-1.5 items-start">
                                 {log['document_id'] ? (
                                   <>
@@ -2303,7 +2307,7 @@ export default function AdminDashboard() {
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/50">
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider w-10">
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider w-10">
                                 <input
                                   type="checkbox"
                                   checked={
@@ -2347,13 +2351,13 @@ export default function AdminDashboard() {
                                   className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
                                 />
                               </th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">발주일시</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급사</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급 제품</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">고객 정보</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급가</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">배송 정보</th>
-                              <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">상태 / 작업</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">발주일시</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급사</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급 제품</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">고객 정보</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급가</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">배송 정보</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">상태 / 작업</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -2374,7 +2378,7 @@ export default function AdminDashboard() {
                               })
                               .map((order, idx) => (
                                 <tr key={order.id || idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
-                                  <td className="p-5">
+                                  <td className="px-2 py-3">
                                     <input
                                       type="checkbox"
                                       checked={selectedOrderIds.includes(order.id)}
@@ -2388,28 +2392,28 @@ export default function AdminDashboard() {
                                       className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
                                     />
                                   </td>
-                                  <td className="p-5 whitespace-nowrap">
+                                  <td className="px-2 py-3 whitespace-nowrap">
                                     <div className="flex flex-col">
                                       <span className="text-slate-900 font-bold text-[11px]">{order.createdAt?.split(' ').slice(0, 3).join(' ')}</span>
                                       <span className="text-slate-400 font-normal text-[10px] mt-0.5">{order.createdAt?.split(' ').slice(3).join(' ')}</span>
                                     </div>
                                   </td>
-                                  <td className="p-5 whitespace-nowrap">
+                                  <td className="px-2 py-3 whitespace-nowrap">
                                     <span className="text-slate-800 font-black">{order.supplierName}</span>
                                   </td>
-                                  <td className="p-5">
+                                  <td className="px-2 py-3">
                                     <span className="text-slate-800 font-black">{order.productName}</span>
                                   </td>
-                                  <td className="p-5 whitespace-nowrap">
+                                  <td className="px-2 py-3 whitespace-nowrap">
                                     <div className="flex flex-col">
                                       <span className="text-slate-900 font-black text-sm">{order.customerName}</span>
                                       <span className="text-[10px] text-slate-400 mt-0.5 font-normal">{order.customerPhone}</span>
                                     </div>
                                   </td>
-                                  <td className="p-5 whitespace-nowrap">
+                                  <td className="px-2 py-3 whitespace-nowrap">
                                     <span className="text-indigo-600 font-black">{Number(order.price || 0).toLocaleString()}원</span>
                                   </td>
-                                  <td className="p-5">
+                                  <td className="px-2 py-3">
                                     <div className="flex flex-col gap-1.5 w-[160px]">
                                       <div className="flex items-center gap-1">
                                         <select 
@@ -2505,7 +2509,7 @@ export default function AdminDashboard() {
                                       />
                                     </div>
                                   </td>
-                                  <td className="p-5">
+                                  <td className="px-2 py-3">
                                     <div className="flex flex-col gap-2 items-start">
                                       <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-black ${
                                         order.status === '발주대기' ? 'bg-amber-50 text-amber-600' :
@@ -2795,19 +2799,19 @@ export default function AdminDashboard() {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">제품명</th>
-                            <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">공급사명</th>
-                            <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">공급가</th>
-                            <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">작업</th>
+                            <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">제품명</th>
+                            <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">공급사명</th>
+                            <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">공급가</th>
+                            <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">작업</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {supplyProducts.map((p, idx) => (
                             <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
-                              <td className="p-5 font-black text-slate-900">{p.name}</td>
-                              <td className="p-5">{p.supplierName}</td>
-                              <td className="p-5 text-indigo-600 font-black">{Number(p.price || 0).toLocaleString()}원</td>
-                              <td className="p-5">
+                              <td className="px-2 py-3 font-black text-slate-900">{p.name}</td>
+                              <td className="px-2 py-3">{p.supplierName}</td>
+                              <td className="px-2 py-3 text-indigo-600 font-black">{Number(p.price || 0).toLocaleString()}원</td>
+                              <td className="px-2 py-3">
                                 <button
                                   onClick={() => handleDeleteSupplyProduct(p.name)}
                                   className="p-1.5 bg-red-50 border border-red-150 hover:bg-red-650 hover:text-white rounded-lg text-red-600 transition-colors"

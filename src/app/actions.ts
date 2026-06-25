@@ -132,7 +132,11 @@ export async function registerAction(data: any) {
           sheetName = '통신결합';
         } else if (data.product === '더좋은라이즈498') {
           sheetName = '라이즈498';
-        } else if (data.product === '굿라이프헬스케어' || data.product === '굿라이프헬스케어골드') {
+        } else if (data.product === '굿라이프헬스케어골드') {
+          sheetName = '굿라이프헬스케어골드';
+        } else if (data.product === '굿라이프헬스케어실버') {
+          sheetName = '굿라이프헬스케어실버';
+        } else if (data.product === '굿라이프헬스케어') {
           sheetName = '굿라이프헬스케어';
         } else if (data.product === '더좋은헬스케어580') {
           sheetName = '헬스케어580';
