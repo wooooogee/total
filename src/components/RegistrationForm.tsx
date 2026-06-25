@@ -522,6 +522,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       accountHolder: '',
       installmentPeriod: '일시불',
     },
+    certificateDeliveryMethod: '', // 'alimtalk', 'email', 'mail'
+    certificateEmail: '',
     // 크루즈 전용 결제수단 추가
     paymentMethod1: 'card',
     paymentInfo1: {
@@ -1025,22 +1027,37 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Package size={14} /> 상품 선택</label>
-                  <div className="flex flex-col gap-2">
-                    {productsToDisplay.map(p => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            product: p
-                          }));
-                        }}
-                        className={`w-full py-4 px-6 rounded-2xl font-black text-left transition-all ${formData.product === p ? 'bg-indigo-600 text-white shadow-lg' : 'bg-theme border border-theme text-sub hover:text-indigo-500'}`}
-                      >
-                        {products.find(prod => prod.id === p)?.name || p}
-                      </button>
-                    ))}
+                  <div className="flex flex-col gap-3">
+                    {productsToDisplay.map((p, idx) => {
+                      const isSelected = formData.product === p;
+                      const themes = [
+                        { active: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 border-transparent ring-2 ring-blue-600/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-blue-300 hover:text-blue-600 text-sub hover:bg-blue-50/30' },
+                        { active: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/20 border-transparent ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-emerald-300 hover:text-emerald-600 text-sub hover:bg-emerald-50/30' },
+                        { active: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xl shadow-amber-500/20 border-transparent ring-2 ring-amber-500/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-amber-300 hover:text-amber-600 text-sub hover:bg-amber-50/30' },
+                        { active: 'bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white shadow-xl shadow-purple-500/20 border-transparent ring-2 ring-purple-500/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-purple-300 hover:text-purple-600 text-sub hover:bg-purple-50/30' },
+                        { active: 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-xl shadow-rose-500/20 border-transparent ring-2 ring-rose-500/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-rose-300 hover:text-rose-600 text-sub hover:bg-rose-50/30' }
+                      ];
+                      const theme = themes[idx % themes.length];
+                      
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              product: p
+                            }));
+                          }}
+                          className={`w-full py-5 px-7 rounded-[1.25rem] font-black text-lg text-left transition-all duration-300 flex items-center justify-between ${isSelected ? theme.active : theme.inactive}`}
+                        >
+                          <span className="tracking-tight">{products.find(prod => prod.id === p)?.name || p}</span>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'border-white bg-white/20' : 'border-slate-300/50 bg-transparent'}`}>
+                            {isSelected && <Check size={14} className="text-white" />}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
 
                 </div>
@@ -1246,6 +1263,59 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                           </button>
                         );
                       })}
+                    </div>
+                  )}
+                </div>
+                
+                {/* 회원증서 수령 방법 */}
+                <div className="space-y-3 pt-4 border-t border-theme/10">
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2">
+                    <FileText size={14} /> 회원증서 수령 방법
+                  </label>
+                  <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
+                    <button 
+                      type="button" 
+                      onClick={() => updateFormData('certificateDeliveryMethod', 'alimtalk')} 
+                      className={`flex-1 rounded-xl font-bold transition-all ${(!formData.certificateDeliveryMethod || formData.certificateDeliveryMethod === 'alimtalk') ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                    >
+                      알림톡
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => updateFormData('certificateDeliveryMethod', 'email')} 
+                      className={`flex-1 rounded-xl font-bold transition-all ${formData.certificateDeliveryMethod === 'email' ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                    >
+                      이메일
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => updateFormData('certificateDeliveryMethod', 'mail')} 
+                      className={`flex-1 rounded-xl font-bold transition-all ${formData.certificateDeliveryMethod === 'mail' ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                    >
+                      우편
+                    </button>
+                  </div>
+                  
+                  <AnimatePresence>
+                    {formData.certificateDeliveryMethod === 'email' && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                        <input 
+                          type="email" 
+                          placeholder="이메일 주소를 정확히 입력해 주세요" 
+                          value={formData.certificateEmail} 
+                          onChange={(e) => updateFormData('certificateEmail', e.target.value)} 
+                          className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base mt-1" 
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  {(!formData.certificateDeliveryMethod || formData.certificateDeliveryMethod === 'alimtalk') && (
+                    <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-start gap-2">
+                      <span className="text-indigo-500 mt-0.5">※</span>
+                      <p className="text-[12px] font-bold text-indigo-700 leading-snug">
+                        선택하지 않으실 경우, 기본적으로 <span className="text-indigo-600 font-black">카카오 알림톡</span>으로 회원증서가 발송됩니다.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -2022,7 +2092,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
               <div className="inline-flex w-24 h-24 bg-white/20 rounded-[2.5rem] items-center justify-center mb-2 animate-bounce"><CheckCircle2 className="text-white" size={48} /></div>
               <div className="space-y-4">
-                <h2 className="text-2xl font-black text-white italic tracking-tighter leading-tight whitespace-nowrap">회원가입 신청 완료</h2>
+                <h2 className="text-2xl font-black italic tracking-tighter leading-tight whitespace-nowrap" style={{ color: '#ffffff' }}>회원가입 신청 완료</h2>
                 <p className="text-indigo-100 text-sm font-bold opacity-80">
                   계약서 PDF가 생성되어 자동으로 열립니다.<br />
                   열리지 않으면 아래 버튼을 눌러주세요.
@@ -2030,15 +2100,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               </div>
 
               {createdDocumentId && (
-                <a
-                  href={`/api/download?id=${createdDocumentId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-5 bg-white/10 text-white rounded-[2rem] font-black hover:bg-white/20 transition-all border border-white/20"
-                >
-                  <FileText size={20} />
-                  계약서 PDF 다운로드
-                </a>
+                <div className="space-y-3">
+                  <a
+                    href={`/api/download?id=${createdDocumentId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-5 bg-white text-indigo-600 rounded-[2rem] font-black hover:bg-zinc-50 hover:scale-[1.02] transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] animate-pulse border-2 border-white"
+                  >
+                    <FileText size={20} className="animate-bounce" />
+                    계약서 PDF 다운로드 (의무)
+                  </a>
+                  <p className="text-[11px] font-bold text-indigo-200">※ 계약 관련 중요 안내사항이 포함되어 있으니 반드시 다운로드해 주세요.</p>
+                </div>
               )}
 
               <button onClick={() => window.location.reload()} className="w-full py-5 bg-white text-indigo-600 rounded-[2rem] font-black hover:shadow-xl transition-all">신규 신청서 작성</button>

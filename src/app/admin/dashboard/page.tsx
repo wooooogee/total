@@ -1125,6 +1125,32 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+      {/* Shortcut Links */}
+      <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center gap-3 overflow-x-auto shadow-sm z-30 relative">
+        <span className="text-xs font-bold text-slate-500 whitespace-nowrap">빠른 링크</span>
+        <div className="h-4 w-px bg-slate-200 mx-1"></div>
+        <a href="https://docs.google.com/spreadsheets/d/1MMYWdX6-x7OApeZiwg6ASjo9H0sX8z_09Ci_m2shfZY/edit?gid=1312626530#gid=1312626530" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-green-200">
+          <ExternalLink size={12} />
+          전산
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/19HQigorXz8j2K2PyQx4k4rGGUMVKk43aNSAI9sEgRyc/edit?gid=844111432#gid=844111432" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-blue-200">
+          <ExternalLink size={12} />
+          가입신청서
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/1Vpn6zTyhaN38TMu1b2MH2_7fGBwDj6S8YQ3O5LeSuJw/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-purple-200">
+          <ExternalLink size={12} />
+          전체회원정보
+        </a>
+        <a href="https://sangjo.netlify.app/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-teal-200">
+          <ExternalLink size={12} />
+          상조현황
+        </a>
+        <a href="https://jinwookerp.netlify.app/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-orange-200">
+          <ExternalLink size={12} />
+          정산ERP
+        </a>
+      </div>
+
       {/* Main Content */}
       <main className="flex-1 p-8 max-w-7xl w-full mx-auto space-y-8">
         <AnimatePresence mode="wait">

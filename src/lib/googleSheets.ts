@@ -818,7 +818,7 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
     if (!sheet) {
       sheet = await doc.addSheet({
         title: '발주내역',
-        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모']
+        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모', '택배사', '운송장번호']
       });
     }
     const rows = await sheet.getRows();
@@ -832,7 +832,7 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
 
     const idKey = findHeader(['발주id', 'id', '발주번호']) || '발주ID';
     const existingRow = rows.find(r => r.get(idKey) === order.id);
-    const rowData = {
+    const rowData: Record<string, string> = {
       '발주ID': order.id || `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       '발주일시': order.createdAt || new Date().toISOString(),
       '고객명': order.customerName || '',
@@ -843,7 +843,9 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
       '공급가': order.price || '',
       '정산방식': order.settlementType || '',
       '정산상태': order.status || '정산대기',
-      '메모': order.memo || ''
+      '메모': order.memo || '',
+      '택배사': order.deliveryCompany || '',
+      '운송장번호': order.trackingNumber || ''
     };
     if (existingRow) {
       existingRow.set('발주일시', rowData['발주일시']);
@@ -856,6 +858,8 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
       existingRow.set('정산방식', rowData['정산방식']);
       existingRow.set('정산상태', rowData['정산상태']);
       existingRow.set('메모', rowData['메모']);
+      existingRow.set('택배사', rowData['택배사']);
+      existingRow.set('운송장번호', rowData['운송장번호']);
       await existingRow.save();
     } else {
       await sheet.addRow(rowData);
@@ -879,6 +883,25 @@ export async function updateOrderInSheet(orderId: string, updates: {status?: str
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle['발주내역'];
     if (!sheet) return false;
+
+    await sheet.loadHeaderRow().catch(() => {});
+    let currentHeaders = sheet.headerValues || [];
+    let needsUpdate = false;
+    if (!currentHeaders.includes('택배사')) {
+      currentHeaders.push('택배사');
+      needsUpdate = true;
+    }
+    if (!currentHeaders.includes('운송장번호')) {
+      currentHeaders.push('운송장번호');
+      needsUpdate = true;
+    }
+    if (needsUpdate) {
+      if (currentHeaders.length > sheet.columnCount) {
+        await sheet.resize({ rowCount: sheet.rowCount || 100, columnCount: currentHeaders.length });
+      }
+      await sheet.setHeaderRow(currentHeaders);
+    }
+
     const rows = await sheet.getRows();
     const headers = sheet.headerValues;
     const clean = (str: any) => 

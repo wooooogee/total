@@ -73,7 +73,8 @@ export async function registerAction(data: any) {
         '영업자': data.salesName,
         '영업자연락처': data.salesPhone,
         'document_id': eformResult.document_id,
-        '상태': '신청완료'
+        '상태': '신청완료',
+        '회원증서수령방법': !data.certificateDeliveryMethod || data.certificateDeliveryMethod === 'alimtalk' ? '알림톡' : data.certificateDeliveryMethod === 'email' ? `이메일 (${data.certificateEmail || ''})` : '우편'
       };
 
       if (data.product === '좋은건강크루즈') {
