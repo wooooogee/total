@@ -286,28 +286,41 @@ export async function getRegistrationsFromSheet(sheetTitle: string): Promise<any
       const raw = (row as any)._rawData;
       const targets: string[] = [];
 
-      // 각 시트별 대상자 정보 입력 열 위치에 맞게 데이터를 추출합니다.
-      if (sheetTitle === '헬스케어580') {
-        // 대상자1: U열(20), 대상자2: V열(21)
-        const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
-        const t2 = headers[21] ? (row.get(headers[21]) || '') : (raw?.[21] || '');
-        if (t1) targets.push(t1);
-        if (t2) targets.push(t2);
-      } else if (sheetTitle === '크루즈') {
-        // 대상자1: U열(20)
-        const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
-        if (t1) targets.push(t1);
+      const targetHeaders = headers.filter(h => h && /^대상자\d+$/.test(h));
+      if (targetHeaders.length > 0) {
+        targetHeaders.sort((a, b) => {
+          const numA = parseInt(a.replace('대상자', ''), 10) || 0;
+          const numB = parseInt(b.replace('대상자', ''), 10) || 0;
+          return numA - numB;
+        });
+        targetHeaders.forEach(h => {
+          const val = data[h];
+          if (val) targets.push(val);
+        });
       } else {
-        // 하이브리드698, 프리미엄540, 라이즈498, 굿라이프헬스케어 등
-        // R열(17), S열(18), T열(19), U열(20)에 대상자1~4가 위치함
-        const t1 = headers[17] ? (row.get(headers[17]) || '') : (raw?.[17] || '');
-        const t2 = headers[18] ? (row.get(headers[18]) || '') : (raw?.[18] || '');
-        const t3 = headers[19] ? (row.get(headers[19]) || '') : (raw?.[19] || '');
-        const t4 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
-        if (t1) targets.push(t1);
-        if (t2) targets.push(t2);
-        if (t3) targets.push(t3);
-        if (t4) targets.push(t4);
+        // 각 시트별 대상자 정보 입력 열 위치에 맞게 데이터를 추출합니다. (하위 호환)
+        if (sheetTitle === '헬스케어580') {
+          // 대상자1: U열(20), 대상자2: V열(21)
+          const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+          const t2 = headers[21] ? (row.get(headers[21]) || '') : (raw?.[21] || '');
+          if (t1) targets.push(t1);
+          if (t2) targets.push(t2);
+        } else if (sheetTitle === '크루즈') {
+          // 대상자1: U열(20)
+          const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+          if (t1) targets.push(t1);
+        } else {
+          // 하이브리드698, 프리미엄540, 라이즈498, 굿라이프헬스케어 등
+          // R열(17), S열(18), T열(19), U열(20)에 대상자1~4가 위치함
+          const t1 = headers[17] ? (row.get(headers[17]) || '') : (raw?.[17] || '');
+          const t2 = headers[18] ? (row.get(headers[18]) || '') : (raw?.[18] || '');
+          const t3 = headers[19] ? (row.get(headers[19]) || '') : (raw?.[19] || '');
+          const t4 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+          if (t1) targets.push(t1);
+          if (t2) targets.push(t2);
+          if (t3) targets.push(t3);
+          if (t4) targets.push(t4);
+        }
       }
 
       data['_targets'] = targets;
