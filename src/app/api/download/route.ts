@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
 
     let response: Response | null = null;
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5;
 
-    // PDF 생성에 시간이 걸릴 수 있으므로 404 발생 시 최대 3번 재시도
+    // PDF 생성에 시간이 걸릴 수 있으므로 404 또는 400(진행 중 에러) 발생 시 최대 5번 재시도
     while (attempts < maxAttempts) {
       // [검증 완료] v2.0에서 문서 조회를 위한 공식 엔드포인트는 download_files (복수형)입니다.
       response = await fetch(`${EFORMSIGN_KR_SERVER}/v2.0/api/documents/${documentId}/download_files?file_type=document`, {
@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
       const errText = await response.text();
       console.log(`[eformsign] PDF Download Attempt ${attempts + 1}: Status ${response.status} - ${errText}`);
 
-      if (response.status === 404) {
+      if (response.status === 404 || (response.status === 400 && errText.includes('2020001'))) {
         attempts++;
         if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           continue;
         }
       }

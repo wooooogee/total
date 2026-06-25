@@ -943,12 +943,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           localStorage.removeItem('registration_form_draft');
           localStorage.removeItem('registration_form_step');
         }
-        setSubmittingMessage('안전하게 계약서 PDF를 생성하고 있습니다. (약 5초 소요)');
+        setSubmittingMessage('안전하게 계약서 PDF를 생성하고 있습니다. (최대 10초 소요)');
         if (result.documentId) {
           setCreatedDocumentId(result.documentId);
           
-          // PDF 생성이 완료될 때까지 약 5초간 로딩 화면 유지
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          // PDF 생성이 완료될 때까지 약 10초간 로딩 화면 유지
+          await new Promise(resolve => setTimeout(resolve, 10000));
           
           setCurrentStep(8); // 완료 화면으로 이동
           
