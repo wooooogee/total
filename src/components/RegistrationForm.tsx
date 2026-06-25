@@ -522,8 +522,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       accountHolder: '',
       installmentPeriod: '일시불',
     },
-    certificateDeliveryMethod: '', // 'alimtalk', 'email', 'mail'
-    certificateEmail: '',
+    certificateDeliveryMethod: '', // 'alimtalk', 'mail'
     // 크루즈 전용 결제수단 추가
     paymentMethod1: 'card',
     paymentInfo1: {
@@ -1280,13 +1279,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     >
                       알림톡
                     </button>
-                    <button 
-                      type="button" 
-                      onClick={() => updateFormData('certificateDeliveryMethod', 'email')} 
-                      className={`flex-1 rounded-xl font-bold transition-all ${formData.certificateDeliveryMethod === 'email' ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
-                    >
-                      이메일
-                    </button>
+
                     <button 
                       type="button" 
                       onClick={() => updateFormData('certificateDeliveryMethod', 'mail')} 
@@ -1296,20 +1289,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     </button>
                   </div>
                   
-                  <AnimatePresence>
-                    {formData.certificateDeliveryMethod === 'email' && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                        <input 
-                          type="email" 
-                          placeholder="이메일 주소를 정확히 입력해 주세요" 
-                          value={formData.certificateEmail} 
-                          onChange={(e) => updateFormData('certificateEmail', e.target.value)} 
-                          className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base mt-1" 
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
+
                   {(!formData.certificateDeliveryMethod || formData.certificateDeliveryMethod === 'alimtalk') && (
                     <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-start gap-2">
                       <span className="text-indigo-500 mt-0.5">※</span>
