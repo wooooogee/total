@@ -1880,11 +1880,11 @@ export default function AdminDashboard() {
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제 구분</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">증서 발송</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
