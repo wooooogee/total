@@ -1942,17 +1942,6 @@ export default function AdminDashboard() {
                               })()}
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
-                              {log['_targets'] && log['_targets'].length > 0 ? (
-                                <div className="flex flex-col gap-0.5">
-                                  {log['_targets'].map((t: string, tIdx: number) => (
-                                    <span key={tIdx} className="text-slate-600 font-normal">{t}</span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 font-bold">-</span>
-                              )}
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-900 font-black text-sm">{log['계약자'] || log['성명'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">{log['연락처'] || '-'}</span>
@@ -1976,6 +1965,17 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap text-slate-700">
                               {log['결제일'] || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              {log['_targets'] && log['_targets'].length > 0 ? (
+                                <div className="flex flex-col gap-0.5">
+                                  {log['_targets'].map((t: string, tIdx: number) => (
+                                    <span key={tIdx} className="text-slate-600 font-normal">{t}</span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-bold">-</span>
+                              )}
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
