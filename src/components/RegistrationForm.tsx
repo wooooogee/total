@@ -576,6 +576,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             setHasCheckedDraft(true);
             return;
           }
+
+          // 사용자가 실제로 의미 있는 데이터를 입력했는지 확인 (초기 빈 폼 상태 제외)
+          const hasMeaningfulData = !!(parsed.name || parsed.phone || parsed.residentId || parsed.address || parsed.signature);
+          
+          if (!hasMeaningfulData) {
+            localStorage.removeItem('registration_form_draft');
+            localStorage.removeItem('registration_form_step');
+            setHasCheckedDraft(true);
+            return;
+          }
           
           setDraftDataToRestore(parsed);
           
