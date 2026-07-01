@@ -495,7 +495,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     document.documentElement.setAttribute('data-theme', newTheme);
   };
 
-  const [formData, setFormData] = useState({
+  const getInitialFormData = () => ({
     name: '',
     phone: '',
     address: '',
@@ -558,6 +558,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     salesPhone: '',
   });
 
+  const [formData, setFormData] = useState(getInitialFormData());
+  const [hasCheckedDraft, setHasCheckedDraft] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [draftDataToRestore, setDraftDataToRestore] = useState<any>(null);
+  const [draftStepToRestore, setDraftStepToRestore] = useState<number | null>(null);
+
   // 작성 중인 폼 데이터 로컬스토리지 임시 저장 및 복구 로직
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -572,42 +578,65 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             parsed.productName2 = '';
           }
           
-          setFormData((prev) => ({
-            ...prev,
-            ...parsed,
-            signature: '', // 서명은 항상 비움
-          }));
+          setDraftDataToRestore(parsed);
           
           const savedStep = localStorage.getItem('registration_form_step');
           if (savedStep) {
             const stepNum = parseInt(savedStep);
             if (!isNaN(stepNum) && stepNum >= 0 && stepNum < STEPS.length) {
               if (!isValidInitialProduct || parsed.product === initialProduct) {
-                setCurrentStep(stepNum);
+                setDraftStepToRestore(stepNum);
               } else {
-                setCurrentStep(1);
+                setDraftStepToRestore(1);
               }
             }
           }
+          
+          setShowRestoreModal(true);
         } catch (e) {
           console.error('Failed to restore form draft:', e);
+          setHasCheckedDraft(true);
         }
+      } else {
+        setHasCheckedDraft(true);
       }
     }
   }, [initialProduct, isValidInitialProduct]);
 
+  const handleRestoreDraft = (restore: boolean) => {
+    if (restore && draftDataToRestore) {
+      setFormData((prev) => ({
+        ...prev,
+        ...draftDataToRestore,
+        signature: '', // 서명은 항상 비움
+      }));
+      if (draftStepToRestore !== null) {
+        setCurrentStep(draftStepToRestore);
+      }
+    } else if (!restore) {
+      localStorage.removeItem('registration_form_draft');
+      localStorage.removeItem('registration_form_step');
+      setFormData(getInitialFormData());
+      setCurrentStep(isValidInitialProduct ? 1 : 0);
+    }
+    setShowRestoreModal(false);
+    setHasCheckedDraft(true);
+    setDraftDataToRestore(null);
+    setDraftStepToRestore(null);
+  };
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && hasCheckedDraft) {
       const { signature, ...restData } = formData;
       localStorage.setItem('registration_form_draft', JSON.stringify(restData));
     }
-  }, [formData]);
+  }, [formData, hasCheckedDraft]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && hasCheckedDraft) {
       localStorage.setItem('registration_form_step', currentStep.toString());
     }
-  }, [currentStep]);
+  }, [currentStep, hasCheckedDraft]);
 
   const [isSameCard, setIsSameCard] = useState(false);
 
@@ -972,6 +1001,53 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   return (
     <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center py-12 px-4 selection:bg-indigo-500/30">
+      <AnimatePresence>
+        {showRestoreModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 max-w-sm w-full space-y-6 shadow-2xl text-center"
+            >
+              <div className="mx-auto w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600 dark:text-indigo-400">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">입력하던 정보가 있습니다</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  이전에 작성 중이던 내용을 이어서 작성하시겠습니까? 아니오를 선택하면 처음부터 다시 작성합니다.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleRestoreDraft(false)}
+                  className="flex-1 py-3.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors text-sm"
+                >
+                  아니오
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRestoreDraft(true)}
+                  className="flex-1 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors text-sm shadow-md shadow-indigo-500/20"
+                >
+                  예 (이어서 작성)
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="lazyOnload" />
 
       <div className="w-full max-w-xl space-y-10">
