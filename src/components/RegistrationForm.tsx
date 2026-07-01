@@ -576,6 +576,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             parsed.product = initialProduct;
             parsed.productName = '';
             parsed.productName2 = '';
+            parsed.productCount = 1;
+            parsed.hasMultipleProducts = false;
           }
           
           setDraftDataToRestore(parsed);
