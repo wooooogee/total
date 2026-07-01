@@ -1167,8 +1167,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일 / 주민번호 앞자리</label>
-                    <input type="text" placeholder="주민번호 앞 6자리" maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일 6자리</label>
+                    <input type="text" placeholder="880805" maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1">성별</label>
