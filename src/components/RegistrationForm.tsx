@@ -572,12 +572,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         try {
           const parsed = JSON.parse(savedDraft);
           
+          // 단일 상품 전용 링크로 들어왔는데, 저장된 상품과 다를 경우 폼 구조가 다르므로 복구하지 않고 무시합니다.
           if (isValidInitialProduct && parsed.product !== initialProduct) {
-            parsed.product = initialProduct;
-            parsed.productName = '';
-            parsed.productName2 = '';
-            parsed.productCount = 1;
-            parsed.hasMultipleProducts = false;
+            localStorage.removeItem('registration_form_draft');
+            localStorage.removeItem('registration_form_step');
+            setHasCheckedDraft(true);
+            return;
           }
           
           setDraftDataToRestore(parsed);
