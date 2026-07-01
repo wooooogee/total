@@ -548,9 +548,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     signature: '', // Base64 signature
     gender: '남', // '남' or '여'
     healthcareTargets: [
-      { relation: '', name: '', birth: '', gender: '남', phone: '', isSameAsContractor: false },
-      { relation: '', name: '', birth: '', gender: '남', phone: '', isSameAsContractor: false },
-      { relation: '', name: '', birth: '', gender: '남', phone: '', isSameAsContractor: false },
       { relation: '', name: '', birth: '', gender: '남', phone: '', isSameAsContractor: false }
     ],
     salesAffiliation: '',
@@ -1121,10 +1118,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                           key={p}
                           type="button"
                           onClick={() => {
-                            setFormData(prev => ({
-                              ...prev,
-                              product: p
-                            }));
+                            if (formData.product !== p) {
+                              setFormData({
+                                ...getInitialFormData(),
+                                product: p
+                              });
+                            }
                           }}
                           className={`w-full py-5 px-7 rounded-[1.25rem] font-black text-lg text-left transition-all duration-300 flex items-center justify-between ${isSelected ? theme.active : theme.inactive}`}
                         >
