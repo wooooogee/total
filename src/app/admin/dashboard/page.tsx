@@ -288,7 +288,10 @@ export default function AdminDashboard() {
 
     // 링크 복사 핸들러
   const handleCopyLink = (id: string) => {
-    const url = `${window.location.origin}/apply/${id}`;
+    const link = links.find(l => l.id === id);
+    const url = link && link.products.length === 1
+      ? `${window.location.origin}/apply/${id}?product=${encodeURIComponent(link.products[0])}`
+      : `${window.location.origin}/apply/${id}`;
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -1287,7 +1290,7 @@ export default function AdminDashboard() {
                             </button>
                             
                             <a 
-                              href={`/apply/${link.id}`} 
+                              href={`/apply/${link.id}${link.products.length === 1 ? `?product=${encodeURIComponent(link.products[0])}` : ''}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm"
