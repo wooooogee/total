@@ -335,6 +335,83 @@ export async function getRegistrationsFromSheet(sheetTitle: string): Promise<any
   }
 }
 
+export async function getAllRegistrationsFromSheets(sheetTitles: string[]): Promise<any[]> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return [];
+
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo(); // 1번만 로드
+
+    const promises = sheetTitles.map(async (sheetTitle) => {
+      const sheet = doc.sheetsByTitle[sheetTitle];
+      if (!sheet) return [];
+
+      const rows = await sheet.getRows();
+      const headers = sheet.headerValues;
+
+      return rows.map(row => {
+        const data: any = {};
+        headers.forEach(h => {
+          data[h] = row.get(h) || '';
+        });
+        const raw = (row as any)._rawData;
+        const targets: string[] = [];
+
+        const targetHeaders = headers.filter(h => h && /^대상자\d+$/.test(h));
+        if (targetHeaders.length > 0) {
+          targetHeaders.sort((a, b) => {
+            const numA = parseInt(a.replace('대상자', ''), 10) || 0;
+            const numB = parseInt(b.replace('대상자', ''), 10) || 0;
+            return numA - numB;
+          });
+          targetHeaders.forEach(h => {
+            const val = data[h];
+            if (val) targets.push(val);
+          });
+        } else {
+          if (sheetTitle === '헬스케어580') {
+            const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+            const t2 = headers[21] ? (row.get(headers[21]) || '') : (raw?.[21] || '');
+            if (t1) targets.push(t1);
+            if (t2) targets.push(t2);
+          } else if (sheetTitle === '크루즈') {
+            const t1 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+            if (t1) targets.push(t1);
+          } else {
+            const t1 = headers[17] ? (row.get(headers[17]) || '') : (raw?.[17] || '');
+            const t2 = headers[18] ? (row.get(headers[18]) || '') : (raw?.[18] || '');
+            const t3 = headers[19] ? (row.get(headers[19]) || '') : (raw?.[19] || '');
+            const t4 = headers[20] ? (row.get(headers[20]) || '') : (raw?.[20] || '');
+            if (t1) targets.push(t1);
+            if (t2) targets.push(t2);
+            if (t3) targets.push(t3);
+            if (t4) targets.push(t4);
+          }
+        }
+
+        data['_targets'] = targets;
+        data['_R'] = headers[17] ? (row.get(headers[17]) || '') : (raw?.[17] || '');
+        data['_S'] = headers[18] ? (row.get(headers[18]) || '') : (raw?.[18] || '');
+        data['_T'] = headers[19] ? (row.get(headers[19]) || '') : (raw?.[19] || '');
+        data['시트구분'] = sheetTitle;
+        return data;
+      });
+    });
+
+    const results = await Promise.all(promises);
+    return results.flat();
+  } catch (error) {
+    console.error(`Failed to get registrations from sheets:`, error);
+    return [];
+  }
+}
+
 export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
   if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
     console.warn('Google Sheets credentials are not set. Using local DB.');

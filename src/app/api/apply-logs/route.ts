@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getRegistrationsFromSheet } from '@/lib/googleSheets';
+import { getAllRegistrationsFromSheets } from '@/lib/googleSheets';
+
+export const revalidate = 15; // Next.js 캐싱 15초 유지
 
 function parseKoreanDate(dateStr: string) {
   if (!dateStr) return 0;
@@ -54,8 +56,18 @@ function parseKoreanDate(dateStr: string) {
   return 0;
 }
 
+// 메모리 캐싱 (개발 환경 및 빠른 연속 호출 방지)
+let cachedLogs: any = null;
+let lastFetchTime = 0;
+const CACHE_DURATION_MS = 1000 * 15; // 15초
+
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedLogs && (now - lastFetchTime < CACHE_DURATION_MS)) {
+      return NextResponse.json(cachedLogs);
+    }
+
     const sheets = [
       '하이브리드698',
       '프리미엄540',
@@ -70,21 +82,7 @@ export async function GET() {
       '헬스케어580'
     ];
 
-    const allLogsPromises = sheets.map(async (sheetName) => {
-      try {
-        const rows = await getRegistrationsFromSheet(sheetName);
-        return rows.map(r => ({
-          ...r,
-          '시트구분': sheetName
-        }));
-      } catch (err) {
-        console.error(`Error loading logs from sheet ${sheetName}:`, err);
-        return [];
-      }
-    });
-
-    const results = await Promise.all(allLogsPromises);
-    const flatLogs = results.flat();
+    const flatLogs = await getAllRegistrationsFromSheets(sheets);
 
     // 신청일시 기준으로 내림차순(최근 순) 정렬
     flatLogs.sort((a, b) => {
@@ -92,6 +90,9 @@ export async function GET() {
       const dateB = parseKoreanDate(b['신청일시']);
       return dateB - dateA;
     });
+
+    cachedLogs = flatLogs;
+    lastFetchTime = now;
 
     return NextResponse.json(flatLogs);
   } catch (error: any) {
