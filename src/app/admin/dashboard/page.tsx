@@ -604,7 +604,7 @@ export default function AdminDashboard() {
         const content = await zip.generateAsync({ type: 'blob' });
         const today = new Date();
         const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-        saveAs(content, `통합신청내역_이미지_${dateStr}.zip`);
+        saveAs(content, `${dateStr}_계약서.zip`);
       } else {
         alert('다운로드에 성공한 이미지가 없습니다.');
       }
