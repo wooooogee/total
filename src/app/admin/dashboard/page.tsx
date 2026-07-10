@@ -48,8 +48,28 @@ export default function AdminDashboard() {
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState({ current: 0, total: 0 });
 
-  const handleDownloadAsImage = async (documentId?: string | React.MouseEvent, contractorName?: string) => {
+  const getFormattedFileName = (log: any) => {
+    if (!log) return '';
+    let dateStr = '';
+    if (log['신청일시']) {
+      const match = String(log['신청일시']).match(/(\d{4})[\.\-\/]\s*(\d{1,2})[\.\-\/]\s*(\d{1,2})/);
+      if (match) {
+        dateStr = `${match[1]}${match[2].padStart(2, '0')}${match[3].padStart(2, '0')}`;
+      } else {
+        dateStr = String(log['신청일시']).split(' ')[0].replace(/[^0-9]/g, '');
+      }
+    }
+    const productName = log['상품명'] || '';
+    const contractorName = log['계약자'] || log['성명'] || '';
+    
+    const parts = [dateStr, productName, contractorName].filter(Boolean);
+    return parts.length > 0 ? parts.join('_') : `contract_${log['document_id'] || ''}`;
+  };
+
+  const handleDownloadAsImage = async (documentId?: string | React.MouseEvent, fileName?: string) => {
     const targetId = typeof documentId === 'string' ? documentId : selectedPdfId;
     if (!targetId) return;
     
@@ -91,7 +111,7 @@ export default function AdminDashboard() {
       
       const a = document.createElement('a');
       a.href = imageUrl;
-      a.download = contractorName && typeof contractorName === 'string' ? `${contractorName}.jpg` : `contract_${targetId}_page1.jpg`;
+      a.download = fileName && typeof fileName === 'string' ? `${fileName}.jpg` : `contract_${targetId}_page1.jpg`;
       a.click();
     } catch (error: any) {
       console.error('Error downloading image:', error);
@@ -519,6 +539,82 @@ export default function AdminDashboard() {
     const timeB = dateB ? dateB.getTime() : 0;
     return timeB - timeA;
   });
+
+  const handleBulkDownloadImages = async () => {
+    const logsWithDocs = filteredLogs.filter(log => log['document_id']);
+    if (logsWithDocs.length === 0) {
+      alert('다운로드할 이미지(계약서)가 없습니다.');
+      return;
+    }
+
+    if (!confirm(`현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 일괄 다운로드하시겠습니까?\n(건수가 많을 경우 시간이 다소 소요될 수 있습니다.)`)) {
+      return;
+    }
+
+    try {
+      setIsBulkDownloading(true);
+      setBulkDownloadProgress({ current: 0, total: logsWithDocs.length });
+
+      const JSZip = (await import('jszip')).default;
+      const { saveAs } = await import('file-saver');
+      const zip = new JSZip();
+
+      const pdfjsLib = await import('pdfjs-dist');
+      const pdfjsVersion = pdfjsLib.version || '4.0.379';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
+
+      let successCount = 0;
+
+      for (let i = 0; i < logsWithDocs.length; i++) {
+        const log = logsWithDocs[i];
+        try {
+          const response = await fetch(`/api/download?id=${log['document_id']}&action=download`);
+          if (!response.ok) throw new Error('Failed to fetch PDF');
+          
+          const arrayBuffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (!context) throw new Error('No canvas context');
+          
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          
+          const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+          if (blob) {
+            const fileName = getFormattedFileName(log) || `contract_${log['document_id']}`;
+            zip.file(`${fileName}.jpg`, blob);
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error downloading document ${log['document_id']}:`, err);
+        }
+        setBulkDownloadProgress({ current: i + 1, total: logsWithDocs.length });
+      }
+
+      if (successCount > 0) {
+        const content = await zip.generateAsync({ type: 'blob' });
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+        saveAs(content, `통합신청내역_이미지_${dateStr}.zip`);
+      } else {
+        alert('다운로드에 성공한 이미지가 없습니다.');
+      }
+    } catch (error: any) {
+      console.error('Error during bulk download:', error);
+      alert(`일괄 다운로드 중 오류가 발생했습니다: ${error.message || error}`);
+    } finally {
+      setIsBulkDownloading(false);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1861,8 +1957,16 @@ export default function AdminDashboard() {
                       </>
                     )}
                   </div>
-                  <button onClick={fetchLogs} className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm">
+                  <button onClick={fetchLogs} title="새로고침" className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm">
                     <RefreshCw size={14} />
+                  </button>
+                  <button 
+                    onClick={handleBulkDownloadImages}
+                    disabled={isBulkDownloading}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-indigo-600/10 whitespace-nowrap"
+                  >
+                    {isBulkDownloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    {isBulkDownloading ? `일괄 다운로드 중 (${bulkDownloadProgress.current}/${bulkDownloadProgress.total})` : '일괄 다운로드'}
                   </button>
                 </div>
               </div>
@@ -2006,7 +2110,7 @@ export default function AdminDashboard() {
                                       <FileText size={12} /> 계약서 보기
                                     </button>
                                     <button 
-                                      onClick={() => handleDownloadAsImage(log['document_id'], log['계약자'] || log['성명'])}
+                                      onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log))}
                                       disabled={isDownloadingImage}
                                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-150 text-indigo-600 hover:bg-indigo-650 hover:text-white hover:border-transparent rounded-lg transition-all text-[10px] font-black shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
@@ -2872,7 +2976,10 @@ export default function AdminDashboard() {
                     <Download size={14} /> PDF 원본
                   </a>
                   <button
-                    onClick={() => handleDownloadAsImage()}
+                    onClick={() => {
+                      const matchedLog = logs.find(l => l['document_id'] === selectedPdfId);
+                      handleDownloadAsImage(selectedPdfId || undefined, matchedLog ? getFormattedFileName(matchedLog) : undefined);
+                    }}
                     disabled={isDownloadingImage}
                     className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
