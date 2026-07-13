@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllRegistrationsFromSheets } from '@/lib/googleSheets';
 
-export const revalidate = 15; // Next.js 캐싱 15초 유지
+export const dynamic = 'force-dynamic';
 
 function parseKoreanDate(dateStr: string) {
   if (!dateStr) return 0;
@@ -56,18 +56,8 @@ function parseKoreanDate(dateStr: string) {
   return 0;
 }
 
-// 메모리 캐싱 (개발 환경 및 빠른 연속 호출 방지)
-let cachedLogs: any = null;
-let lastFetchTime = 0;
-const CACHE_DURATION_MS = 1000 * 15; // 15초
-
 export async function GET() {
   try {
-    const now = Date.now();
-    if (cachedLogs && (now - lastFetchTime < CACHE_DURATION_MS)) {
-      return NextResponse.json(cachedLogs);
-    }
-
     const sheets = [
       '하이브리드698',
       '프리미엄540',
@@ -90,9 +80,6 @@ export async function GET() {
       const dateB = parseKoreanDate(b['신청일시']);
       return dateB - dateA;
     });
-
-    cachedLogs = flatLogs;
-    lastFetchTime = now;
 
     return NextResponse.json(flatLogs);
   } catch (error: any) {
