@@ -5,12 +5,12 @@ import Link from 'next/link';
 
 interface ApplyPageProps {
   params: Promise<{ linkId: string }>;
-  searchParams: Promise<{ product?: string }>;
+  searchParams: Promise<{ product?: string; skipHealthcare?: string }>;
 }
 
 export default async function ApplyPage({ params, searchParams }: ApplyPageProps) {
   const { linkId } = await params;
-  const { product } = await searchParams;
+  const { product, skipHealthcare } = await searchParams;
 
   // 1. Google Sheets에서 링크 설정 가져오기 시도
   let configs = await getLinkConfigsFromSheet();
@@ -47,6 +47,7 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
         allowedProducts={currentConfig.products} 
         linkId={linkId} 
         initialProduct={product}
+        initialSkipHealthcare={skipHealthcare === 'true'}
       />
     </div>
   );

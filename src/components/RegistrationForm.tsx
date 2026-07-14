@@ -293,9 +293,10 @@ interface RegistrationFormProps {
   allowedProducts?: string[];
   linkId?: string;
   initialProduct?: string;
+  initialSkipHealthcare?: boolean;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct, initialSkipHealthcare }) => {
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드'];
   const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
 
@@ -747,7 +748,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   useEffect(() => {
     let count = 1;
     const currentProductConfig = products.find(p => p.id === formData.product);
-    const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+    const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
 
     if (formData.product === '더좋은라이즈498') {
       const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
@@ -951,7 +952,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         return;
       }
       const currentProductConfig = products.find(p => p.id === formData.product);
-      const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+      const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
       if (!isHealthcareRequired) {
         setCurrentStep(3); // 헬스케어대상자(Step 2)를 건너뛰고 상품정보(Step 3)로 바로 이동
         return;
@@ -968,7 +969,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         return;
       }
       const currentProductConfig = products.find(p => p.id === formData.product);
-      const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+      const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
       if (!isHealthcareRequired) {
         setCurrentStep(1); // 헬스케어대상자(Step 2)를 건너뛰고 계약자정보(Step 1)로 바로 이동
         return;
