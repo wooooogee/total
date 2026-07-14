@@ -1166,64 +1166,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               </div>
 
               <div className="space-y-6">
-                {!['좋은건강크루즈', '더좋은헬스케어580', '더좋은라이즈498', '더좋은통신결합'].includes(formData.product) && !formData.product?.includes('크루즈') && (
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
-                    <input type="text" placeholder="예: LG 스탠바이미" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
-                  </div>
-                )}
-
-                {formData.product === '더좋은라이즈498' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 렌탈 제품 입력</label>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            hasMultipleProducts: !prev.hasMultipleProducts,
-                            productName2: !prev.hasMultipleProducts ? prev.productName2 : ''
-                          }));
-                        }}
-                        className={`text-xs px-3 py-1 rounded-full font-bold border transition-all ${formData.hasMultipleProducts ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-zinc-50 border-zinc-200 text-sub'}`}
-                      >
-                        제품 2개 신청
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      <input type="text" placeholder="첫 번째 제품명 (예: 세탁기)" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
-                      {formData.hasMultipleProducts && (
-                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                          <input type="text" placeholder="두 번째 제품명 (예: 건조기)" value={formData.productName2} onChange={(e) => updateFormData('productName2', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {formData.product === '더좋은통신결합' && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 요금제 선택</label>
-                      <select value={formData.planName} onChange={(e) => updateFormData('planName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
-                        <option value="">-- 요금제를 선택하세요 --</option>
-                        <option value="360플러스(7G 월44,000원)">360플러스(7G 월44,000원)</option>
-                        <option value="360플러스(10G 월47,080원)">360플러스(10G 월47,080원)</option>
-                        <option value="360플러스(15G 월49,060원)">360플러스(15G 월49,060원)</option>
-                        <option value="540플러스(7G 월64,020원)">540플러스(7G 월64,020원)</option>
-                        <option value="540플러스(10G 월67,100원)">540플러스(10G 월67,100원)</option>
-                        <option value="540플러스(15G 월69,080원)">540플러스(15G 월69,080원)</option>
-                        <option value="프리미어플러스(11G 79,200원)">프리미어플러스(11G 79,200원)</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
-                      <input type="text" placeholder="예: 신세계상품권 80만원" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
-                    </div>
-                  </>
-                )}
-
                 {formData.product === '더좋은헬스케어580' && (
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 가입 유형</label>
@@ -1352,6 +1294,64 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     </div>
                   )}
                 </div>
+
+                {!['좋은건강크루즈', '더좋은헬스케어580', '더좋은라이즈498', '더좋은통신결합'].includes(formData.product) && !formData.product?.includes('크루즈') && (
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
+                    <input type="text" placeholder="예: LG 스탠바이미" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                  </div>
+                )}
+
+                {formData.product === '더좋은라이즈498' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 렌탈 제품 입력</label>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            hasMultipleProducts: !prev.hasMultipleProducts,
+                            productName2: !prev.hasMultipleProducts ? prev.productName2 : ''
+                          }));
+                        }}
+                        className={`text-xs px-3 py-1 rounded-full font-bold border transition-all ${formData.hasMultipleProducts ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-zinc-50 border-zinc-200 text-sub'}`}
+                      >
+                        제품 2개 신청
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <input type="text" placeholder="첫 번째 제품명 (예: 세탁기)" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                      {formData.hasMultipleProducts && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                          <input type="text" placeholder="두 번째 제품명 (예: 건조기)" value={formData.productName2} onChange={(e) => updateFormData('productName2', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {formData.product === '더좋은통신결합' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 요금제 선택</label>
+                      <select value={formData.planName} onChange={(e) => updateFormData('planName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
+                        <option value="">-- 요금제를 선택하세요 --</option>
+                        <option value="360플러스(7G 월44,000원)">360플러스(7G 월44,000원)</option>
+                        <option value="360플러스(10G 월47,080원)">360플러스(10G 월47,080원)</option>
+                        <option value="360플러스(15G 월49,060원)">360플러스(15G 월49,060원)</option>
+                        <option value="540플러스(7G 월64,020원)">540플러스(7G 월64,020원)</option>
+                        <option value="540플러스(10G 월67,100원)">540플러스(10G 월67,100원)</option>
+                        <option value="540플러스(15G 월69,080원)">540플러스(15G 월69,080원)</option>
+                        <option value="프리미어플러스(11G 79,200원)">프리미어플러스(11G 79,200원)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
+                      <input type="text" placeholder="예: 신세계상품권 80만원" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    </div>
+                  </>
+                )}
                 
                 {/* 회원증서 수령 방법 */}
                 <div className="space-y-3 pt-4 border-t border-theme/10">
