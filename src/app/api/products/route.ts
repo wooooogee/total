@@ -42,13 +42,6 @@ export async function POST(request: Request) {
       sheetSyncError = sheetError.message || String(sheetError);
     }
     
-    if (!sheetSaved) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `구글 시트 동기화에 실패했습니다. (원인: ${sheetSyncError})` 
-      }, { status: 500 });
-    }
-    
     return NextResponse.json({
       success: localSaved,
       sheetSynced: sheetSaved,
