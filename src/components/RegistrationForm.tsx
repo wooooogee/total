@@ -746,12 +746,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   // 구좌 수 변경 시 대상자 배열 크기 조정
   useEffect(() => {
     let count = 1;
+    const currentProductConfig = products.find(p => p.id === formData.product);
+    const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+
     if (formData.product === '더좋은라이즈498') {
       const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
       count = countMap[formData.productCount as string] || 1;
     } else {
-      // 더좋은헬스케어580에서 직접 입력을 선택한 경우에는 대상자 스킵이므로 0명으로 설정
-      count = (formData.product === '더좋은헬스케어580' && isCustomProductCount) ? 0 : (Number(formData.productCount) || 1);
+      // 헬스케어 대상자 입력이 필요 없는 상품인 경우 0명으로 설정
+      count = !isHealthcareRequired ? 0 : (Number(formData.productCount) || 1);
     }
 
 
@@ -947,7 +950,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         setCurrentStep(3);
         return;
       }
-      if (formData.product === '더좋은헬스케어580' && isCustomProductCount) {
+      const currentProductConfig = products.find(p => p.id === formData.product);
+      const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+      if (!isHealthcareRequired) {
         setCurrentStep(3); // 헬스케어대상자(Step 2)를 건너뛰고 상품정보(Step 3)로 바로 이동
         return;
       }
@@ -962,7 +967,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         setCurrentStep(1);
         return;
       }
-      if (formData.product === '더좋은헬스케어580' && isCustomProductCount) {
+      const currentProductConfig = products.find(p => p.id === formData.product);
+      const isHealthcareRequired = currentProductConfig?.requireHealthcare !== false;
+      if (!isHealthcareRequired) {
         setCurrentStep(1); // 헬스케어대상자(Step 2)를 건너뛰고 계약자정보(Step 1)로 바로 이동
         return;
       }

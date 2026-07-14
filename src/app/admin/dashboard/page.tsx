@@ -33,6 +33,7 @@ interface ProductConfig {
   privacyTerm: string;
   thirdPartyTerm: string;
   marketingTerm: string;
+  requireHealthcare?: boolean;
 }
 
 const KLJ_DEFAULT_TEMPLATE = `송하인\\t수취인\\t진화번호\\t주소\\t상품명\\t상품옵션\\t수량\\t공급가\n더홈온라이프\\t{고객명}\\t{연락처}\\t{주소}\\t{제품명}\\t\\t1\\t{공급가}`;
@@ -464,7 +465,7 @@ export default function AdminDashboard() {
   };
 
   // 편집 필드 업데이트 헬퍼
-  const updateEditField = (field: keyof ProductConfig, value: string) => {
+  const updateEditField = (field: keyof ProductConfig, value: any) => {
     if (!selectedProductForEdit) return;
     
     // 만약 ID(식별자)를 바꾼다면 상품명(name)도 기본적으로 동조화시킴
@@ -1537,7 +1538,8 @@ export default function AdminDashboard() {
                           productNoticeTerm: '',
                           privacyTerm: '',
                           thirdPartyTerm: '',
-                          marketingTerm: ''
+                          marketingTerm: '',
+                          requireHealthcare: true
                         });
                         setIsAddingProduct(true);
                       }}
@@ -1712,6 +1714,17 @@ export default function AdminDashboard() {
                             placeholder="예: 16,000원 (61~240회) / 없을 경우 비워둠"
                             className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
                           />
+                        </div>
+                        <div className="space-y-1 md:col-span-2 mt-2">
+                          <label className="text-[11px] font-bold text-slate-650 flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedProductForEdit.requireHealthcare !== false}
+                              onChange={(e) => updateEditField('requireHealthcare', e.target.checked)}
+                              className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 w-4 h-4"
+                            />
+                            <span>헬스케어 대상자 입력 단계 활성화 (체크 시 가입 신청 시점에 헬스케어 대상자 입력 단계를 노출하며, 체크 해제 시 단계를 건너뜁니다.)</span>
+                          </label>
                         </div>
                       </div>
                     </div>

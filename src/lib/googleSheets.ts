@@ -457,7 +457,8 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
       thirdPartyTerm: row.get('제3자제공동의약관') || '',
       marketingTerm: row.get('마케팅정보제공동의약관') || '',
       monthlyPayment1Title: sheet.headerValues.includes('1차납입금제목') ? (row.get('1차납입금제목') || '') : '',
-      monthlyPayment2Title: sheet.headerValues.includes('2차납입금제목') ? (row.get('2차납입금제목') || '') : ''
+      monthlyPayment2Title: sheet.headerValues.includes('2차납입금제목') ? (row.get('2차납입금제목') || '') : '',
+      requireHealthcare: sheet.headerValues.includes('헬스케어대상자입력여부') ? (row.get('헬스케어대상자입력여부') !== 'FALSE' && row.get('헬스케어대상자입력여부') !== 'false') : true
     }));
   } catch (error) {
     console.error('Failed to get product configs from Sheet:', error);
@@ -485,9 +486,21 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
         headerValues: [
           '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
           '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관',
-          '1차납입금제목', '2차납입금제목'
+          '1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부'
         ]
       });
+    }
+
+    // 헤더 동적 확장
+    const existingHeaders = sheet.headerValues;
+    const requiredHeaders = ['1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부'];
+    const missingHeaders = requiredHeaders.filter(h => !existingHeaders.includes(h));
+    if (missingHeaders.length > 0) {
+      const newHeaders = [...existingHeaders, ...missingHeaders];
+      if (newHeaders.length > sheet.columnCount) {
+        await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length });
+      }
+      await sheet.setHeaderRow(newHeaders);
     }
 
     const rows = await sheet.getRows();
@@ -514,6 +527,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
     if (sheet.headerValues.includes('2차납입금제목')) {
       rowData['2차납입금제목'] = config.monthlyPayment2Title || '';
     }
+    if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
+      rowData['헬스케어대상자입력여부'] = config.requireHealthcare !== false ? 'TRUE' : 'FALSE';
+    }
 
     if (existingRow) {
       existingRow.set('상품명', rowData['상품명']);
@@ -532,6 +548,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       }
       if (sheet.headerValues.includes('2차납입금제목')) {
         existingRow.set('2차납입금제목', rowData['2차납입금제목']);
+      }
+      if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
+        existingRow.set('헬스케어대상자입력여부', rowData['헬스케어대상자입력여부']);
       }
       await existingRow.save();
     } else {

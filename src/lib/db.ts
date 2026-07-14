@@ -24,6 +24,7 @@ export interface ProductConfig {
   privacyTerm: string;       // 2. 개인정보수집이용 약관 문구
   thirdPartyTerm: string;    // 3. 제3자제공동의 약관 문구
   marketingTerm: string;     // 4. 마케팅정보제공동의 약관 문구
+  requireHealthcare?: boolean; // 헬스케어 대상자 입력 여부
 }
 
 const DATA_DIR = path.join(process.cwd(), 'data');
