@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, 
@@ -146,7 +146,6 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
-  const AVAILABLE_SHEETS = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드', '굿라이프헬스케어실버', '골드', '실버', '헬스케어580', '통신결합'];
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -162,6 +161,14 @@ export default function AdminDashboard() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+
+  const AVAILABLE_SHEETS = useMemo(() => {
+    const defaultSheets = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드', '굿라이프헬스케어실버', '골드', '실버', '헬스케어580', '통신결합'];
+    const sheetsFromLogs = logs.map(log => log['시트구분'] || log['상품명']).filter(Boolean);
+    const sheetsFromProducts = products.map(p => p.targetSheetName || p.name).filter(Boolean);
+    const sheetsSet = new Set([...defaultSheets, ...sheetsFromLogs, ...sheetsFromProducts]);
+    return Array.from(sheetsSet);
+  }, [logs, products]);
 
   // --- 수기 발주 및 공급사 상태 ---
   const [orderSubTab, setOrderSubTab] = useState<'list' | 'suppliers' | 'products'>('list');

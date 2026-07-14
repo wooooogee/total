@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllRegistrationsFromSheets } from '@/lib/googleSheets';
+import { getRegistrationsFromSheet } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,21 +58,13 @@ function parseKoreanDate(dateStr: string) {
 
 export async function GET() {
   try {
-    const sheets = [
-      '하이브리드698',
-      '프리미엄540',
-      '통신결합',
-      '라이즈498',
-      '크루즈',
-      '굿라이프헬스케어',
-      '굿라이프헬스케어골드',
-      '굿라이프헬스케어실버',
-      '골드',
-      '실버',
-      '헬스케어580'
-    ];
+    const rawLogs = await getRegistrationsFromSheet('통합신청내역');
 
-    const flatLogs = await getAllRegistrationsFromSheets(sheets);
+    // 하위 호환성을 위해 '상품명'을 '시트구분' 필드로 매핑해 줍니다.
+    const flatLogs = rawLogs.map(log => ({
+      ...log,
+      '시트구분': log['상품명'] || '미분류'
+    }));
 
     // 신청일시 기준으로 내림차순(최근 순) 정렬
     flatLogs.sort((a, b) => {

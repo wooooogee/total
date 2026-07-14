@@ -116,37 +116,7 @@ export async function registerAction(data: any) {
         });
       }
       
-      let sheetName = '헬스케어580';
-      
-      // 크루즈 상품은 최우선적으로 '크루즈' 시트로 강제 라우팅 처리
-      if (data.product === '좋은건강크루즈' || data.product === '더좋은크루즈' || data.product?.includes('크루즈')) {
-        sheetName = '크루즈';
-      } else if (productConfig && productConfig.targetSheetName) {
-        sheetName = productConfig.targetSheetName;
-      } else {
-        if (data.product === '더좋은하이브리드698') {
-          sheetName = '하이브리드698';
-        } else if (data.product === '더좋은프리미엄540') {
-          sheetName = '프리미엄540';
-        } else if (data.product === '더좋은통신결합') {
-          sheetName = '통신결합';
-        } else if (data.product === '더좋은라이즈498') {
-          sheetName = '라이즈498';
-        } else if (data.product === '굿라이프헬스케어골드') {
-          sheetName = '굿라이프헬스케어골드';
-        } else if (data.product === '굿라이프헬스케어실버') {
-          sheetName = '굿라이프헬스케어실버';
-        } else if (data.product === '굿라이프헬스케어') {
-          sheetName = '굿라이프헬스케어';
-        } else if (data.product === '더좋은헬스케어580') {
-          sheetName = '헬스케어580';
-        } else if (productConfig) {
-          // 신규 등록 상품 중 targetSheetName이 없으면 상품명을 시트 이름으로 폴백
-          sheetName = productConfig.name;
-        } else {
-          sheetName = data.product;
-        }
-      }
+      let sheetName = '통합신청내역';
 
       await addRegistrationToSheet(sheetData, sheetName);
       console.log(`Google Sheets 기록 완료 (${sheetName} 시트)`);
