@@ -37,6 +37,13 @@ export async function POST(request: Request) {
       console.error('Failed to save product to Google Sheets:', sheetError);
     }
     
+    if (!sheetSaved) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '구글 시트 동기화에 실패했습니다. GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY 환경변수 설정이나 스프레드시트 상태를 확인해 주세요.' 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({
       success: localSaved,
       sheetSynced: sheetSaved,
