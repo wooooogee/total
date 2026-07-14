@@ -495,6 +495,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       });
     }
 
+    // 명시적으로 헤더 행 정보 로딩
+    await sheet.loadHeaderRow();
+
     // 헤더 동적 확장
     const existingHeaders = sheet.headerValues;
     const requiredHeaders = ['1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부'];
@@ -505,9 +508,8 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
         await sheet.resize({ rowCount: sheet.rowCount, columnCount: newHeaders.length });
       }
       await sheet.setHeaderRow(newHeaders);
-      // 구글 시트 메타데이터 및 헤더 캐시를 갱신하기 위해 문서를 다시 로드하고 sheet 객체를 갱신
-      await doc.loadInfo();
-      sheet = doc.sheetsByTitle['상품설정'];
+      // 헤더 갱신 후 헤더 캐시 리로드
+      await sheet.loadHeaderRow();
     }
 
     const rows = await sheet.getRows();
