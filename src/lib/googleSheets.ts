@@ -567,7 +567,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
     return true;
   } catch (error) {
     console.error('Failed to save product config to Sheet:', error);
-    return false;
+    throw error;
   }
 }
 
