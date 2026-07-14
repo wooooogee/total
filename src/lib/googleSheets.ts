@@ -458,7 +458,11 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
       marketingTerm: row.get('마케팅정보제공동의약관') || '',
       monthlyPayment1Title: sheet.headerValues.includes('1차납입금제목') ? (row.get('1차납입금제목') || '') : '',
       monthlyPayment2Title: sheet.headerValues.includes('2차납입금제목') ? (row.get('2차납입금제목') || '') : '',
-      requireHealthcare: sheet.headerValues.includes('헬스케어대상자입력여부') ? (row.get('헬스케어대상자입력여부') !== 'FALSE' && row.get('헬스케어대상자입력여부') !== 'false') : true
+      requireHealthcare: (() => {
+        const val = row.get('헬스케어대상자입력여부');
+        if (val === undefined || val === null || val === '') return true;
+        return (val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1');
+      })()
     }));
   } catch (error) {
     console.error('Failed to get product configs from Sheet:', error);
@@ -518,18 +522,11 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       '상품내용고지약관': config.productNoticeTerm,
       '개인정보수집이용약관': config.privacyTerm,
       '제3자제공동의약관': config.thirdPartyTerm,
-      '마케팅정보제공동의약관': config.marketingTerm
+      '마케팅정보제공동의약관': config.marketingTerm,
+      '1차납입금제목': config.monthlyPayment1Title || '',
+      '2차납입금제목': config.monthlyPayment2Title || '',
+      '헬스케어대상자입력여부': config.requireHealthcare !== false ? 'TRUE' : 'FALSE'
     };
-
-    if (sheet.headerValues.includes('1차납입금제목')) {
-      rowData['1차납입금제목'] = config.monthlyPayment1Title || '';
-    }
-    if (sheet.headerValues.includes('2차납입금제목')) {
-      rowData['2차납입금제목'] = config.monthlyPayment2Title || '';
-    }
-    if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
-      rowData['헬스케어대상자입력여부'] = config.requireHealthcare !== false ? 'TRUE' : 'FALSE';
-    }
 
     if (existingRow) {
       existingRow.set('상품명', rowData['상품명']);
@@ -543,15 +540,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       existingRow.set('개인정보수집이용약관', rowData['개인정보수집이용약관']);
       existingRow.set('제3자제공동의약관', rowData['제3자제공동의약관']);
       existingRow.set('마케팅정보제공동의약관', rowData['마케팅정보제공동의약관']);
-      if (sheet.headerValues.includes('1차납입금제목')) {
-        existingRow.set('1차납입금제목', rowData['1차납입금제목']);
-      }
-      if (sheet.headerValues.includes('2차납입금제목')) {
-        existingRow.set('2차납입금제목', rowData['2차납입금제목']);
-      }
-      if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
-        existingRow.set('헬스케어대상자입력여부', rowData['헬스케어대상자입력여부']);
-      }
+      existingRow.set('1차납입금제목', rowData['1차납입금제목']);
+      existingRow.set('2차납입금제목', rowData['2차납입금제목']);
+      existingRow.set('헬스케어대상자입력여부', rowData['헬스케어대상자입력여부']);
       await existingRow.save();
     } else {
       await sheet.addRow(rowData);
