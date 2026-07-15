@@ -776,6 +776,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
   }, [formData.productCount, formData.product]);
 
+  // 모바일 기기 서명 시 스크롤 및 새로고침(Pull-to-refresh) 방지
+  useEffect(() => {
+    if (currentStep === 6) {
+      const canvas = sigCanvas.current?.getCanvas();
+      if (!canvas) return;
+
+      const preventDefault = (e: TouchEvent) => {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      };
+
+      canvas.addEventListener('touchstart', preventDefault as EventListener, { passive: false });
+      canvas.addEventListener('touchmove', preventDefault as EventListener, { passive: false });
+      canvas.addEventListener('touchend', preventDefault as EventListener, { passive: false });
+      canvas.addEventListener('touchcancel', preventDefault as EventListener, { passive: false });
+
+      return () => {
+        canvas.removeEventListener('touchstart', preventDefault as EventListener);
+        canvas.removeEventListener('touchmove', preventDefault as EventListener);
+        canvas.removeEventListener('touchend', preventDefault as EventListener);
+        canvas.removeEventListener('touchcancel', preventDefault as EventListener);
+      };
+    }
+  }, [currentStep]);
+
   const copyContractorToHealthcare = (index: number) => {
     const isSame = !formData.healthcareTargets[index].isSameAsContractor;
     updateHealthcareTarget(index, 'isSameAsContractor', isSame);
@@ -2090,8 +2116,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
               </div>
 
-              <div className="bg-white rounded-3xl overflow-hidden border-4 border-theme shadow-2xl">
-                <SignatureCanvas ref={sigCanvas} penColor="black" canvasProps={{ className: "signature-canvas w-full h-64" }} />
+              <div className="bg-white rounded-3xl overflow-hidden border-4 border-theme shadow-2xl touch-none">
+                <SignatureCanvas 
+                  ref={sigCanvas} 
+                  penColor="black" 
+                  canvasProps={{ 
+                    className: "signature-canvas w-full h-64 touch-none",
+                    style: { touchAction: 'none' }
+                  }} 
+                />
               </div>
               <div className="flex justify-between items-center px-2">
                 <button onClick={clearSignature} className="flex items-center gap-2 text-xs font-bold text-sub hover:text-indigo-500 transition-colors"><Eraser size={14} /> 서명 초기화</button>
