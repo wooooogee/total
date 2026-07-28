@@ -171,6 +171,49 @@ export default function AdminDashboard() {
     return Array.from(sheetsSet);
   }, [logs, products]);
 
+  // --- 본인섭외-본부명 퀵 복사 & 관리 상태 ---
+  const [affiliationList, setAffiliationList] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('custom_affiliations');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    return ['혜랑인터내셔널', '인바운드컴퍼니', '언바운드컴퍼니'];
+  });
+  const [newAffiliationInput, setNewAffiliationInput] = useState('');
+  const [copiedAffiliation, setCopiedAffiliation] = useState<string | null>(null);
+  const [isQuickBarOpen, setIsQuickBarOpen] = useState(true);
+
+  const handleAddAffiliation = () => {
+    if (!newAffiliationInput.trim()) return;
+    const clean = newAffiliationInput.trim().replace(/^본인섭외-?/, '');
+    if (!clean) return;
+    if (!affiliationList.includes(clean)) {
+      const next = [...affiliationList, clean];
+      setAffiliationList(next);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('custom_affiliations', JSON.stringify(next));
+      }
+    }
+    setNewAffiliationInput('');
+  };
+
+  const handleRemoveAffiliation = (aff: string) => {
+    const next = affiliationList.filter(a => a !== aff);
+    setAffiliationList(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('custom_affiliations', JSON.stringify(next));
+    }
+  };
+
+  const handleCopyAffiliationCode = (aff: string) => {
+    const fullText = `본인섭외-${aff}`;
+    navigator.clipboard.writeText(fullText);
+    setCopiedAffiliation(fullText);
+    setTimeout(() => setCopiedAffiliation(null), 2000);
+  };
+
   // --- 수기 발주 및 공급사 상태 ---
   const [orderSubTab, setOrderSubTab] = useState<'list' | 'suppliers' | 'products'>('list');
   const [orders, setOrders] = useState<any[]>([]);
@@ -1723,7 +1766,7 @@ export default function AdminDashboard() {
                               onChange={(e) => updateEditField('requireHealthcare', e.target.checked)}
                               className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 w-4 h-4"
                             />
-                            <span>헬스케어 대상자 입력 단계 활성화 (체크 시 가입 신청 시점에 헬스케어 대상자 입력 단계를 노출하며, 체크 해제 시 단계를 건너뜁니다.)</span>
+                            <span>헬스케어 대상자 입력 단계 활성화 (체크 시 가입 신청 시점에 헬스케어 대상자 입력 단계를 노출하며, 체크 해제 시 단계를 건너뜅니다.)</span>
                           </label>
                         </div>
                       </div>
@@ -1819,7 +1862,7 @@ export default function AdminDashboard() {
                   accountsByProduct[product] = (accountsByProduct[product] || 0) + count;
 
                   let hq = log['영업자소속'] || log['영업소속'] || '';
-                  hq = String(hq).trim();
+                  hq = String(hq).replace(/^본인섭외-?/, '').trim();
                   if (!hq) hq = '소속 미지정/본인';
                   accountsByHQ[hq] = (accountsByHQ[hq] || 0) + count;
                 });
@@ -1851,7 +1894,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col">
-                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">본부별 구좌수</p>
+                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">소속별 구좌수</p>
                       <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[100px] custom-scrollbar">
                         {sortedHQs.length > 0 ? sortedHQs.map(([h, c]) => (
                           <div key={h} className="flex justify-between items-center text-xs">
@@ -1864,6 +1907,107 @@ export default function AdminDashboard() {
                   </div>
                 );
               })()}
+
+              {/* 우측 고정 세로 미니바 (본인섭외-본부명 퀵 복사) */}
+              <div className="fixed right-5 top-28 z-50 flex flex-col items-end font-sans">
+                {isQuickBarOpen ? (
+                  <div className="w-64 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-2xl p-4 flex flex-col max-h-[calc(100vh-9rem)] transition-all">
+                    {/* 헤더 */}
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
+                          <Copy size={14} />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-black text-slate-800">본인섭외 복사</h3>
+                          <p className="text-[9px] text-slate-400 font-medium">클릭시 자동 복사</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setIsQuickBarOpen(false)}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                        title="미니바 접기"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+
+                    {/* 본부명 세로 리스트 */}
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-[80px]">
+                      {affiliationList.length === 0 ? (
+                        <div className="text-center py-6 text-[11px] text-slate-400 font-medium">
+                          저장된 본부명이 없습니다.<br />아래에서 추가해 주세요.
+                        </div>
+                      ) : (
+                        affiliationList.map(aff => {
+                          const code = `본인섭외-${aff}`;
+                          const isCopied = copiedAffiliation === code;
+                          return (
+                            <div key={aff} className="group flex items-center gap-1">
+                              <button
+                                onClick={() => handleCopyAffiliationCode(aff)}
+                                className={`flex-1 flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-bold transition-all border shadow-xs text-left ${
+                                  isCopied 
+                                    ? 'bg-emerald-500 text-white border-emerald-500 scale-[1.02]' 
+                                    : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                }`}
+                                title={`클릭시 "${code}" 복사`}
+                              >
+                                <span className="truncate">{code}</span>
+                                {isCopied ? (
+                                  <Check size={14} className="shrink-0 text-white" />
+                                ) : (
+                                  <Copy size={13} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleRemoveAffiliation(aff)}
+                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-40 group-hover:opacity-100 shrink-0"
+                                title="삭제"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* 본부명 입력/추가 하단 폼 */}
+                    <div className="pt-3 mt-3 border-t border-slate-100 shrink-0">
+                      <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-2xl px-2.5 py-1.5 focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-xs">
+                        <span className="text-[10px] font-black text-indigo-600 shrink-0">본인섭외-</span>
+                        <input
+                          type="text"
+                          placeholder="본부명 입력"
+                          value={newAffiliationInput}
+                          onChange={(e) => setNewAffiliationInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddAffiliation()}
+                          className="w-full bg-transparent outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
+                        />
+                        <button
+                          onClick={handleAddAffiliation}
+                          className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shrink-0"
+                          title="본부명 저장"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 접혔을 때 컴팩트 버튼 */
+                  <button
+                    onClick={() => setIsQuickBarOpen(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all hover:scale-105 group"
+                    title="본인섭외 퀵 복사 미니바 열기"
+                  >
+                    <Copy size={18} />
+                    <span className="text-xs font-black pr-1 hidden group-hover:inline">본인섭외 퀵복사</span>
+                    <ChevronLeft size={16} />
+                  </button>
+                )}
+              </div>
 
               {/* 필터 및 검색 바 */}
               <div className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm">
@@ -2008,7 +2152,8 @@ export default function AdminDashboard() {
                         <tr className="border-b border-slate-100 bg-slate-50/50">
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품 및 구좌</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품</th>
+                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap text-center">구좌수</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제 구분</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
@@ -2077,10 +2222,17 @@ export default function AdminDashboard() {
                             <td className="px-2 py-3">
                               <div className="flex flex-col">
                                 <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
-                                  구좌: {log['구좌수'] || log['수량'] || '-'} {log['제품명'] && `// 제품: ${log['제품명']}`}
-                                </span>
+                                {log['제품명'] && (
+                                  <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                    제품: {log['제품명']}
+                                  </span>
+                                )}
                               </div>
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                              <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
+                                {log['구좌수'] || log['수량'] || '1'}
+                              </span>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
@@ -2107,13 +2259,14 @@ export default function AdminDashboard() {
                             <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700">{log['영업자'] || log['영업담당'] || '-'}</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
-                                  {(() => {
-                                    const aff = log['영업자소속'] || log['영업소속'] || '';
-                                    if (!aff) return '본인섭외-';
-                                    return aff.startsWith('본인섭외-') ? aff : `본인섭외-${aff}`;
-                                  })()}
-                                </span>
+                                {(() => {
+                                  const aff = String(log['영업자소속'] || log['영업소속'] || '').replace(/^본인섭외-?/, '').trim();
+                                  return aff ? (
+                                    <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                      {aff}
+                                    </span>
+                                  ) : null;
+                                })()}
                               </div>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
