@@ -183,7 +183,15 @@ export default function AdminDashboard() {
   });
   const [newAffiliationInput, setNewAffiliationInput] = useState('');
   const [copiedAffiliation, setCopiedAffiliation] = useState<string | null>(null);
+  const [copiedHealthcareTarget, setCopiedHealthcareTarget] = useState<string | null>(null);
   const [isQuickBarOpen, setIsQuickBarOpen] = useState(true);
+
+  const handleCopyHealthcareTarget = (targetText: string) => {
+    if (!targetText || targetText === '-') return;
+    navigator.clipboard.writeText(targetText);
+    setCopiedHealthcareTarget(targetText);
+    setTimeout(() => setCopiedHealthcareTarget(null), 2000);
+  };
 
   const handleAddAffiliation = () => {
     if (!newAffiliationInput.trim()) return;
@@ -2246,15 +2254,44 @@ export default function AdminDashboard() {
                               {log['결제일'] || '-'}
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
-                              {log['_targets'] && log['_targets'].length > 0 ? (
-                                <div className="flex flex-col gap-0.5">
-                                  {log['_targets'].map((t: string, tIdx: number) => (
-                                    <span key={tIdx} className="text-slate-600 font-normal">{t}</span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 font-bold">-</span>
-                              )}
+                              {(() => {
+                                const targets: string[] = log['_targets'] && log['_targets'].length > 0 
+                                  ? log['_targets'] 
+                                  : (log['헬스케어대상자'] || log['헬스케어 대상자'])
+                                    ? [String(log['헬스케어대상자'] || log['헬스케어 대상자'])] 
+                                    : [];
+
+                                if (targets.length === 0) {
+                                  return <span className="text-slate-400 font-bold">-</span>;
+                                }
+
+                                return (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    {targets.map((t: string, tIdx: number) => {
+                                      const isCopied = copiedHealthcareTarget === t;
+                                      return (
+                                        <button
+                                          key={tIdx}
+                                          onClick={() => handleCopyHealthcareTarget(t)}
+                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-normal text-left ${
+                                            isCopied
+                                              ? 'bg-emerald-500 text-white border-emerald-500 scale-105 font-bold shadow-xs'
+                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                          }`}
+                                          title="클릭하여 대상자 정보 복사"
+                                        >
+                                          <span>{t}</span>
+                                          {isCopied ? (
+                                            <Check size={12} className="shrink-0 text-white" />
+                                          ) : (
+                                            <Copy size={11} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex flex-col">
