@@ -27,9 +27,31 @@ export interface ProductConfig {
   requireHealthcare?: boolean; // 헬스케어 대상자 입력 여부
 }
 
+export interface PrefillConfig {
+  token: string;             // 고유 토큰 (예: 'p_1689239812')
+  name: string;              // 계약자 성명
+  birth: string;             // 생년월일 (6자리 또는 8자리)
+  phone: string;             // 연락처
+  address: string;           // 주소
+  addressDetail?: string;    // 상세주소
+  product: string;           // 상품 ID
+  productCount: number;      // 구좌수 (1, 2 등)
+  productName?: string;      // 결합 제품명 (선택)
+  productName2?: string;     // 결합 제품명 2 (선택)
+  salesAffiliation?: string; // 영업자 소속
+  salesName?: string;        // 영업자 성명
+  salesPhone?: string;       // 영업자 연락처
+  companyName?: string;      // 기업명 (선택)
+  businessNumber?: string;   // 사업자등록번호 (선택)
+  status: '대기' | '작성완료'; // 상태
+  documentId?: string;       // 완성된 eformsign document id
+  createdAt: string;         // 생성 일시
+}
+
 const DATA_DIR = path.join(process.cwd(), 'data');
 const LINKS_FILE = path.join(DATA_DIR, 'links.json');
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const PREFILLS_FILE = path.join(DATA_DIR, 'prefills.json');
 
 // 기본 링크 데이터
 const DEFAULT_LINKS: LinkConfig[] = [
@@ -506,6 +528,56 @@ export function deleteProductConfig(id: string): boolean {
     return true;
   } catch (error) {
     console.error('Failed to delete product config:', error);
+    return false;
+  }
+}
+
+export function getPrefillConfigs(): PrefillConfig[] {
+  try {
+    ensureDataFiles();
+    const data = fs.readFileSync(PREFILLS_FILE, 'utf-8');
+    return JSON.parse(data) as PrefillConfig[];
+  } catch (error) {
+    console.error('Failed to read prefills.json:', error);
+    return [];
+  }
+}
+
+export function getPrefillConfigByToken(token: string): PrefillConfig | undefined {
+  const configs = getPrefillConfigs();
+  return configs.find(c => c.token === token);
+}
+
+export function savePrefillConfig(config: PrefillConfig): boolean {
+  try {
+    ensureDataFiles();
+    const configs = getPrefillConfigs();
+    const index = configs.findIndex(c => c.token === config.token);
+    
+    if (index !== -1) {
+      configs[index] = { ...configs[index], ...config };
+    } else {
+      configs.unshift(config);
+    }
+    
+    fs.writeFileSync(PREFILLS_FILE, JSON.stringify(configs, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Failed to save prefill config:', error);
+    return false;
+  }
+}
+
+export function deletePrefillConfig(token: string): boolean {
+  try {
+    ensureDataFiles();
+    const configs = getPrefillConfigs();
+    const filtered = configs.filter(c => c.token !== token);
+    
+    fs.writeFileSync(PREFILLS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Failed to delete prefill config:', error);
     return false;
   }
 }

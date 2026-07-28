@@ -1,17 +1,13 @@
-import { getLinkConfigsFromSheet } from '@/lib/googleSheets';
-import { getLinkConfigs } from '@/lib/db';
 import { getPrefillDataAction } from '@/app/actions';
 import RegistrationForm from '@/components/RegistrationForm';
 import Link from 'next/link';
 
-interface ApplyPageProps {
-  params: Promise<{ linkId: string }>;
-  searchParams: Promise<{ product?: string; skipHealthcare?: string; token?: string }>;
+interface ApplyRootPageProps {
+  searchParams: Promise<{ token?: string; product?: string; skipHealthcare?: string }>;
 }
 
-export default async function ApplyPage({ params, searchParams }: ApplyPageProps) {
-  const { linkId } = await params;
-  const { product, skipHealthcare, token } = await searchParams;
+export default async function ApplyRootPage({ searchParams }: ApplyRootPageProps) {
+  const { token, product, skipHealthcare } = await searchParams;
 
   let prefillData = null;
   if (token) {
@@ -21,12 +17,7 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
     }
   }
 
-  // 1. Google Sheets에서 링크 설정 가져오기 시도
-  let configs = await getLinkConfigsFromSheet();
-
-  const currentConfig = configs.find(c => c.id === linkId && c.isActive);
-
-  if (!currentConfig) {
+  if (token && !prefillData) {
     return (
       <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center justify-center p-6 selection:bg-indigo-500/30">
         <div className="w-full max-w-md card-theme p-10 rounded-[3rem] text-center space-y-8 shadow-2xl relative overflow-hidden">
@@ -35,17 +26,16 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </div>
           <div className="space-y-3">
-            <h2 className="text-xl font-black italic tracking-tighter leading-tight">유효하지 않은 신청 링크</h2>
+            <h2 className="text-xl font-black italic tracking-tighter leading-tight">만료되거나 유효하지 않은 링크</h2>
             <p className="text-sub text-xs leading-relaxed font-bold opacity-80">
-              접속하신 링크 정보가 존재하지 않거나,<br />
-              비활성화 상태입니다. 관리자에게 문의해 주세요.
+              요청하신 사전 신청 정보 링크가 존재하지 않거나<br />
+              이미 삭제된 링크입니다. 담당자에게 문의해 주세요.
             </p>
           </div>
           <Link href="/" className="w-full block py-4.5 bg-card text-sub rounded-2xl font-bold border border-theme hover:bg-zinc-100 transition-colors">
             메인 페이지로 돌아가기
           </Link>
         </div>
-        <footer className="mt-12 text-[9px] text-sub font-bold uppercase tracking-[0.5em] italic opacity-60">Premium Sign Platform</footer>
       </div>
     );
   }
@@ -53,8 +43,6 @@ export default async function ApplyPage({ params, searchParams }: ApplyPageProps
   return (
     <div className="min-h-screen bg-theme">
       <RegistrationForm 
-        allowedProducts={currentConfig.products} 
-        linkId={linkId} 
         initialProduct={product}
         initialSkipHealthcare={skipHealthcare === 'true'}
         initialPrefillData={prefillData}

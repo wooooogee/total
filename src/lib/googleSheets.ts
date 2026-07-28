@@ -1084,4 +1084,162 @@ export async function deleteOrderFromSheet(orderId: string): Promise<boolean> {
   }
 }
 
+export async function getPrefillDataFromSheet(token?: string): Promise<any> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return token ? null : [];
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    let sheet = doc.sheetsByTitle['사전신청목록'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '사전신청목록',
+        headerValues: ['토큰ID', '계약자', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
+      });
+      return token ? null : [];
+    }
+
+    const rows = await sheet.getRows();
+    const list = rows.map(r => ({
+      token: r.get('토큰ID'),
+      name: r.get('계약자'),
+      birth: r.get('생년월일'),
+      phone: r.get('연락처'),
+      address: r.get('주소'),
+      addressDetail: r.get('상세주소') || '',
+      product: r.get('상품ID'),
+      productCount: Number(r.get('구좌수') || 1),
+      salesAffiliation: r.get('영업자소속') || '',
+      salesName: r.get('영업자명') || '',
+      salesPhone: r.get('영업자연락처') || '',
+      companyName: r.get('기업명') || '',
+      businessNumber: r.get('사업자등록번호') || '',
+      productName: r.get('제품명1') || '',
+      productName2: r.get('제품명2') || '',
+      status: r.get('상태') || '대기',
+      documentId: r.get('문서ID') || '',
+      createdAt: r.get('생성일시')
+    }));
+
+    if (token) {
+      return list.find(item => item.token === token) || null;
+    }
+    return list;
+  } catch (error) {
+    console.error('Failed to get prefill data from Sheet:', error);
+    return token ? null : [];
+  }
+}
+
+export async function savePrefillDataToSheet(config: any): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    let sheet = doc.sheetsByTitle['사전신청목록'];
+    if (!sheet) {
+      sheet = await doc.addSheet({
+        title: '사전신청목록',
+        headerValues: ['토큰ID', '계약자', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
+      });
+    }
+
+    const rowData = {
+      '토큰ID': config.token,
+      '계약자': config.name || '',
+      '생년월일': config.birth || '',
+      '연락처': config.phone || '',
+      '주소': config.address || '',
+      '상세주소': config.addressDetail || '',
+      '상품ID': config.product || '',
+      '구좌수': String(config.productCount || 1),
+      '영업자소속': config.salesAffiliation || '',
+      '영업자명': config.salesName || '',
+      '영업자연락처': config.salesPhone || '',
+      '기업명': config.companyName || '',
+      '사업자등록번호': config.businessNumber || '',
+      '제품명1': config.productName || '',
+      '제품명2': config.productName2 || '',
+      '상태': config.status || '대기',
+      '문서ID': config.documentId || '',
+      '생성일시': config.createdAt || new Date().toISOString()
+    };
+
+    await sheet.addRow(rowData);
+    return true;
+  } catch (error) {
+    console.error('Failed to save prefill data to Sheet:', error);
+    return false;
+  }
+}
+
+export async function updatePrefillStatusInSheet(token: string, status: string, documentId?: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['사전신청목록'];
+    if (!sheet) return false;
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('토큰ID') === token);
+    if (existingRow) {
+      existingRow.set('상태', status);
+      if (documentId) {
+        existingRow.set('문서ID', documentId);
+      }
+      await existingRow.save();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to update prefill status in Sheet:', error);
+    return false;
+  }
+}
+
+export async function deletePrefillDataFromSheet(token: string): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  try {
+    const serviceAccountAuth = new JWT({
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByTitle['사전신청목록'];
+    if (!sheet) return false;
+
+    const rows = await sheet.getRows();
+    const existingRow = rows.find(r => r.get('토큰ID') === token);
+    if (existingRow) {
+      await existingRow.delete();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to delete prefill data from Sheet:', error);
+    return false;
+  }
+}
+
 

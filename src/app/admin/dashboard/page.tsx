@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, 
   Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award, ChevronRightIcon,
-  X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2
+  X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2, UserPlus, Upload, FileSpreadsheet, MessageSquare
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { createPrefillLinkAction, getPrefillListAction, deletePrefillLinkAction } from '@/app/actions';
 
 interface LinkConfig {
   id: string;
@@ -39,7 +40,7 @@ interface ProductConfig {
 const KLJ_DEFAULT_TEMPLATE = `송하인\\t수취인\\t진화번호\\t주소\\t상품명\\t상품옵션\\t수량\\t공급가\n더홈온라이프\\t{고객명}\\t{연락처}\\t{주소}\\t{제품명}\\t\\t1\\t{공급가}`;
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products' | 'orders'>('logs');
+  const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products' | 'orders' | 'prefill'>('logs');
   
   // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -51,6 +52,246 @@ export default function AdminDashboard() {
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [bulkDownloadProgress, setBulkDownloadProgress] = useState({ current: 0, total: 0 });
+
+  // 사전 등록 링크 state
+  const [prefillSubTab, setPrefillSubTab] = useState<'single' | 'excel' | 'list'>('single');
+  const [prefillList, setPrefillList] = useState<any[]>([]);
+  const [isLoadingPrefills, setIsLoadingPrefills] = useState(false);
+  const [isCreatingPrefill, setIsCreatingPrefill] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [copiedMsgToken, setCopiedMsgToken] = useState<string | null>(null);
+
+  // 엑셀 1행 한줄 복사붙여넣기 텍스트
+  const [quickPasteText, setQuickPasteText] = useState('');
+
+  // 단건 사전등록 Form
+  const [prefillForm, setPrefillForm] = useState({
+    name: '',
+    birth: '',
+    phone: '',
+    address: '',
+    addressDetail: '',
+    product: '더좋은프리미엄540',
+    productCount: 1,
+    productName: '',
+    productName2: '',
+    salesAffiliation: '',
+    salesName: '',
+    salesPhone: '',
+    companyName: '',
+    businessNumber: ''
+  });
+
+  // 전화번호 자동 000-0000-0000 하이픈 포맷팅 헬퍼
+  const formatPhone = (val: string) => {
+    if (!val) return '';
+    const digits = val.replace(/[^0-9]/g, '');
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    if (digits.length <= 11) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, digits.length - 4)}-${digits.slice(digits.length - 4)}`;
+    }
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  };
+
+  // 엑셀 1행 한줄 복사붙여넣기 파싱 핸들러 (이름, 생년월일, 연락처, 주소, 상품, 구좌수, 제품명, 영업자 소속, 영업자 성명, 영업자 연락처)
+  const handleQuickPaste = (rawText: string) => {
+    setQuickPasteText(rawText);
+    if (!rawText.trim()) return;
+
+    // 탭(\t) 구분 우선, 없으면 콤마(,) 구분
+    let tokens = rawText.split('\t');
+    if (tokens.length < 2 && rawText.includes(',')) {
+      tokens = rawText.split(',');
+    }
+    tokens = tokens.map(t => t.trim());
+
+    setPrefillForm(prev => ({
+      ...prev,
+      name: tokens[0] || prev.name,
+      birth: tokens[1] || prev.birth,
+      phone: tokens[2] ? formatPhone(tokens[2]) : prev.phone,
+      address: tokens[3] || prev.address,
+      product: tokens[4] || prev.product,
+      productCount: tokens[5] && !isNaN(Number(tokens[5])) ? Number(tokens[5]) : prev.productCount,
+      productName: tokens[6] || prev.productName,
+      salesAffiliation: tokens[7] || prev.salesAffiliation,
+      salesName: tokens[8] || prev.salesName,
+      salesPhone: tokens[9] ? formatPhone(tokens[9]) : prev.salesPhone,
+    }));
+  };
+
+  const fetchPrefillList = async () => {
+    setIsLoadingPrefills(true);
+    try {
+      const res = await getPrefillListAction();
+      if (res.success && res.data) {
+        setPrefillList(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingPrefills(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'links') {
+      fetchPrefillList();
+    }
+  }, [activeTab]);
+
+  const handleCreateSinglePrefill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prefillForm.name || !prefillForm.phone) {
+      alert('고객 성명과 연락처는 필수 입력 항목입니다.');
+      return;
+    }
+
+    setIsCreatingPrefill(true);
+    try {
+      const res = await createPrefillLinkAction(prefillForm);
+      if (res.success) {
+        alert('🎉 고객 사전입력 맞춤 가입신청 링크가 생성되었습니다!');
+        setPrefillForm({
+          name: '',
+          birth: '',
+          phone: '',
+          address: '',
+          addressDetail: '',
+          product: '더좋은프리미엄540',
+          productCount: 1,
+          productName: '',
+          productName2: '',
+          salesAffiliation: '',
+          salesName: '',
+          salesPhone: '',
+          companyName: '',
+          businessNumber: ''
+        });
+        fetchPrefillList();
+        setPrefillSubTab('list');
+      } else {
+        alert(res.message || '링크 생성 실패');
+      }
+    } catch (err: any) {
+      alert('오류 발생: ' + err.message);
+    } finally {
+      setIsCreatingPrefill(false);
+    }
+  };
+
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsName = wb.SheetNames[0];
+        const ws = wb.Sheets[wsName];
+        const data: any[] = XLSX.utils.sheet_to_json(ws);
+
+        if (data.length === 0) {
+          alert('엑셀 파일에 데이터가 없습니다.');
+          return;
+        }
+
+        setIsCreatingPrefill(true);
+        const formattedItems = data.map(item => ({
+          name: item['계약자'] || item['성명'] || item['이름'] || item['name'] || '',
+          birth: String(item['생년월일'] || item['주민번호'] || item['birth'] || ''),
+          phone: formatPhone(String(item['연락처'] || item['전화번호'] || item['휴대폰'] || item['phone'] || '')),
+          address: item['주소'] || item['address'] || '',
+          addressDetail: item['상세주소'] || item['addressDetail'] || '',
+          product: item['상품ID'] || item['상품명'] || item['product'] || '더좋은프리미엄540',
+          productCount: Number(item['구좌수'] || item['productCount'] || 1),
+          productName: item['제품명'] || item['제품명1'] || item['productName'] || '',
+          salesAffiliation: item['영업자소속'] || item['소속'] || item['salesAffiliation'] || '',
+          salesName: item['영업자'] || item['영업자명'] || item['salesName'] || '',
+          salesPhone: formatPhone(String(item['영업자연락처'] || item['salesPhone'] || ''))
+        }));
+
+        const res = await createPrefillLinkAction(formattedItems);
+        if (res.success) {
+          alert(`🎉 엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`);
+          fetchPrefillList();
+          setPrefillSubTab('list');
+        } else {
+          alert(res.message || '대량 링크 생성 중 오류가 발생했습니다.');
+        }
+      } catch (err: any) {
+        alert('엑셀 파싱 중 오류 발생: ' + err.message);
+      } finally {
+        setIsCreatingPrefill(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const downloadExcelSample = () => {
+    const sampleData = [
+      {
+        '계약자': '홍길동',
+        '생년월일': '880101',
+        '연락처': '010-1234-5678',
+        '주소': '서울특별시 강남구 테헤란로 123',
+        '상세주소': '101호',
+        '상품ID': '더좋은프리미엄540',
+        '구좌수': 1,
+        '제품명': 'LG 트롬 세탁기',
+        '영업자소속': '인바운드',
+        '영업자': '김담당',
+        '영업자연락처': '010-9999-8888'
+      },
+      {
+        '계약자': '성춘향',
+        '생년월일': '920505',
+        '연락처': '010-9876-5432',
+        '주소': '경기도 성남시 분당구 정자로 45',
+        '상세주소': '202동 303호',
+        '상품ID': '더좋은라이즈498',
+        '구좌수': 2,
+        '제품명': '삼성 AI 건조기',
+        '영업자소속': '영업1팀',
+        '영업자': '이철수',
+        '영업자연락처': '010-7777-6666'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '고객사전입력양식');
+    XLSX.writeFile(wb, '고객사전입력_대량양식.xlsx');
+  };
+
+  const handleDeletePrefill = async (token: string) => {
+    if (!confirm('해당 사전 신청 링크를 삭제하시겠습니까?')) return;
+    const res = await deletePrefillLinkAction(token);
+    if (res.success) {
+      alert('삭제되었습니다.');
+      fetchPrefillList();
+    } else {
+      alert(res.message);
+    }
+  };
+
+  const copyPrefillUrl = (token: string) => {
+    const url = `${window.location.origin}/apply?token=${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const copyPrefillMessage = (item: any) => {
+    const url = `${window.location.origin}/apply?token=${item.token}`;
+    const msg = `[더좋은라이프] ${item.name || '고객'} 님, 가입신청서 사전 작성이 완료되었습니다.\n아래 링크에서 확인하시고 서명을 작성해 주시면 신청이 완성됩니다.\n▶ 신청 및 서명하기: ${url}`;
+    navigator.clipboard.writeText(msg);
+    setCopiedMsgToken(item.token);
+    setTimeout(() => setCopiedMsgToken(null), 2000);
+  };
 
   const getFormattedFileName = (log: any) => {
     if (!log) return '';
@@ -1259,7 +1500,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       {/* Header */}
@@ -1277,28 +1517,34 @@ export default function AdminDashboard() {
         </div>
         
         {/* Navigation Tabs */}
-                <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl self-start md:self-center">
+        <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl self-start md:self-center">
           <button 
             onClick={() => setActiveTab('logs')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
             <UserCheck size={14} /> 통합 신청 내역
           </button>
           <button 
+            onClick={() => setActiveTab('prefill')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'prefill' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+          >
+            <UserPlus size={14} /> 고객 맞춤 가입신청
+          </button>
+          <button 
             onClick={() => setActiveTab('links')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
             <Link2 size={14} /> 신청 링크 매니저
           </button>
           <button 
             onClick={() => setActiveTab('products')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
             <Settings size={14} /> 상품/약관 매니저
           </button>
           <button 
             onClick={() => setActiveTab('orders')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
           >
             <FileText size={14} /> 수기 발주 및 정산
           </button>
@@ -1342,13 +1588,13 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, y: -15 }}
               className="grid lg:grid-cols-3 gap-8 items-start"
             >
-              {/* 링크 생성 폼 */}
+              {/* 기존 링크 생성 폼 */}
               <div className="lg:col-span-1 bg-white border border-slate-200 p-8 rounded-[2.5rem] space-y-6 shadow-sm">
                 <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
                   <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                     <Plus size={18} />
                   </div>
-                  <h2 className="text-md font-black text-slate-850">신규 가입신청 링크 생성</h2>
+                  <h2 className="text-md font-black text-slate-850">신규 범용 가입신청 링크 생성</h2>
                 </div>
 
                 <form onSubmit={handleCreateLink} className="space-y-5">
@@ -1398,20 +1644,20 @@ export default function AdminDashboard() {
                   <button 
                     type="submit" 
                     disabled={isSubmittingLink}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white rounded-xl font-black text-sm transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white rounded-xl font-black text-sm transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isSubmittingLink ? <Loader2 className="animate-spin" size={16} /> : '가입신청 링크 생성'}
                   </button>
                 </form>
               </div>
 
-              {/* 링크 목록 */}
+              {/* 기존 링크 목록 */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-md font-black flex items-center gap-2 text-slate-900">
                     활성화된 가입 링크 <span className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">{links.length}개</span>
                   </h2>
-                  <button onClick={fetchLinks} className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors shadow-sm">
+                  <button onClick={fetchLinks} className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors shadow-sm cursor-pointer">
                     <RefreshCw size={14} />
                   </button>
                 </div>
@@ -1449,7 +1695,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2 self-end md:self-center">
                             <button 
                               onClick={() => handleToggleActive(link.id, link.isActive)}
-                              className={`px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${
+                              className={`px-3 py-2 rounded-xl text-[10px] font-black border transition-all cursor-pointer ${
                                 link.isActive 
                                   ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm' 
                                   : 'bg-slate-100 border-slate-200 text-slate-400'
@@ -1460,7 +1706,7 @@ export default function AdminDashboard() {
                             
                             <button 
                               onClick={() => handleCopyLink(link.id)}
-                              className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm"
+                              className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                               title="신청 링크 주소 복사"
                             >
                               {copiedId === link.id ? <Check className="text-emerald-500" size={14} /> : <Copy size={14} />}
@@ -1470,7 +1716,7 @@ export default function AdminDashboard() {
                               href={`/apply/${link.id}${link.products.length === 1 ? `?product=${encodeURIComponent(link.products[0])}` : ''}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm"
+                              className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                               title="링크 직접 테스트 접속"
                             >
                               <ExternalLink size={14} />
@@ -1478,7 +1724,7 @@ export default function AdminDashboard() {
 
                             <button 
                               onClick={() => handleDeleteLink(link.id)}
-                              className="p-3 bg-slate-50 border border-slate-200 hover:border-red-400 rounded-xl hover:bg-red-50 text-slate-500 hover:text-red-500 transition-colors flex items-center justify-center shadow-sm"
+                              className="p-3 bg-slate-50 border border-slate-200 hover:border-red-400 rounded-xl hover:bg-red-50 text-slate-500 hover:text-red-500 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                               title="링크 설정 삭제"
                             >
                               <Trash2 size={14} />
@@ -1491,7 +1737,7 @@ export default function AdminDashboard() {
                           <button
                             type="button"
                             onClick={() => toggleProductLinks(link.id)}
-                            className="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                            className="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <span>상품별 다이렉트 가입 링크 목록</span>
                             <ChevronDown size={14} className={`transform transition-transform duration-200 ${expandedLinks[link.id] ? 'rotate-180 text-indigo-500' : ''}`} />
@@ -1511,7 +1757,7 @@ export default function AdminDashboard() {
                                     <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                                       <button
                                         onClick={() => handleCopyProductLink(link.id, p)}
-                                        className="py-2 px-3 bg-white border border-slate-200 rounded-xl hover:border-slate-350 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm text-[10px] font-black"
+                                        className="py-2 px-3 bg-white border border-slate-200 rounded-xl hover:border-slate-350 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm text-[10px] font-black cursor-pointer"
                                         title={`${p} 신청 링크 주소 복사`}
                                       >
                                         {copiedId === key ? (
@@ -1530,7 +1776,7 @@ export default function AdminDashboard() {
                                         href={`/apply/${link.id}?product=${encodeURIComponent(p)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-slate-350 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center shadow-sm"
+                                        className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-slate-350 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center shadow-sm cursor-pointer"
                                         title={`${p} 링크 테스트`}
                                       >
                                         <ExternalLink size={12} />
@@ -1547,6 +1793,353 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* 신규: 고객 맞춤 가입신청 탭 (prefill) */}
+          {activeTab === 'prefill' && (
+            <motion.div
+              key="tab-prefill"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="space-y-8"
+            >
+              {/* 상단 서브 네비게이션 */}
+              <div className="bg-white border border-slate-200 p-2 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPrefillSubTab('single')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${prefillSubTab === 'single' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    <UserPlus size={15} /> 고객 정보 개별 사전 입력 (맞춤 링크)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrefillSubTab('excel')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${prefillSubTab === 'excel' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    <FileSpreadsheet size={15} /> 엑셀 대량 업로드 (일괄 맞춤링크)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrefillSubTab('list')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${prefillSubTab === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    <Link2 size={15} /> 생성된 맞춤링크 현황 ({prefillList.length}건)
+                  </button>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={fetchPrefillList}
+                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <RefreshCw size={13} className={isLoadingPrefills ? 'animate-spin' : ''} /> 새로고침
+                </button>
+              </div>
+
+              {/* 1. 단건 사전입력 생성 UI */}
+              {prefillSubTab === 'single' && (
+                <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
+                      <UserPlus size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-black text-slate-900">고객 사전정보 입력 ➔ 맞춤 가입신청 링크 생성</h2>
+                      <p className="text-xs text-slate-500 font-bold">계약자명, 생년월일, 주소, 연락처 등을 미리 입력하여 고객에게 전송할 수 있는 맞춤 링크를 생성합니다.</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleCreateSinglePrefill} className="space-y-6">
+                    {/* 엑셀 한 줄 복사-붙여넣기 빠른 입력 상자 */}
+                    <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                          <span>📋 엑셀 1행 한 줄 복사-붙여넣기 (빠른 자동입력)</span>
+                        </label>
+                        <span className="text-[11px] text-indigo-600 font-bold">
+                          순서: 이름 ➔ 생년월일 ➔ 연락처 ➔ 주소 ➔ 상품 ➔ 구좌수 ➔ 제품명 ➔ 영업자소속 ➔ 영업자성명 ➔ 영업자연락처
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="엑셀에서 한 행을 복사(Ctrl+C)하여 여기에 붙여넣기(Ctrl+V) 하세요."
+                        value={quickPasteText}
+                        onChange={e => handleQuickPaste(e.target.value)}
+                        className="w-full bg-white border border-indigo-300 focus:border-indigo-600 outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 shadow-inner"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-5">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">계약자 성명 <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="예: 홍길동"
+                          value={prefillForm.name}
+                          onChange={e => setPrefillForm(p => ({ ...p, name: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">생년월일 (6자리 또는 8자리)</label>
+                        <input
+                          type="text"
+                          placeholder="예: 880101"
+                          value={prefillForm.birth}
+                          onChange={e => setPrefillForm(p => ({ ...p, birth: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">연락처 (휴대폰) <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="예: 010-1234-5678"
+                          value={prefillForm.phone}
+                          onChange={e => setPrefillForm(p => ({ ...p, phone: formatPhone(e.target.value) }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">기본 주소</label>
+                        <input
+                          type="text"
+                          placeholder="예: 서울특별시 강남구 테헤란로 123"
+                          value={prefillForm.address}
+                          onChange={e => setPrefillForm(p => ({ ...p, address: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">상세 주소</label>
+                        <input
+                          type="text"
+                          placeholder="예: 101호"
+                          value={prefillForm.addressDetail}
+                          onChange={e => setPrefillForm(p => ({ ...p, addressDetail: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-5">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">신청 상품 (직접 입력 가능)</label>
+                        <input
+                          type="text"
+                          list="productListOptions"
+                          placeholder="예: 더좋은프리미엄540"
+                          value={prefillForm.product}
+                          onChange={e => setPrefillForm(p => ({ ...p, product: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                        <datalist id="productListOptions">
+                          {products.map(prod => (
+                            <option key={prod.id} value={prod.name || prod.id} />
+                          ))}
+                        </datalist>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">구좌 수</label>
+                        <input
+                          type="number"
+                          min={1}
+                          placeholder="예: 1"
+                          value={prefillForm.productCount}
+                          onChange={e => setPrefillForm(p => ({ ...p, productCount: Number(e.target.value) || 1 }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">결합 제품명 (선택)</label>
+                        <input
+                          type="text"
+                          placeholder="예: LG 통돌이 세탁기"
+                          value={prefillForm.productName}
+                          onChange={e => setPrefillForm(p => ({ ...p, productName: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-5 border-t border-slate-100 pt-5">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">영업자 소속</label>
+                        <input
+                          type="text"
+                          placeholder="예: 인바운드 컴퍼니"
+                          value={prefillForm.salesAffiliation}
+                          onChange={e => setPrefillForm(p => ({ ...p, salesAffiliation: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">영업자 성명</label>
+                        <input
+                          type="text"
+                          placeholder="예: 김정미"
+                          value={prefillForm.salesName}
+                          onChange={e => setPrefillForm(p => ({ ...p, salesName: e.target.value }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-700 block">영업자 연락처</label>
+                        <input
+                          type="text"
+                          placeholder="예: 010-3035-2537"
+                          value={prefillForm.salesPhone}
+                          onChange={e => setPrefillForm(p => ({ ...p, salesPhone: formatPhone(e.target.value) }))}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isCreatingPrefill}
+                      className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
+                    >
+                      {isCreatingPrefill ? <Loader2 className="animate-spin" size={18} /> : '🎉 고객 맞춤 가입신청 링크 생성하기'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* 2. 엑셀 대량 업로드 UI */}
+              {prefillSubTab === 'excel' && (
+                <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 font-bold">
+                        <FileSpreadsheet size={20} />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-black text-slate-900">엑셀 대량 업로드 ➔ 일괄 맞춤 링크 생성</h2>
+                        <p className="text-xs text-slate-500 font-bold">여러 명의 고객 정보를 엑셀 양식에 입력 후 업로드하여 한 번에 맞춤 링크를 만듭니다.</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={downloadExcelSample}
+                      className="flex items-center gap-1.5 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-black transition-colors cursor-pointer"
+                    >
+                      <Download size={14} /> 샘플 엑셀 양식 다운로드
+                    </button>
+                  </div>
+
+                  <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/50 p-12 rounded-[2rem] text-center space-y-4 transition-colors">
+                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+                      <Upload size={28} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-800">엑셀(.xlsx, .csv) 파일을 클릭하여 선택하세요</p>
+                      <p className="text-xs text-slate-400 font-bold mt-1">컬럼명: 계약자, 생년월일, 연락처, 주소, 상세주소, 상품ID, 구좌수, 제품명 등</p>
+                    </div>
+                    <label className="inline-block py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md cursor-pointer transition-all">
+                      {isCreatingPrefill ? '업로드 데이터 처리 중...' : '엑셀 파일 선택하기'}
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls, .csv"
+                        onChange={handleExcelUpload}
+                        disabled={isCreatingPrefill}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. 생성된 맞춤링크 현황 목록 UI */}
+              {prefillSubTab === 'list' && (
+                <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      생성된 고객 맞춤 가입신청 링크 현황
+                      <span className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 font-bold">
+                        총 {prefillList.length}건
+                      </span>
+                    </h2>
+                  </div>
+
+                  {isLoadingPrefills ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl" />)}
+                    </div>
+                  ) : prefillList.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 font-bold text-sm">
+                      생성된 사전 입력 맞춤 링크가 없습니다. [개별 사전 입력] 또는 [엑셀 대량 업로드]를 통해 링크를 생성해 보세요.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {prefillList.map((item: any) => (
+                        <div key={item.token} className="p-5 border border-slate-200 rounded-2xl hover:border-indigo-300 transition-all bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${item.status === '작성완료' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                {item.status === '작성완료' ? '✅ 작성 완료' : '⏳ 고객 미작성 (대기)'}
+                              </span>
+                              <span className="text-sm font-black text-slate-900">{item.name || '미지정'} ({item.phone || '-'})</span>
+                              <span className="text-xs font-bold text-slate-400">생년월일: {item.birth || '-'}</span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-bold">
+                              상품: <span className="text-indigo-600">{item.product} ({item.productCount || 1}구좌)</span> | 주소: {item.address} {item.addressDetail}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-medium">
+                              생성일: {item.createdAt} | 토큰ID: {item.token} {item.documentId && `| eFormsign Doc: ${item.documentId}`}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => copyPrefillUrl(item.token)}
+                              className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              {copiedToken === item.token ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                              {copiedToken === item.token ? '복사완료' : '링크 복사'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => copyPrefillMessage(item)}
+                              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              {copiedMsgToken === item.token ? <Check size={14} className="text-green-600" /> : <MessageSquare size={14} />}
+                              {copiedMsgToken === item.token ? '문구복사완료' : '문자/알림톡 문구 복사'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePrefill(item.token)}
+                              className="p-2 text-slate-400 hover:text-red-500 border border-slate-200 bg-white hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 

@@ -294,16 +294,17 @@ interface RegistrationFormProps {
   linkId?: string;
   initialProduct?: string;
   initialSkipHealthcare?: boolean;
+  initialPrefillData?: any;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct, initialSkipHealthcare }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct, initialSkipHealthcare, initialPrefillData }) => {
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드'];
   const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
 
   const isValidInitialProduct = initialProduct && productsToDisplay.includes(initialProduct);
-  const defaultProduct = isValidInitialProduct ? initialProduct : (productsToDisplay[0] || '더좋은헬스케어580');
+  const defaultProduct = initialPrefillData?.product || (isValidInitialProduct ? initialProduct : (productsToDisplay[0] || '더좋은헬스케어580'));
 
-  const [currentStep, setCurrentStep] = useState(isValidInitialProduct ? 1 : 0);
+  const [currentStep, setCurrentStep] = useState(initialPrefillData ? 1 : (isValidInitialProduct ? 1 : 0));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState('');
   const [createdDocumentId, setCreatedDocumentId] = useState<string | null>(null);
@@ -557,6 +558,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   });
 
   const [formData, setFormData] = useState(getInitialFormData());
+  const [prefillBannerVisible, setPrefillBannerVisible] = useState(false);
+
+  useEffect(() => {
+    if (initialPrefillData) {
+      setFormData(prev => ({
+        ...prev,
+        name: initialPrefillData.name || prev.name,
+        phone: initialPrefillData.phone || prev.phone,
+        residentId: initialPrefillData.birth || prev.residentId,
+        address: initialPrefillData.address || prev.address,
+        addressDetail: initialPrefillData.addressDetail || prev.addressDetail,
+        product: initialPrefillData.product || prev.product,
+        productCount: initialPrefillData.productCount || prev.productCount,
+        productName: initialPrefillData.productName || prev.productName,
+        productName2: initialPrefillData.productName2 || prev.productName2,
+        salesAffiliation: initialPrefillData.salesAffiliation || prev.salesAffiliation,
+        salesName: initialPrefillData.salesName || prev.salesName,
+        salesPhone: initialPrefillData.salesPhone || prev.salesPhone,
+        companyName: initialPrefillData.companyName || prev.companyName,
+        businessNumber: initialPrefillData.businessNumber || prev.businessNumber,
+        prefillToken: initialPrefillData.token
+      }));
+      setPrefillBannerVisible(true);
+      setCurrentStep(1);
+    }
+  }, [initialPrefillData]);
   const [hasCheckedDraft, setHasCheckedDraft] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [draftDataToRestore, setDraftDataToRestore] = useState<any>(null);
@@ -1108,6 +1135,31 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             {theme === 'light' ? <Moon size={20} className="text-zinc-600" /> : <Sun size={20} className="text-yellow-400" />}
           </button>
         </div>
+
+        {prefillBannerVisible && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl p-4 w-full shadow-lg flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <p className="text-xs font-black">사전 정보 작성 완료 링크</p>
+                <p className="text-[11px] opacity-95 font-bold">기본 회원정보가 이미 채워져 있습니다. 미입력 항목만 작성 후 제출해 주세요!</p>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              onClick={() => setPrefillBannerVisible(false)}
+              className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer"
+            >
+              닫기
+            </button>
+          </motion.div>
+        )}
 
         {currentStep > 0 && currentStep < 8 && (
           <motion.div 

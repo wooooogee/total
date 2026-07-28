@@ -1,8 +1,21 @@
 'use server';
 
 import { createEformsignDocument } from '@/lib/eformsign';
-import { addRegistrationToSheet, getProductConfigsFromSheet } from '@/lib/googleSheets';
-import { getProductConfigs } from '@/lib/db';
+import { 
+  addRegistrationToSheet, 
+  getProductConfigsFromSheet, 
+  savePrefillDataToSheet, 
+  getPrefillDataFromSheet, 
+  updatePrefillStatusInSheet, 
+  deletePrefillDataFromSheet 
+} from '@/lib/googleSheets';
+import { 
+  getProductConfigs, 
+  savePrefillConfig, 
+  getPrefillConfigs, 
+  getPrefillConfigByToken, 
+  deletePrefillConfig 
+} from '@/lib/db';
 
 function formatBirth8(birth: string) {
   if (!birth || birth.length !== 6) return birth;
@@ -31,6 +44,104 @@ function getKoreanDateTime() {
   return `${dateObj.year}-${dateObj.month}-${dateObj.day} ${dateObj.hour}:${dateObj.minute}:${dateObj.second}`;
 }
 
+export async function createPrefillLinkAction(inputData: any) {
+  try {
+    const items = Array.isArray(inputData) ? inputData : [inputData];
+    const createdList: any[] = [];
+
+    for (const item of items) {
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const token = `p_${Date.now().toString().slice(-6)}_${randomStr}`;
+
+      const config = {
+        token,
+        name: item.name || '',
+        birth: item.birth || '',
+        phone: item.phone || '',
+        address: item.address || '',
+        addressDetail: item.addressDetail || '',
+        product: item.product || '더좋은프리미엄540',
+        productCount: Number(item.productCount || 1),
+        productName: item.productName || '',
+        productName2: item.productName2 || '',
+        salesAffiliation: item.salesAffiliation || '',
+        salesName: item.salesName || '',
+        salesPhone: item.salesPhone || '',
+        companyName: item.companyName || '',
+        businessNumber: item.businessNumber || '',
+        status: '대기',
+        createdAt: getKoreanDateTime()
+      };
+
+      // 1. Local DB / memory 저장
+      savePrefillConfig(config as any);
+
+      // 2. Google Sheets 저장
+      try {
+        await savePrefillDataToSheet(config);
+      } catch (sheetErr) {
+        console.error('Failed to save prefill to Sheet:', sheetErr);
+      }
+
+      createdList.push(config);
+    }
+
+    return {
+      success: true,
+      data: createdList,
+      message: `${createdList.length}건의 사전신청 맞춤 링크가 성공적으로 생성되었습니다.`
+    };
+  } catch (error: any) {
+    console.error('createPrefillLinkAction error:', error);
+    return { success: false, message: error.message || '링크 생성 중 오류가 발생했습니다.' };
+  }
+}
+
+export async function getPrefillDataAction(token: string) {
+  try {
+    // 1. Google Sheets에서 조회 시도
+    let data = await getPrefillDataFromSheet(token);
+    if (!data) {
+      // 2. Local DB 폴백
+      data = getPrefillConfigByToken(token);
+    }
+    if (!data) {
+      return { success: false, message: '유효하지 않은 신청 링크이거나 삭제된 링크입니다.' };
+    }
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('getPrefillDataAction error:', error);
+    // Local DB 폴백
+    const data = getPrefillConfigByToken(token);
+    if (data) return { success: true, data };
+    return { success: false, message: '사전 입력 데이터를 불러오는 중 오류가 발생했습니다.' };
+  }
+}
+
+export async function getPrefillListAction() {
+  try {
+    let list = await getPrefillDataFromSheet();
+    if (!list || list.length === 0) {
+      list = getPrefillConfigs();
+    }
+    return { success: true, data: list };
+  } catch (error: any) {
+    console.error('getPrefillListAction error:', error);
+    const list = getPrefillConfigs();
+    return { success: true, data: list };
+  }
+}
+
+export async function deletePrefillLinkAction(token: string) {
+  try {
+    deletePrefillConfig(token);
+    await deletePrefillDataFromSheet(token).catch(() => {});
+    return { success: true, message: '사전 신청 링크가 삭제되었습니다.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || '삭제 중 오류가 발생했습니다.' };
+  }
+}
+
 export async function registerAction(data: any) {
   try {
     console.log('--- Register Action Started ---');
@@ -42,6 +153,24 @@ export async function registerAction(data: any) {
         success: false,
         message: '이폼사인 전송 중 오류가 발생했습니다: ' + eformResult.message,
       };
+    }
+
+    // 사전 등록 토큰이 있는 경우 사전 신청 목록 상태 업데이트
+    if (data.prefillToken) {
+      try {
+        const token = data.prefillToken;
+        // Local DB 업데이트
+        const prefill = getPrefillConfigByToken(token);
+        if (prefill) {
+          prefill.status = '작성완료';
+          prefill.documentId = eformResult.document_id;
+          savePrefillConfig(prefill);
+        }
+        // Google Sheets 업데이트
+        await updatePrefillStatusInSheet(token, '작성완료', eformResult.document_id);
+      } catch (err) {
+        console.error('Failed to update prefill status:', err);
+      }
     }
 
     // Google Sheets에 데이터 기록
@@ -60,7 +189,7 @@ export async function registerAction(data: any) {
 
       let sheetData: any = {
         '신청일시': getKoreanDateTime(),
-        '유입링크': data.linkId || '직접접속',
+        '유입링크': data.prefillToken ? `사전등록(${data.prefillToken})` : (data.linkId || '직접접속'),
         '상품명': productConfig ? productConfig.name : data.product,
         '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
         '계약자': data.name,
@@ -78,15 +207,12 @@ export async function registerAction(data: any) {
       };
 
       if (data.product === '좋은건강크루즈') {
-        // 크루즈 상품인 경우: 1회차 및 2~101회차 분리 저장
-        // 1) 기존 컬럼(결제정보, 카드사 등)은 크루즈에서는 1,2차로 분리되어 있으므로 중복 방지를 위해 비워둠 (결제일은 유지)
         sheetData['결제정보(카드/cms)'] = '';
         sheetData['카드사/은행명'] = '';
         sheetData['카드번호/계좌번호'] = '';
         sheetData['유효기간'] = '';
         sheetData['결제일'] = data.paymentDate;
 
-        // 2) 크루즈 상세 컬럼 추가 기록
         sheetData['1회차 납부방법'] = data.paymentMethod1 === 'card' ? '카드결제' : '계좌이체';
         sheetData['1회차 카드사/은행명'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardCompany : '국민은행';
         sheetData['1회차 계좌/카드번호'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardNumber : '476101-01-413681';
@@ -97,7 +223,6 @@ export async function registerAction(data: any) {
         sheetData['2~101회차 계좌/카드번호'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardNumber : data.paymentInfo2.accountNumber;
         sheetData['2~101회차 유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
       } else {
-        // 일반 상품인 경우 기존 매핑 유지
         sheetData['결제정보(카드/cms)'] = data.paymentMethod === 'card' ? '카드' : 'CMS';
         sheetData['카드사/은행명'] = data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName;
         sheetData['카드번호/계좌번호'] = data.paymentMethod === 'card' ? data.paymentInfo.cardNumber : data.paymentInfo.accountNumber;
@@ -105,7 +230,6 @@ export async function registerAction(data: any) {
         sheetData['결제일'] = data.paymentDate;
       }
 
-      // 헬스케어 대상자 정보 추가
       if (data.healthcareTargets && Array.isArray(data.healthcareTargets)) {
         data.healthcareTargets.forEach((target: any, index: number) => {
           if (target.name && target.birth) {
