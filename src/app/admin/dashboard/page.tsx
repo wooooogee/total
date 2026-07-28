@@ -65,8 +65,19 @@ export default function AdminDashboard() {
     }
     const productName = log['상품명'] || '';
     const contractorName = log['계약자'] || log['성명'] || '';
-    
-    const parts = [dateStr, productName, contractorName].filter(Boolean);
+
+    // 구좌수 파싱 (예: 2구좌)
+    let accountStr = log['구좌수'] || log['수량'] || '';
+    if (accountStr) {
+      accountStr = String(accountStr).trim();
+      if (!accountStr.includes('구좌') && !isNaN(Number(accountStr))) {
+        accountStr = `${accountStr}구좌`;
+      }
+    } else {
+      accountStr = '1구좌';
+    }
+
+    const parts = [dateStr, productName, contractorName, accountStr].filter(Boolean);
     return parts.length > 0 ? parts.join('_') : `contract_${log['document_id'] || ''}`;
   };
 
