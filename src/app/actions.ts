@@ -5,6 +5,7 @@ import {
   addRegistrationToSheet, 
   getProductConfigsFromSheet, 
   savePrefillDataToSheet, 
+  savePrefillBatchToSheet,
   getPrefillDataFromSheet, 
   updatePrefillStatusInSheet, 
   deletePrefillDataFromSheet 
@@ -44,10 +45,14 @@ function getKoreanDateTime() {
   return `${dateObj.year}-${dateObj.month}-${dateObj.day} ${dateObj.hour}:${dateObj.minute}:${dateObj.second}`;
 }
 
-export async function createPrefillLinkAction(inputData: any) {
+export async function createPrefillLinkAction(inputData: any, customBatchName?: string) {
   try {
     const items = Array.isArray(inputData) ? inputData : [inputData];
     const createdList: any[] = [];
+
+    const now = getKoreanDateTime();
+    const batchId = `b_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const batchName = customBatchName || `${now.slice(0, 16)} (${items.length}건 묶음)`;
 
     for (const item of items) {
       const randomStr = Math.random().toString(36).substring(2, 8);
@@ -55,6 +60,8 @@ export async function createPrefillLinkAction(inputData: any) {
 
       const config = {
         token,
+        batchId,
+        batchName,
         name: item.name || '',
         birth: item.birth || '',
         phone: item.phone || '',
@@ -70,25 +77,24 @@ export async function createPrefillLinkAction(inputData: any) {
         companyName: item.companyName || '',
         businessNumber: item.businessNumber || '',
         status: '대기',
-        createdAt: getKoreanDateTime()
+        createdAt: now
       };
 
       // 1. Local DB / memory 저장
       savePrefillConfig(config as any);
-
-      // 2. Google Sheets 저장
-      try {
-        await savePrefillDataToSheet(config);
-      } catch (sheetErr) {
-        console.error('Failed to save prefill to Sheet:', sheetErr);
-      }
-
       createdList.push(config);
     }
+
+    // 2. Google Sheets 일괄 저장 (Batch - 1회 API 호출로 초고속 처리)
+    savePrefillBatchToSheet(createdList).catch(sheetErr => {
+      console.error('Failed to batch save prefill to Sheet:', sheetErr);
+    });
 
     return {
       success: true,
       data: createdList,
+      batchId,
+      batchName,
       message: `${createdList.length}건의 사전신청 맞춤 링크가 성공적으로 생성되었습니다.`
     };
   } catch (error: any) {

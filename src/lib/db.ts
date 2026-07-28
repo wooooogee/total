@@ -29,6 +29,8 @@ export interface ProductConfig {
 
 export interface PrefillConfig {
   token: string;             // 고유 토큰 (예: 'p_1689239812')
+  batchId?: string;          // 생성 묶음 그룹 ID
+  batchName?: string;        // 생성 묶음 명칭
   name: string;              // 계약자 성명
   birth: string;             // 생년월일 (6자리 또는 8자리)
   phone: string;             // 연락처

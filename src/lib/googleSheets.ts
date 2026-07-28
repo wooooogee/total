@@ -1137,7 +1137,11 @@ export async function getPrefillDataFromSheet(token?: string): Promise<any> {
 }
 
 export async function savePrefillDataToSheet(config: any): Promise<boolean> {
-  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
+  return savePrefillBatchToSheet([config]);
+}
+
+export async function savePrefillBatchToSheet(configs: any[]): Promise<boolean> {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !configs || configs.length === 0) return false;
   try {
     const serviceAccountAuth = new JWT({
       email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -1155,7 +1159,7 @@ export async function savePrefillDataToSheet(config: any): Promise<boolean> {
       });
     }
 
-    const rowData = {
+    const rowsData = configs.map(config => ({
       '토큰ID': config.token,
       '계약자': config.name || '',
       '생년월일': config.birth || '',
@@ -1174,12 +1178,12 @@ export async function savePrefillDataToSheet(config: any): Promise<boolean> {
       '상태': config.status || '대기',
       '문서ID': config.documentId || '',
       '생성일시': config.createdAt || new Date().toISOString()
-    };
+    }));
 
-    await sheet.addRow(rowData);
+    await sheet.addRows(rowsData);
     return true;
   } catch (error) {
-    console.error('Failed to save prefill data to Sheet:', error);
+    console.error('Failed to save prefill batch data to Sheet:', error);
     return false;
   }
 }

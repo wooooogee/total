@@ -61,8 +61,34 @@ export default function AdminDashboard() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [copiedMsgToken, setCopiedMsgToken] = useState<string | null>(null);
 
+  // 묶음 구분 및 필터 state
+  const [selectedBatchFilter, setSelectedBatchFilter] = useState<string>('all');
+  const [showSingleFormDetail, setShowSingleFormDetail] = useState<boolean>(false);
+
   // 엑셀 1행 한줄 복사붙여넣기 텍스트
   const [quickPasteText, setQuickPasteText] = useState('');
+
+  // 사전등록 묶음(Batch) 그룹화
+  const batchGroups = useMemo(() => {
+    const groupMap: { [key: string]: { batchId: string; batchName: string; createdAt: string; items: any[] } } = {};
+    
+    prefillList.forEach(item => {
+      const bId = item.batchId || item.createdAt?.slice(0, 16) || 'single_batch';
+      const bName = item.batchName || (bId === 'single_batch' ? '개별 직접 등록' : `${item.createdAt?.slice(0, 16)} 등록 묶음`);
+      
+      if (!groupMap[bId]) {
+        groupMap[bId] = {
+          batchId: bId,
+          batchName: bName,
+          createdAt: item.createdAt || '',
+          items: []
+        };
+      }
+      groupMap[bId].items.push(item);
+    });
+
+    return Object.values(groupMap);
+  }, [prefillList]);
 
   // 단건 사전등록 Form
   const [prefillForm, setPrefillForm] = useState({
@@ -94,7 +120,7 @@ export default function AdminDashboard() {
     return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
   };
 
-  // 엑셀 1행 한줄 복사붙여넣기 파싱 핸들러 (이름, 생년월일, 연락처, 주소, 상품, 구좌수, 제품명, 영업자 소속, 영업자 성명, 영업자 연락처)
+  // 엑셀 1행 한줄 복사붙여넣기 파싱 핸들러 (가입일자, 이름, 생년월일, 연락처, 주소, 상품, 구좌수, 제품명, 영업자소속, 영업자성명, 영업자연락처)
   const handleQuickPaste = (rawText: string) => {
     setQuickPasteText(rawText);
     if (!rawText.trim()) return;
@@ -106,18 +132,24 @@ export default function AdminDashboard() {
     }
     tokens = tokens.map(t => t.trim());
 
+    // 첫번째 항목이 날짜 형식이거나 '가입일자' 헤더인 경우 offset 처리
+    let idxOffset = 0;
+    if (tokens[0] && (tokens[0].includes('-') || tokens[0].includes('.') || tokens[0] === '가입일자')) {
+      idxOffset = 1;
+    }
+
     setPrefillForm(prev => ({
       ...prev,
-      name: tokens[0] || prev.name,
-      birth: tokens[1] || prev.birth,
-      phone: tokens[2] ? formatPhone(tokens[2]) : prev.phone,
-      address: tokens[3] || prev.address,
-      product: tokens[4] || prev.product,
-      productCount: tokens[5] && !isNaN(Number(tokens[5])) ? Number(tokens[5]) : prev.productCount,
-      productName: tokens[6] || prev.productName,
-      salesAffiliation: tokens[7] || prev.salesAffiliation,
-      salesName: tokens[8] || prev.salesName,
-      salesPhone: tokens[9] ? formatPhone(tokens[9]) : prev.salesPhone,
+      name: tokens[0 + idxOffset] || prev.name,
+      birth: tokens[1 + idxOffset] || prev.birth,
+      phone: tokens[2 + idxOffset] ? formatPhone(tokens[2 + idxOffset]) : prev.phone,
+      address: tokens[3 + idxOffset] || prev.address,
+      product: tokens[4 + idxOffset] || prev.product,
+      productCount: tokens[5 + idxOffset] && !isNaN(Number(tokens[5 + idxOffset])) ? Number(tokens[5 + idxOffset]) : prev.productCount,
+      productName: tokens[6 + idxOffset] || prev.productName,
+      salesAffiliation: tokens[7 + idxOffset] || prev.salesAffiliation,
+      salesName: tokens[8 + idxOffset] || prev.salesName,
+      salesPhone: tokens[9 + idxOffset] ? formatPhone(tokens[9 + idxOffset]) : prev.salesPhone,
     }));
   };
 
@@ -201,20 +233,21 @@ export default function AdminDashboard() {
 
         setIsCreatingPrefill(true);
         const formattedItems = data.map(item => ({
-          name: item['계약자'] || item['성명'] || item['이름'] || item['name'] || '',
+          name: item['이름'] || item['계약자'] || item['성명'] || item['계약자명'] || item['name'] || '',
           birth: String(item['생년월일'] || item['주민번호'] || item['birth'] || ''),
-          phone: formatPhone(String(item['연락처'] || item['전화번호'] || item['휴대폰'] || item['phone'] || '')),
+          phone: formatPhone(String(item['연락처'] || item['계약자연락처'] || item['전화번호'] || item['휴대폰'] || item['phone'] || '')),
           address: item['주소'] || item['address'] || '',
           addressDetail: item['상세주소'] || item['addressDetail'] || '',
-          product: item['상품ID'] || item['상품명'] || item['product'] || '더좋은프리미엄540',
+          product: item['상품'] || item['상품ID'] || item['상품명'] || item['product'] || '더좋은프리미엄540',
           productCount: Number(item['구좌수'] || item['productCount'] || 1),
           productName: item['제품명'] || item['제품명1'] || item['productName'] || '',
           salesAffiliation: item['영업자소속'] || item['소속'] || item['salesAffiliation'] || '',
-          salesName: item['영업자'] || item['영업자명'] || item['salesName'] || '',
+          salesName: item['영업자성명'] || item['영업자'] || item['영업자명'] || item['salesName'] || '',
           salesPhone: formatPhone(String(item['영업자연락처'] || item['salesPhone'] || ''))
         }));
 
-        const res = await createPrefillLinkAction(formattedItems);
+        const batchName = `${file.name.replace(/\.[^/.]+$/, '')} (${formattedItems.length}건 엑셀업로드)`;
+        const res = await createPrefillLinkAction(formattedItems, batchName);
         if (res.success) {
           alert(`🎉 엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`);
           fetchPrefillList();
@@ -234,30 +267,30 @@ export default function AdminDashboard() {
   const downloadExcelSample = () => {
     const sampleData = [
       {
-        '계약자': '홍길동',
-        '생년월일': '880101',
-        '연락처': '010-1234-5678',
-        '주소': '서울특별시 강남구 테헤란로 123',
-        '상세주소': '101호',
-        '상품ID': '더좋은프리미엄540',
-        '구좌수': 1,
-        '제품명': 'LG 트롬 세탁기',
-        '영업자소속': '인바운드',
-        '영업자': '김담당',
-        '영업자연락처': '010-9999-8888'
+        '가입일자': '2026-07-28',
+        '이름': '강기인',
+        '생년월일': '640420',
+        '연락처': '010-9816-0780',
+        '주소': '서울 강서구 화곡로63가길 92 (등촌동, 등촌9단지아파트)',
+        '상품': '더좋은프리미엄540플러스',
+        '구좌수': 2,
+        '제품명': '2구좌_[삼성] Bespoke AI 냉장고 4도어',
+        '영업자소속': '언바운드컴퍼니',
+        '영업자성명': '김수진',
+        '영업자연락처': '010-3920-3914'
       },
       {
-        '계약자': '성춘향',
-        '생년월일': '920505',
-        '연락처': '010-9876-5432',
-        '주소': '경기도 성남시 분당구 정자로 45',
-        '상세주소': '202동 303호',
-        '상품ID': '더좋은라이즈498',
-        '구좌수': 2,
-        '제품명': '삼성 AI 건조기',
-        '영업자소속': '영업1팀',
-        '영업자': '이철수',
-        '영업자연락처': '010-7777-6666'
+        '가입일자': '2026-07-28',
+        '이름': '김미진',
+        '생년월일': '920519',
+        '연락처': '010-8545-7280',
+        '주소': '경남 창원시 의창구 북면 신촌본포로 12-13',
+        '상품': '더좋은프리미엄540',
+        '구좌수': 1,
+        '제품명': '1구좌_삼성 냉장고 410L 리파인드 이노릭스',
+        '영업자소속': '언바운드컴퍼니',
+        '영업자성명': '김순희',
+        '영업자연락처': '010-6894-1161'
       }
     ];
 
@@ -265,6 +298,102 @@ export default function AdminDashboard() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '고객사전입력양식');
     XLSX.writeFile(wb, '고객사전입력_대량양식.xlsx');
+  };
+
+  // 텍스트 다중행 복사붙여넣기 파싱 및 일괄 생성 핸들러
+  const handleBulkTextCreate = async () => {
+    if (!quickPasteText.trim()) {
+      alert('복사한 엑셀 텍스트를 입력해 주세요.');
+      return;
+    }
+
+    const lines = quickPasteText.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length === 0) {
+      alert('유효한 데이터 줄이 없습니다.');
+      return;
+    }
+
+    const formattedItems: any[] = [];
+    for (const line of lines) {
+      let tokens = line.split('\t');
+      if (tokens.length < 2 && line.includes(',')) {
+        tokens = line.split(',');
+      }
+      tokens = tokens.map(t => t.trim());
+
+      // 헤더행 건너뛰기
+      if (tokens[0] === '가입일자' || tokens[0] === '이름' || tokens[0] === '계약자') continue;
+
+      let idxOffset = 0;
+      if (tokens[0] && (tokens[0].includes('-') || tokens[0].includes('.'))) {
+        idxOffset = 1;
+      }
+
+      const name = tokens[0 + idxOffset] || '';
+      const birth = tokens[1 + idxOffset] || '';
+      const phone = formatPhone(tokens[2 + idxOffset] || '');
+      if (!name || !phone) continue;
+
+      formattedItems.push({
+        name,
+        birth,
+        phone,
+        address: tokens[3 + idxOffset] || '',
+        addressDetail: '',
+        product: tokens[4 + idxOffset] || '더좋은프리미엄540',
+        productCount: tokens[5 + idxOffset] && !isNaN(Number(tokens[5 + idxOffset])) ? Number(tokens[5 + idxOffset]) : 1,
+        productName: tokens[6 + idxOffset] || '',
+        salesAffiliation: tokens[7 + idxOffset] || '',
+        salesName: tokens[8 + idxOffset] || '',
+        salesPhone: tokens[9 + idxOffset] ? formatPhone(tokens[9 + idxOffset]) : ''
+      });
+    }
+
+    if (formattedItems.length === 0) {
+      alert('파싱 가능한 고객 정보가 없습니다. 엑셀에서 데이터를 복사했는지 확인해 주세요.');
+      return;
+    }
+
+    setIsCreatingPrefill(true);
+    try {
+      const batchName = `텍스트 복사 등록 (${formattedItems.length}건 묶음)`;
+      const res = await createPrefillLinkAction(formattedItems, batchName);
+      if (res.success) {
+        alert(`🎉 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 일괄 생성되었습니다!`);
+        setQuickPasteText('');
+        fetchPrefillList();
+        setPrefillSubTab('list');
+      } else {
+        alert(res.message || '링크 생성 중 오류가 발생했습니다.');
+      }
+    } catch (err: any) {
+      alert('오류 발생: ' + err.message);
+    } finally {
+      setIsCreatingPrefill(false);
+    }
+  };
+
+  const downloadPrefillListExcel = (targetList?: any[], customFileName?: string) => {
+    const listToExport = targetList || prefillList;
+    if (!listToExport || listToExport.length === 0) {
+      alert('다운로드할 맞춤링크 목록 데이터가 없습니다.');
+      return;
+    }
+
+    // A열: 계약자연락처, B열: 계약자명, C열: 상품명, D열: 토큰ID (요청대로 A,B,C,D열만 포함)
+    const exportData = listToExport.map((item: any) => ({
+      '계약자연락처': item.phone || '',
+      '계약자명': item.name || '',
+      '상품명': item.product || '',
+      '토큰ID': item.token || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '생성된맞춤링크');
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const fileName = customFileName || `고객맞춤가입링크_목록_${today}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   const handleDeletePrefill = async (token: string) => {
@@ -1843,181 +1972,200 @@ export default function AdminDashboard() {
               {/* 1. 단건 사전입력 생성 UI */}
               {prefillSubTab === 'single' && (
                 <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
-                      <UserPlus size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-black text-slate-900">고객 사전정보 입력 ➔ 맞춤 가입신청 링크 생성</h2>
-                      <p className="text-xs text-slate-500 font-bold">계약자명, 생년월일, 주소, 연락처 등을 미리 입력하여 고객에게 전송할 수 있는 맞춤 링크를 생성합니다.</p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleCreateSinglePrefill} className="space-y-6">
-                    {/* 엑셀 한 줄 복사-붙여넣기 빠른 입력 상자 */}
-                    <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-2xl space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
-                          <span>📋 엑셀 1행 한 줄 복사-붙여넣기 (빠른 자동입력)</span>
-                        </label>
-                        <span className="text-[11px] text-indigo-600 font-bold">
-                          순서: 이름 ➔ 생년월일 ➔ 연락처 ➔ 주소 ➔ 상품 ➔ 구좌수 ➔ 제품명 ➔ 영업자소속 ➔ 영업자성명 ➔ 영업자연락처
-                        </span>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
+                        <UserPlus size={20} />
                       </div>
-                      <input
-                        type="text"
-                        placeholder="엑셀에서 한 행을 복사(Ctrl+C)하여 여기에 붙여넣기(Ctrl+V) 하세요."
-                        value={quickPasteText}
-                        onChange={e => handleQuickPaste(e.target.value)}
-                        className="w-full bg-white border border-indigo-300 focus:border-indigo-600 outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 shadow-inner"
-                      />
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-5">
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">계약자 성명 <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          placeholder="예: 홍길동"
-                          value={prefillForm.name}
-                          onChange={e => setPrefillForm(p => ({ ...p, name: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">생년월일 (6자리 또는 8자리)</label>
-                        <input
-                          type="text"
-                          placeholder="예: 880101"
-                          value={prefillForm.birth}
-                          onChange={e => setPrefillForm(p => ({ ...p, birth: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">연락처 (휴대폰) <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          placeholder="예: 010-1234-5678"
-                          value={prefillForm.phone}
-                          onChange={e => setPrefillForm(p => ({ ...p, phone: formatPhone(e.target.value) }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">기본 주소</label>
-                        <input
-                          type="text"
-                          placeholder="예: 서울특별시 강남구 테헤란로 123"
-                          value={prefillForm.address}
-                          onChange={e => setPrefillForm(p => ({ ...p, address: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">상세 주소</label>
-                        <input
-                          type="text"
-                          placeholder="예: 101호"
-                          value={prefillForm.addressDetail}
-                          onChange={e => setPrefillForm(p => ({ ...p, addressDetail: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-5">
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">신청 상품 (직접 입력 가능)</label>
-                        <input
-                          type="text"
-                          list="productListOptions"
-                          placeholder="예: 더좋은프리미엄540"
-                          value={prefillForm.product}
-                          onChange={e => setPrefillForm(p => ({ ...p, product: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                        <datalist id="productListOptions">
-                          {products.map(prod => (
-                            <option key={prod.id} value={prod.name || prod.id} />
-                          ))}
-                        </datalist>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">구좌 수</label>
-                        <input
-                          type="number"
-                          min={1}
-                          placeholder="예: 1"
-                          value={prefillForm.productCount}
-                          onChange={e => setPrefillForm(p => ({ ...p, productCount: Number(e.target.value) || 1 }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">결합 제품명 (선택)</label>
-                        <input
-                          type="text"
-                          placeholder="예: LG 통돌이 세탁기"
-                          value={prefillForm.productName}
-                          onChange={e => setPrefillForm(p => ({ ...p, productName: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-5 border-t border-slate-100 pt-5">
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">영업자 소속</label>
-                        <input
-                          type="text"
-                          placeholder="예: 인바운드 컴퍼니"
-                          value={prefillForm.salesAffiliation}
-                          onChange={e => setPrefillForm(p => ({ ...p, salesAffiliation: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">영업자 성명</label>
-                        <input
-                          type="text"
-                          placeholder="예: 김정미"
-                          value={prefillForm.salesName}
-                          onChange={e => setPrefillForm(p => ({ ...p, salesName: e.target.value }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 block">영업자 연락처</label>
-                        <input
-                          type="text"
-                          placeholder="예: 010-3035-2537"
-                          value={prefillForm.salesPhone}
-                          onChange={e => setPrefillForm(p => ({ ...p, salesPhone: formatPhone(e.target.value) }))}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
-                        />
+                      <div>
+                        <h2 className="text-base font-black text-slate-900">고객 사전정보 입력 ➔ 맞춤 가입신청 링크 생성</h2>
+                        <p className="text-xs text-slate-500 font-bold">엑셀 1행 복사붙여넣기로 한 줄에 빠르게 사전등록 링크를 만듭니다.</p>
                       </div>
                     </div>
 
                     <button
-                      type="submit"
-                      disabled={isCreatingPrefill}
-                      className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
+                      type="button"
+                      onClick={() => setShowSingleFormDetail(!showSingleFormDetail)}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      {isCreatingPrefill ? <Loader2 className="animate-spin" size={18} /> : '🎉 고객 맞춤 가입신청 링크 생성하기'}
+                      {showSingleFormDetail ? '▲ 개별 상세 폼 접기' : '▼ 개별 상세 폼 직접 작성하기'}
                     </button>
+                  </div>
+
+                  <form onSubmit={handleCreateSinglePrefill} className="space-y-6">
+                    {/* 엑셀 한 줄 복사-붙여넣기 빠른 입력 상자 */}
+                    <div className="bg-indigo-50/70 border border-indigo-200 p-5 rounded-2xl space-y-3 shadow-inner">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <label className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                          <span>📋 엑셀 복사-붙여넣기 (한 줄 파싱 또는 다중 행 대량 자동입력)</span>
+                        </label>
+                        <span className="text-[11px] text-indigo-600 font-bold">
+                          컬럼순서: 가입일자 ➔ 이름 ➔ 생년월일 ➔ 연락처 ➔ 주소 ➔ 상품 ➔ 구좌수 ➔ 제품명 ➔ 영업자소속 ➔ 영업자성명 ➔ 영업자연락처
+                        </span>
+                      </div>
+                      <textarea
+                        rows={5}
+                        placeholder="엑셀에서 여러 행(줄)을 복사(Ctrl+C)하여 여기에 붙여넣기(Ctrl+V) 하세요."
+                        value={quickPasteText}
+                        onChange={e => handleQuickPaste(e.target.value)}
+                        className="w-full min-h-[140px] bg-white border border-indigo-300 focus:border-indigo-600 outline-none rounded-xl py-3.5 px-4 text-xs font-bold text-slate-800 shadow-inner resize-y leading-relaxed"
+                      />
+                      {quickPasteText.includes('\n') && (
+                        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-indigo-200 shadow-sm">
+                          <span className="text-xs font-bold text-indigo-700">
+                            💡 감지된 데이터: 약 {quickPasteText.split(/\r?\n/).filter(l => l.trim()).length}건의 행이 입력되었습니다.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleBulkTextCreate}
+                            disabled={isCreatingPrefill}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-xs rounded-lg transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                          >
+                            {isCreatingPrefill ? <Loader2 className="animate-spin" size={14} /> : '🚀 복사한 텍스트로 일괄 맞춤링크 생성하기'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {showSingleFormDetail && (
+                      <div className="space-y-5 pt-2 border-t border-slate-100">
+                        <div className="grid md:grid-cols-3 gap-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">계약자 성명 <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              placeholder="예: 홍길동"
+                              value={prefillForm.name}
+                              onChange={e => setPrefillForm(p => ({ ...p, name: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">생년월일 (6자리 또는 8자리)</label>
+                            <input
+                              type="text"
+                              placeholder="예: 880101"
+                              value={prefillForm.birth}
+                              onChange={e => setPrefillForm(p => ({ ...p, birth: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">연락처 (휴대폰) <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              placeholder="예: 010-1234-5678"
+                              value={prefillForm.phone}
+                              onChange={e => setPrefillForm(p => ({ ...p, phone: formatPhone(e.target.value) }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">기본 주소</label>
+                            <input
+                              type="text"
+                              placeholder="예: 서울특별시 강남구 테헤란로 123"
+                              value={prefillForm.address}
+                              onChange={e => setPrefillForm(p => ({ ...p, address: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">상세 주소</label>
+                            <input
+                              type="text"
+                              placeholder="예: 101호"
+                              value={prefillForm.addressDetail}
+                              onChange={e => setPrefillForm(p => ({ ...p, addressDetail: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">신청 상품</label>
+                            <input
+                              type="text"
+                              list="productListOptions"
+                              placeholder="예: 더좋은프리미엄540"
+                              value={prefillForm.product}
+                              onChange={e => setPrefillForm(p => ({ ...p, product: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                            <datalist id="productListOptions">
+                              {products.map(prod => (
+                                <option key={prod.id} value={prod.name || prod.id} />
+                              ))}
+                            </datalist>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">구좌 수</label>
+                            <input
+                              type="number"
+                              min={1}
+                              placeholder="예: 1"
+                              value={prefillForm.productCount}
+                              onChange={e => setPrefillForm(p => ({ ...p, productCount: Number(e.target.value) || 1 }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">결합 제품명</label>
+                            <input
+                              type="text"
+                              placeholder="예: LG 통돌이 세탁기"
+                              value={prefillForm.productName}
+                              onChange={e => setPrefillForm(p => ({ ...p, productName: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-5 border-t border-slate-100 pt-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">영업자 소속</label>
+                            <input
+                              type="text"
+                              placeholder="예: 언바운드컴퍼니"
+                              value={prefillForm.salesAffiliation}
+                              onChange={e => setPrefillForm(p => ({ ...p, salesAffiliation: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">영업자 성명</label>
+                            <input
+                              type="text"
+                              placeholder="예: 김수진"
+                              value={prefillForm.salesName}
+                              onChange={e => setPrefillForm(p => ({ ...p, salesName: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">영업자 연락처</label>
+                            <input
+                              type="text"
+                              placeholder="예: 010-3920-3914"
+                              value={prefillForm.salesPhone}
+                              onChange={e => setPrefillForm(p => ({ ...p, salesPhone: formatPhone(e.target.value) }))}
+                              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </form>
                 </div>
               )}
@@ -2051,7 +2199,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-800">엑셀(.xlsx, .csv) 파일을 클릭하여 선택하세요</p>
-                      <p className="text-xs text-slate-400 font-bold mt-1">컬럼명: 계약자, 생년월일, 연락처, 주소, 상세주소, 상품ID, 구좌수, 제품명 등</p>
+                      <p className="text-xs text-slate-400 font-bold mt-1">컬럼명: 가입일자, 이름, 생년월일, 연락처, 주소, 상품, 구좌수, 제품명, 영업자소속, 영업자성명, 영업자연락처</p>
                     </div>
                     <label className="inline-block py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md cursor-pointer transition-all">
                       {isCreatingPrefill ? '업로드 데이터 처리 중...' : '엑셀 파일 선택하기'}
@@ -2067,16 +2215,55 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* 3. 생성된 맞춤링크 현황 목록 UI */}
+              {/* 3. 생성된 맞춤링크 현황 목록 UI (생성 묶음 그룹별 구획 및 묶음별 다운로드) */}
               {prefillSubTab === 'list' && (
                 <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm space-y-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                      생성된 고객 맞춤 가입신청 링크 현황
-                      <span className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 font-bold">
-                        총 {prefillList.length}건
-                      </span>
-                    </h2>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+                    <div>
+                      <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                        생성된 고객 맞춤 가입신청 링크 현황
+                        <span className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 font-bold">
+                          전체 {prefillList.length}건 / {batchGroups.length}개 묶음
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500 font-bold mt-1">
+                        대량 생성된 링크 묶음별로 모아보거나 각 묶음 단위로 엑셀(A,B,C,D열)을 다운로드받을 수 있습니다.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* 생성 묶음 필터 드롭다운 */}
+                      <select
+                        value={selectedBatchFilter}
+                        onChange={e => setSelectedBatchFilter(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 font-bold text-xs text-slate-800 rounded-xl py-2 px-3 outline-none focus:border-indigo-600"
+                      >
+                        <option value="all">📦 전체 묶음 보기 ({prefillList.length}건)</option>
+                        {batchGroups.map(group => (
+                          <option key={group.batchId} value={group.batchId}>
+                            📁 {group.batchName} ({group.items.length}건)
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedBatchFilter === 'all') {
+                            downloadPrefillListExcel(prefillList, `고객맞춤가입링크_전체_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.xlsx`);
+                          } else {
+                            const targetGroup = batchGroups.find(g => g.batchId === selectedBatchFilter);
+                            if (targetGroup) {
+                              downloadPrefillListExcel(targetGroup.items, `${targetGroup.batchName.replace(/[\s\/:*?"<>|]/g, '_')}.xlsx`);
+                            }
+                          }
+                        }}
+                        disabled={prefillList.length === 0}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-colors cursor-pointer shadow-md shadow-emerald-600/20"
+                      >
+                        <Download size={14} /> {selectedBatchFilter === 'all' ? '전체 엑셀 다운로드 (A,B,C,D열)' : '선택 묶음 엑셀 다운로드 (A,B,C,D열)'}
+                      </button>
+                    </div>
                   </div>
 
                   {isLoadingPrefills ? (
@@ -2088,54 +2275,91 @@ export default function AdminDashboard() {
                       생성된 사전 입력 맞춤 링크가 없습니다. [개별 사전 입력] 또는 [엑셀 대량 업로드]를 통해 링크를 생성해 보세요.
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {prefillList.map((item: any) => (
-                        <div key={item.token} className="p-5 border border-slate-200 rounded-2xl hover:border-indigo-300 transition-all bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${item.status === '작성완료' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                {item.status === '작성완료' ? '✅ 작성 완료' : '⏳ 고객 미작성 (대기)'}
-                              </span>
-                              <span className="text-sm font-black text-slate-900">{item.name || '미지정'} ({item.phone || '-'})</span>
-                              <span className="text-xs font-bold text-slate-400">생년월일: {item.birth || '-'}</span>
+                    <div className="space-y-8">
+                      {batchGroups
+                        .filter(group => selectedBatchFilter === 'all' || group.batchId === selectedBatchFilter)
+                        .map(group => (
+                          <div key={group.batchId} className="border border-slate-200 rounded-[2rem] p-6 space-y-4 bg-slate-50/30">
+                            {/* 묶음 헤더 */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200/80 gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                                  📦
+                                </span>
+                                <div>
+                                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                    {group.batchName}
+                                    <span className="text-xs bg-indigo-600 text-white px-2.5 py-0.5 rounded-full font-bold">
+                                      {group.items.length}건
+                                    </span>
+                                  </h3>
+                                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                    생성일시: {group.createdAt} | 그룹 ID: {group.batchId}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => downloadPrefillListExcel(group.items, `${group.batchName.replace(/[\s\/:*?"<>|]/g, '_')}.xlsx`)}
+                                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                              >
+                                <Download size={13} /> 이 묶음만 엑셀 다운로드 (A,B,C,D열)
+                              </button>
                             </div>
-                            <p className="text-xs text-slate-500 font-bold">
-                              상품: <span className="text-indigo-600">{item.product} ({item.productCount || 1}구좌)</span> | 주소: {item.address} {item.addressDetail}
-                            </p>
-                            <p className="text-[11px] text-slate-400 font-medium">
-                              생성일: {item.createdAt} | 토큰ID: {item.token} {item.documentId && `| eFormsign Doc: ${item.documentId}`}
-                            </p>
+
+                            {/* 묶음 내 항목 리스트 */}
+                            <div className="space-y-3">
+                              {group.items.map((item: any) => (
+                                <div key={item.token} className="p-4 border border-slate-200/80 bg-white rounded-2xl hover:border-indigo-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${item.status === '작성완료' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                        {item.status === '작성완료' ? '✅ 작성 완료' : '⏳ 고객 미작성 (대기)'}
+                                      </span>
+                                      <span className="text-sm font-black text-slate-900">{item.name || '미지정'} ({item.phone || '-'})</span>
+                                      <span className="text-xs font-bold text-slate-400">생년월일: {item.birth || '-'}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-bold">
+                                      상품: <span className="text-indigo-600">{item.product} ({item.productCount || 1}구좌)</span> | 주소: {item.address} {item.addressDetail}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 font-medium">
+                                      토큰ID: <code className="text-indigo-600 font-mono font-bold">{item.token}</code> {item.documentId && `| eFormsign Doc: ${item.documentId}`}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => copyPrefillUrl(item.token)}
+                                      className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      {copiedToken === item.token ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                                      {copiedToken === item.token ? '복사완료' : '링크 복사'}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => copyPrefillMessage(item)}
+                                      className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      {copiedMsgToken === item.token ? <Check size={14} className="text-green-600" /> : <MessageSquare size={14} />}
+                                      {copiedMsgToken === item.token ? '문구복사완료' : '문자/알림톡 문구 복사'}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePrefill(item.token)}
+                                      className="p-2 text-slate-400 hover:text-red-500 border border-slate-200 bg-white hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => copyPrefillUrl(item.token)}
-                              className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                            >
-                              {copiedToken === item.token ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-                              {copiedToken === item.token ? '복사완료' : '링크 복사'}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => copyPrefillMessage(item)}
-                              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                            >
-                              {copiedMsgToken === item.token ? <Check size={14} className="text-green-600" /> : <MessageSquare size={14} />}
-                              {copiedMsgToken === item.token ? '문구복사완료' : '문자/알림톡 문구 복사'}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeletePrefill(item.token)}
-                              className="p-2 text-slate-400 hover:text-red-500 border border-slate-200 bg-white hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   )}
                 </div>
