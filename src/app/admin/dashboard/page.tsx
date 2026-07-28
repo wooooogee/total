@@ -196,12 +196,9 @@ export default function AdminDashboard() {
 
   const handleCopyCertificateMethod = (log: any, idx: number) => {
     const method = String(log['회원증서수령방법'] || log['증서수령방법'] || '-').trim();
-    const address = String(log['주소'] || log['계약자주소'] || log['수령주소'] || '').trim();
+    if (!method || method === '-') return;
     
-    // 우편이고 주소가 존재하면 주소 우선 복사 (없으면 "우편" 복사)
-    const copyText = (method.includes('우편') && address) ? address : method;
-    
-    navigator.clipboard.writeText(copyText);
+    navigator.clipboard.writeText(method);
     const key = `${idx}-${method}`;
     setCopiedCertificateMethod(key);
     setTimeout(() => setCopiedCertificateMethod(null), 2000);
@@ -2328,7 +2325,6 @@ export default function AdminDashboard() {
                                 }
 
                                 const isPost = method.includes('우편');
-                                const address = String(log['주소'] || log['계약자주소'] || log['수령주소'] || '').trim();
                                 const key = `${idx}-${method}`;
                                 const isCopied = copiedCertificateMethod === key;
 
@@ -2342,7 +2338,7 @@ export default function AdminDashboard() {
                                           ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 border-amber-200/80 shadow-xs'
                                           : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200/70 hover:border-indigo-200'
                                     }`}
-                                    title={isPost && address ? `클릭시 주소 복사: "${address}"` : `클릭시 "${method}" 복사`}
+                                    title={`클릭시 "${method}" 복사`}
                                   >
                                     <span>{method}</span>
                                     {isCopied ? (
