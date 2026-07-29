@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, 
   Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award, ChevronRightIcon,
-  X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2, UserPlus, Upload, FileSpreadsheet, MessageSquare
+  X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2, UserPlus, Upload, FileSpreadsheet, MessageSquare,
+  ArrowUp, ArrowDown, Sliders
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -520,6 +521,82 @@ export default function AdminDashboard() {
       ...prev,
       [id]: !prev[id]
     }));
+  };
+
+  // 링크 상품 목록 수정 상태
+  const [editingLink, setEditingLink] = useState<LinkConfig | null>(null);
+  const [editingLinkProducts, setEditingLinkProducts] = useState<string[]>([]);
+  const [isSavingLinkProducts, setIsSavingLinkProducts] = useState(false);
+
+  const handleOpenEditProducts = (link: LinkConfig) => {
+    setEditingLink(link);
+    setEditingLinkProducts([...link.products]);
+  };
+
+  const handleCloseEditProducts = () => {
+    setEditingLink(null);
+    setEditingLinkProducts([]);
+  };
+
+  const handleMoveLinkProductUp = (index: number) => {
+    if (index <= 0) return;
+    setEditingLinkProducts(prev => {
+      const next = [...prev];
+      const temp = next[index - 1];
+      next[index - 1] = next[index];
+      next[index] = temp;
+      return next;
+    });
+  };
+
+  const handleMoveLinkProductDown = (index: number) => {
+    setEditingLinkProducts(prev => {
+      if (index >= prev.length - 1) return prev;
+      const next = [...prev];
+      const temp = next[index + 1];
+      next[index + 1] = next[index];
+      next[index] = temp;
+      return next;
+    });
+  };
+
+  const handleRemoveLinkProduct = (prodName: string) => {
+    setEditingLinkProducts(prev => prev.filter(p => p !== prodName));
+  };
+
+  const handleAddLinkProduct = (prodName: string) => {
+    if (!prodName) return;
+    if (!editingLinkProducts.includes(prodName)) {
+      setEditingLinkProducts(prev => [...prev, prodName]);
+    }
+  };
+
+  const handleSaveLinkProducts = async () => {
+    if (!editingLink) return;
+    if (editingLinkProducts.length === 0) {
+      alert('최소 1개 이상의 상품을 선택해야 합니다.');
+      return;
+    }
+    setIsSavingLinkProducts(true);
+    try {
+      const res = await fetch(`/api/links/${editingLink.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: editingLinkProducts })
+      });
+      if (res.ok) {
+        await fetchLinks();
+        handleCloseEditProducts();
+      } else {
+        const err = await res.json();
+        alert(err.error || '상품 목록 수정에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsSavingLinkProducts(false);
+    }
   };
 
   // 신청 로그 상태
@@ -1781,7 +1858,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* 기존 링크 목록 */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-6 min-w-0">
                 <div className="flex items-center justify-between">
                   <h2 className="text-md font-black flex items-center gap-2 text-slate-900">
                     활성화된 가입 링크 <span className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">{links.length}개</span>
@@ -1800,28 +1877,36 @@ export default function AdminDashboard() {
                     <p className="text-slate-400 font-bold text-sm">등록된 신청 링크가 없습니다.</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-4 min-w-0">
                     {links.map(link => (
-                      <div key={link.id} className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col gap-5 transition-all hover:border-indigo-200/80 shadow-sm hover:shadow-md">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-xs font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-xl shadow-sm">
+                      <div key={link.id} className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col gap-5 transition-all hover:border-indigo-200/80 shadow-sm hover:shadow-md min-w-0 overflow-hidden">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
+                          <div className="space-y-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="text-xs font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-xl shadow-sm shrink-0">
                                 ID: {link.id}
                               </span>
-                              <h3 className="text-sm font-black text-slate-800">{link.title}</h3>
+                              <h3 className="text-sm font-black text-slate-800 truncate">{link.title}</h3>
                             </div>
                             
                             <div className="flex flex-wrap gap-1.5 pt-1">
                               {link.products.map(p => (
-                                <span key={p} className="text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-200/80 px-2 py-0.5 rounded-md">
+                                <span key={p} className="text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-200/80 px-2 py-0.5 rounded-md truncate max-w-[200px]">
                                   {p}
                                 </span>
                               ))}
+                              <button
+                                onClick={() => handleOpenEditProducts(link)}
+                                className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
+                                title="노출 상품 추가/삭제/순서변경"
+                              >
+                                <Sliders size={10} />
+                                <span>상품 편집</span>
+                              </button>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end md:self-center">
+                          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                             <button 
                               onClick={() => handleToggleActive(link.id, link.isActive)}
                               className={`px-3 py-2 rounded-xl text-[10px] font-black border transition-all cursor-pointer ${
@@ -1833,6 +1918,14 @@ export default function AdminDashboard() {
                               {link.isActive ? '사용중' : '중지됨'}
                             </button>
                             
+                            <button 
+                              onClick={() => handleOpenEditProducts(link)}
+                              className="p-3 bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-xl hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
+                              title="노출 상품 목록 수정"
+                            >
+                              <Sliders size={14} />
+                            </button>
+
                             <button 
                               onClick={() => handleCopyLink(link.id)}
                               className="p-3 bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl hover:bg-white text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
@@ -1862,25 +1955,25 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* 상품별 개별 신청 링크 아코디언 */}
-                        <div className="border-t border-slate-100/80 pt-3">
+                        <div className="border-t border-slate-100/80 pt-3 min-w-0 w-full">
                           <button
                             type="button"
                             onClick={() => toggleProductLinks(link.id)}
                             className="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 cursor-pointer"
                           >
-                            <span>상품별 다이렉트 가입 링크 목록</span>
+                            <span>상품별 다이렉트 가입 링크 목록 ({link.products.length}개)</span>
                             <ChevronDown size={14} className={`transform transition-transform duration-200 ${expandedLinks[link.id] ? 'rotate-180 text-indigo-500' : ''}`} />
                           </button>
                           
                           {expandedLinks[link.id] && (
-                            <div className="mt-3 space-y-2 max-w-full">
+                            <div className="mt-3 space-y-2 min-w-0 w-full">
                               {link.products.map(p => {
                                 const key = `${link.id}-${p}`;
                                 const productUrl = `${window.location.origin}/apply/${link.id}?product=${encodeURIComponent(p)}`;
                                 return (
-                                  <div key={p} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-indigo-50/20 hover:border-indigo-100/50 transition-all">
-                                    <div className="space-y-0.5 overflow-hidden">
-                                      <span className="text-[11px] font-black text-slate-700 block">{p}</span>
+                                  <div key={p} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-indigo-50/20 hover:border-indigo-100/50 transition-all min-w-0 w-full">
+                                    <div className="space-y-0.5 min-w-0 flex-1 overflow-hidden">
+                                      <span className="text-[11px] font-black text-slate-700 block truncate">{p}</span>
                                       <span className="text-[10px] text-slate-400 font-mono block truncate select-all">{productUrl}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
@@ -1919,6 +2012,116 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* 상품 목록 편집 모달 */}
+                {editingLink && (
+                  <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-100 space-y-6 max-h-[90vh] flex flex-col"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                          <span className="text-xs font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-md">ID: {editingLink.id}</span>
+                          <h3 className="text-base font-black text-slate-800 mt-1">{editingLink.title} - 노출 상품 설정</h3>
+                        </div>
+                        <button onClick={handleCloseEditProducts} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors">
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-500 uppercase">현재 노출 상품 ({editingLinkProducts.length}개)</label>
+                          <span className="text-[11px] text-slate-400">▲/▼ 순서 변경</span>
+                        </div>
+
+                        {editingLinkProducts.length === 0 ? (
+                          <div className="p-6 text-center text-xs font-bold text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+                            노출할 상품이 없습니다. 아래에서 상품을 선택하여 추가하세요.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {editingLinkProducts.map((p, idx) => (
+                              <div key={p} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                                  <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center shrink-0">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-800 truncate">{p}</span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => handleMoveLinkProductUp(idx)}
+                                    disabled={idx === 0}
+                                    className="p-1.5 border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 rounded-lg text-slate-600 transition-colors cursor-pointer"
+                                    title="위로 이동"
+                                  >
+                                    <ArrowUp size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveLinkProductDown(idx)}
+                                    disabled={idx === editingLinkProducts.length - 1}
+                                    className="p-1.5 border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 rounded-lg text-slate-600 transition-colors cursor-pointer"
+                                    title="아래로 이동"
+                                  >
+                                    <ArrowDown size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveLinkProduct(p)}
+                                    className="p-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors cursor-pointer ml-1"
+                                    title="목록에서 삭제"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 상품 추가 셀렉트 */}
+                        <div className="pt-3 border-t border-slate-100 space-y-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase">상품 추가</label>
+                          <select
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all cursor-pointer"
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAddLinkProduct(e.target.value);
+                              }
+                            }}
+                          >
+                            <option value="" disabled>추가할 상품 선택...</option>
+                            {products
+                              .map(prod => prod.targetSheetName || prod.name || prod.id)
+                              .filter((name, i, self) => name && self.indexOf(name) === i && !editingLinkProducts.includes(name))
+                              .map(name => (
+                                <option key={name} value={name}>{name}</option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button
+                          onClick={handleCloseEditProducts}
+                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={handleSaveLinkProducts}
+                          disabled={isSavingLinkProducts}
+                          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {isSavingLinkProducts ? <Loader2 className="animate-spin" size={14} /> : '저장'}
+                        </button>
+                      </div>
+                    </motion.div>
                   </div>
                 )}
               </div>
