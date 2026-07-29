@@ -297,7 +297,10 @@ interface RegistrationFormProps {
   initialPrefillData?: any;
 }
 
+import { useToast } from '@/components/ToastContext';
+
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct, initialSkipHealthcare, initialPrefillData }) => {
+  const { toast } = useToast();
   const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드'];
   const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
 
