@@ -40,7 +40,10 @@ interface ProductConfig {
 
 const KLJ_DEFAULT_TEMPLATE = `송하인\\t수취인\\t진화번호\\t주소\\t상품명\\t상품옵션\\t수량\\t공급가\n더홈온라이프\\t{고객명}\\t{연락처}\\t{주소}\\t{제품명}\\t\\t1\\t{공급가}`;
 
+import { useToast } from '@/components/ToastContext';
+
 export default function AdminDashboard() {
+  const { toast, showConfirm } = useToast();
   const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products' | 'orders' | 'prefill'>('logs');
   
   // 인증 상태
@@ -908,16 +911,25 @@ export default function AdminDashboard() {
   };
 
   // 링크 삭제
-  const handleDeleteLink = async (id: string) => {
-    if (!confirm('정말로 이 링크 설정을 삭제하시겠습니까?')) return;
-    try {
-      const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchLinks();
+  const handleDeleteLink = (id: string) => {
+    showConfirm({
+      title: '링크 설정 삭제',
+      message: '정말로 이 링크 설정을 삭제하시겠습니까?',
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchLinks();
+            toast('링크 설정이 삭제되었습니다.', 'success');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('삭제 도중 오류가 발생했습니다.', 'error');
+        }
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
   // 상품 체크박스 토글
@@ -961,27 +973,33 @@ export default function AdminDashboard() {
   };
 
   // 상품 삭제 핸들러
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm(`정말로 '${id}' 상품을 완전히 삭제하시겠습니까?\n이 상품을 노출하는 링크 화면에 더 이상 상품이 표시되지 않습니다.`)) return;
+  const handleDeleteProduct = (id: string) => {
+    showConfirm({
+      title: '상품 설정 삭제',
+      message: `'${id}' 상품을 완전히 삭제하시겠습니까?`,
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE'
+          });
 
-    try {
-      const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE'
-      });
-
-      if (res.ok) {
-        alert('상품이 성공적으로 삭제되었습니다.');
-        setSelectedProductForEdit(null);
-        setIsAddingProduct(false);
-        fetchProducts();
-      } else {
-        const err = await res.json();
-        alert(err.error || '상품 삭제에 실패했습니다.');
+          if (res.ok) {
+            toast('상품이 성공적으로 삭제되었습니다.', 'success');
+            setSelectedProductForEdit(null);
+            setIsAddingProduct(false);
+            fetchProducts();
+          } else {
+            const err = await res.json();
+            toast(err.error || '상품 삭제에 실패했습니다.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('삭제 도중 오류가 발생했습니다.', 'error');
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('삭제 도중 오류가 발생했습니다.');
-    }
+    });
   };
 
   // 편집 필드 업데이트 헬퍼

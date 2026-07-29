@@ -321,6 +321,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getProductConfig = (targetName: string) => {
+    if (!targetName) return undefined;
+    return products.find(p => p.id === targetName || p.name === targetName || p.targetSheetName === targetName);
+  };
+
+  const getProductDisplayName = (targetName: string) => {
+    const matched = getProductConfig(targetName);
+    return matched?.name || targetName;
+  };
+
   const renderInstallmentGuide = () => (
     <div className="mt-4 border border-blue-200 rounded-xl overflow-hidden bg-white shadow-sm">
       <button
@@ -449,7 +459,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   }, []);
 
   const getTermsForProduct = (productName: string) => {
-    const config = products.find(p => p.id === productName);
+    const config = getProductConfig(productName);
     
     // 1. 상품 내용 고지 약관
     const productNotice = config?.productNoticeTerm || 
@@ -774,7 +784,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   // 구좌 수 변경 시 대상자 배열 크기 조정
   useEffect(() => {
     let count = 1;
-    const currentProductConfig = products.find(p => p.id === formData.product);
+    const currentProductConfig = getProductConfig(formData.product);
     const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
 
     if (formData.product === '더좋은라이즈498') {
@@ -1169,7 +1179,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           >
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-sub opacity-60">선택한 상품</span>
-              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{products.find(p => p.id === formData.product)?.name || formData.product}</span>
+              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{getProductDisplayName(formData.product)}</span>
             </div>
             <button
               type="button"
@@ -1223,7 +1233,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                           }}
                           className={`w-full py-5 px-7 rounded-[1.25rem] font-black text-lg text-left transition-all duration-300 flex items-center justify-between ${isSelected ? theme.active : theme.inactive}`}
                         >
-                          <span className="tracking-tight">{products.find(prod => prod.id === p)?.name || p}</span>
+                          <span className="tracking-tight">{getProductDisplayName(p)}</span>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'border-white bg-white/20' : 'border-slate-300/50 bg-transparent'}`}>
                             {isSelected && <Check size={14} className="text-white" />}
                           </div>
@@ -1583,7 +1593,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div>
                   <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">선택한 상품</p>
                   <h3 className="text-lg font-black italic">
-                    {products.find(p => p.id === formData.product)?.name || formData.product} {formData.productCount && `(${formData.productCount}구좌)`}
+                    {getProductDisplayName(formData.product)} {formData.productCount && `(${formData.productCount}구좌)`}
                   </h3>
                   {formData.productName && <p className="text-xs font-bold text-indigo-600 mt-1">제품: {formData.productName} {formData.productName2 && `, ${formData.productName2}`}</p>}
                 </div>
@@ -1748,7 +1758,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     }
 
                     // 2. 알 수 없는 신규 상품인 경우 products.json 설정 기반 폴백
-                    const currentConfig = products.find(p => p.id === formData.product);
+                    const currentConfig = getProductConfig(formData.product);
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
