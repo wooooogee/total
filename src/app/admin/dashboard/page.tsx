@@ -2083,26 +2083,65 @@ export default function AdminDashboard() {
                           </div>
                         )}
 
-                        {/* 상품 추가 셀렉트 */}
-                        <div className="pt-3 border-t border-slate-100 space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase">상품 추가</label>
-                          <select
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all cursor-pointer"
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleAddLinkProduct(e.target.value);
-                              }
-                            }}
-                          >
-                            <option value="" disabled>추가할 상품 선택...</option>
-                            {products
-                              .map(prod => prod.targetSheetName || prod.name || prod.id)
-                              .filter((name, i, self) => name && self.indexOf(name) === i && !editingLinkProducts.includes(name))
-                              .map(name => (
-                                <option key={name} value={name}>{name}</option>
-                              ))}
-                          </select>
+                        {/* 상품 추가 셀렉트 및 직접 입력 */}
+                        <div className="pt-3 border-t border-slate-100 space-y-3">
+                          <label className="text-xs font-bold text-slate-500 uppercase block">상품 추가</label>
+                          
+                          <div className="space-y-2">
+                            <select
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all cursor-pointer"
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleAddLinkProduct(e.target.value);
+                                }
+                              }}
+                            >
+                              <option value="" disabled>추가할 상품 선택...</option>
+                              {Array.from(new Set([
+                                ...products.map(prod => prod.name).filter(Boolean),
+                                ...products.map(prod => prod.id).filter(Boolean),
+                                ...products.map(prod => prod.targetSheetName).filter(Boolean),
+                                ...AVAILABLE_SHEETS.filter(Boolean)
+                              ]))
+                                .filter(name => !editingLinkProducts.includes(name))
+                                .map(name => (
+                                  <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <input
+                                type="text"
+                                id="custom-product-input"
+                                placeholder="또는 직접 상품명 입력..."
+                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 placeholder:text-slate-400 transition-all"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = e.currentTarget.value.trim();
+                                    if (val) {
+                                      handleAddLinkProduct(val);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const input = document.getElementById('custom-product-input') as HTMLInputElement;
+                                  if (input && input.value.trim()) {
+                                    handleAddLinkProduct(input.value.trim());
+                                    input.value = '';
+                                  }
+                                }}
+                                className="px-3 py-2 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer"
+                              >
+                                추가
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
