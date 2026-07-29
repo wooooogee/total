@@ -180,7 +180,7 @@ export default function AdminDashboard() {
   const handleCreateSinglePrefill = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prefillForm.name || !prefillForm.phone) {
-      alert('고객 성명과 연락처는 필수 입력 항목입니다.');
+      toast('고객 성명과 연락처는 필수 입력 항목입니다.', 'warning');
       return;
     }
 
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
     try {
       const res = await createPrefillLinkAction(prefillForm);
       if (res.success) {
-        alert('🎉 고객 사전입력 맞춤 가입신청 링크가 생성되었습니다!');
+        toast('고객 사전입력 맞춤 가입신청 링크가 생성되었습니다!', 'success');
         setPrefillForm({
           name: '',
           birth: '',
@@ -208,10 +208,10 @@ export default function AdminDashboard() {
         fetchPrefillList();
         setPrefillSubTab('list');
       } else {
-        alert(res.message || '링크 생성 실패');
+        toast(res.message || '링크 생성 실패', 'error');
       }
     } catch (err: any) {
-      alert('오류 발생: ' + err.message);
+      toast('오류 발생: ' + err.message, 'error');
     } finally {
       setIsCreatingPrefill(false);
     }
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
         const data: any[] = XLSX.utils.sheet_to_json(ws);
 
         if (data.length === 0) {
-          alert('엑셀 파일에 데이터가 없습니다.');
+          toast('엑셀 파일에 데이터가 없습니다.', 'warning');
           return;
         }
 
@@ -253,14 +253,14 @@ export default function AdminDashboard() {
         const batchName = `${file.name.replace(/\.[^/.]+$/, '')} (${formattedItems.length}건 엑셀업로드)`;
         const res = await createPrefillLinkAction(formattedItems, batchName);
         if (res.success) {
-          alert(`🎉 엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`);
+          toast(`엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`, 'success');
           fetchPrefillList();
           setPrefillSubTab('list');
         } else {
-          alert(res.message || '대량 링크 생성 중 오류가 발생했습니다.');
+          toast(res.message || '대량 링크 생성 중 오류가 발생했습니다.', 'error');
         }
       } catch (err: any) {
-        alert('엑셀 파싱 중 오류 발생: ' + err.message);
+        toast('엑셀 파싱 중 오류 발생: ' + err.message, 'error');
       } finally {
         setIsCreatingPrefill(false);
       }
@@ -307,13 +307,13 @@ export default function AdminDashboard() {
   // 텍스트 다중행 복사붙여넣기 파싱 및 일괄 생성 핸들러
   const handleBulkTextCreate = async () => {
     if (!quickPasteText.trim()) {
-      alert('복사한 엑셀 텍스트를 입력해 주세요.');
+      toast('복사한 엑셀 텍스트를 입력해 주세요.', 'warning');
       return;
     }
 
     const lines = quickPasteText.split(/\r?\n/).filter(line => line.trim().length > 0);
     if (lines.length === 0) {
-      alert('유효한 데이터 줄이 없습니다.');
+      toast('유효한 데이터 줄이 없습니다.', 'warning');
       return;
     }
 
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
     }
 
     if (formattedItems.length === 0) {
-      alert('파싱 가능한 고객 정보가 없습니다. 엑셀에서 데이터를 복사했는지 확인해 주세요.');
+      toast('파싱 가능한 고객 정보가 없습니다. 엑셀에서 데이터를 복사했는지 확인해 주세요.', 'warning');
       return;
     }
 
@@ -363,15 +363,15 @@ export default function AdminDashboard() {
       const batchName = `텍스트 복사 등록 (${formattedItems.length}건 묶음)`;
       const res = await createPrefillLinkAction(formattedItems, batchName);
       if (res.success) {
-        alert(`🎉 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 일괄 생성되었습니다!`);
+        toast(`${res.data?.length || 0}건의 고객 맞춤 서명 링크가 일괄 생성되었습니다!`, 'success');
         setQuickPasteText('');
         fetchPrefillList();
         setPrefillSubTab('list');
       } else {
-        alert(res.message || '링크 생성 중 오류가 발생했습니다.');
+        toast(res.message || '링크 생성 중 오류가 발생했습니다.', 'error');
       }
     } catch (err: any) {
-      alert('오류 발생: ' + err.message);
+      toast('오류 발생: ' + err.message, 'error');
     } finally {
       setIsCreatingPrefill(false);
     }
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
   const downloadPrefillListExcel = (targetList?: any[], customFileName?: string) => {
     const listToExport = targetList || prefillList;
     if (!listToExport || listToExport.length === 0) {
-      alert('다운로드할 맞춤링크 목록 데이터가 없습니다.');
+      toast('다운로드할 맞춤링크 목록 데이터가 없습니다.', 'warning');
       return;
     }
 
@@ -400,15 +400,22 @@ export default function AdminDashboard() {
     XLSX.writeFile(wb, fileName);
   };
 
-  const handleDeletePrefill = async (token: string) => {
-    if (!confirm('해당 사전 신청 링크를 삭제하시겠습니까?')) return;
-    const res = await deletePrefillLinkAction(token);
-    if (res.success) {
-      alert('삭제되었습니다.');
-      fetchPrefillList();
-    } else {
-      alert(res.message);
-    }
+  const handleDeletePrefill = (token: string) => {
+    showConfirm({
+      title: '사전 신청 링크 삭제',
+      message: '해당 사전 신청 링크를 삭제하시겠습니까?',
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        const res = await deletePrefillLinkAction(token);
+        if (res.success) {
+          toast('삭제되었습니다.', 'success');
+          fetchPrefillList();
+        } else {
+          toast(res.message, 'error');
+        }
+      }
+    });
   };
 
   const copyPrefillUrl = (token: string) => {
@@ -501,7 +508,7 @@ export default function AdminDashboard() {
       a.click();
     } catch (error: any) {
       console.error('Error downloading image:', error);
-      alert(`이미지 다운로드 중 오류가 발생했습니다: ${error.message || error}`);
+      toast(`이미지 다운로드 중 오류가 발생했습니다: ${error.message || error}`, 'error');
     } finally {
       setIsDownloadingImage(false);
     }
@@ -577,7 +584,7 @@ export default function AdminDashboard() {
   const handleSaveLinkProducts = async () => {
     if (!editingLink) return;
     if (editingLinkProducts.length === 0) {
-      alert('최소 1개 이상의 상품을 선택해야 합니다.');
+      toast('최소 1개 이상의 상품을 선택해야 합니다.', 'warning');
       return;
     }
     setIsSavingLinkProducts(true);
@@ -590,13 +597,14 @@ export default function AdminDashboard() {
       if (res.ok) {
         await fetchLinks();
         handleCloseEditProducts();
+        toast('상품 목록이 성공적으로 수정되었습니다.', 'success');
       } else {
         const err = await res.json();
-        alert(err.error || '상품 목록 수정에 실패했습니다.');
+        toast(err.error || '상품 목록 수정에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSavingLinkProducts(false);
     }
@@ -860,7 +868,7 @@ export default function AdminDashboard() {
   const handleCreateLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLinkId || !newLinkTitle || selectedProducts.length === 0) {
-      alert('모든 필드를 채워주세요.');
+      toast('모든 필드를 채워주세요.', 'warning');
       return;
     }
 
@@ -882,13 +890,14 @@ export default function AdminDashboard() {
         setNewLinkTitle('');
         setSelectedProducts([]);
         fetchLinks();
+        toast('신규 신청링크가 성공적으로 생성되었습니다!', 'success');
       } else {
         const err = await res.json();
-        alert(err.error || '링크 생성에 실패했습니다.');
+        toast(err.error || '링크 생성에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSubmittingLink(false);
     }
@@ -944,7 +953,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!selectedProductForEdit) return;
     if (!selectedProductForEdit.id.trim()) {
-      alert('상품 식별자(ID)를 입력해 주세요.');
+      toast('상품 식별자(ID)를 입력해 주세요.', 'warning');
       return;
     }
 
@@ -957,16 +966,16 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert(isAddingProduct ? '신규 상품이 성공적으로 등록되었습니다.' : '상품 정보와 약관이 저장되었습니다.');
+        toast(isAddingProduct ? '신규 상품이 성공적으로 등록되었습니다.' : '상품 정보와 약관이 저장되었습니다.', 'success');
         setIsAddingProduct(false);
         fetchProducts();
       } else {
         const err = await res.json();
-        alert(err.error || '상품 저장에 실패했습니다.');
+        toast(err.error || '상품 저장에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('저장 도중 오류가 발생했습니다.');
+      toast('저장 도중 오류가 발생했습니다.', 'error');
     } finally {
       setIsSavingProduct(false);
     }
@@ -1089,85 +1098,91 @@ export default function AdminDashboard() {
   const handleBulkDownloadImages = async () => {
     const logsWithDocs = filteredLogs.filter(log => log['document_id']);
     if (logsWithDocs.length === 0) {
-      alert('다운로드할 이미지(계약서)가 없습니다.');
+      toast('다운로드할 이미지(계약서)가 없습니다.', 'warning');
       return;
     }
 
-    if (!confirm(`현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 일괄 다운로드하시겠습니까?\n(건수가 많을 경우 시간이 다소 소요될 수 있습니다.)`)) {
-      return;
-    }
-
-    try {
-      setIsBulkDownloading(true);
-      setBulkDownloadProgress({ current: 0, total: logsWithDocs.length });
-
-      const JSZip = (await import('jszip')).default;
-      const { saveAs } = await import('file-saver');
-      const zip = new JSZip();
-
-      const pdfjsLib = await import('pdfjs-dist');
-      const pdfjsVersion = pdfjsLib.version || '4.0.379';
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
-
-      let successCount = 0;
-
-      for (let i = 0; i < logsWithDocs.length; i++) {
-        const log = logsWithDocs[i];
+    showConfirm({
+      title: '계약서 이미지 일괄 다운로드',
+      message: `현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 일괄 다운로드하시겠습니까?`,
+      type: 'info',
+      confirmText: '다운로드',
+      onConfirm: async () => {
         try {
-          const response = await fetch(`/api/download?id=${log['document_id']}&action=download`);
-          if (!response.ok) throw new Error('Failed to fetch PDF');
-          
-          const arrayBuffer = await response.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          
-          const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-          const pdf = await loadingTask.promise;
-          const page = await pdf.getPage(1);
-          
-          const viewport = page.getViewport({ scale: 1.5 });
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          if (!context) throw new Error('No canvas context');
-          
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          
-          await page.render({ canvasContext: context, viewport: viewport } as any).promise;
-          
-          const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
-          if (blob) {
-            const fileName = getFormattedFileName(log) || `contract_${log['document_id']}`;
-            zip.file(`${fileName}.jpg`, blob);
-            successCount++;
-          }
-        } catch (err) {
-          console.error(`Error downloading document ${log['document_id']}:`, err);
-        }
-        setBulkDownloadProgress({ current: i + 1, total: logsWithDocs.length });
-      }
+          setIsBulkDownloading(true);
+          setBulkDownloadProgress({ current: 0, total: logsWithDocs.length });
 
-      if (successCount > 0) {
-        const content = await zip.generateAsync({ type: 'blob' });
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-        saveAs(content, `${dateStr}_계약서.zip`);
-      } else {
-        alert('다운로드에 성공한 이미지가 없습니다.');
+          const JSZip = (await import('jszip')).default;
+          const { saveAs } = await import('file-saver');
+          const zip = new JSZip();
+
+          const pdfjsLib = await import('pdfjs-dist');
+          const pdfjsVersion = pdfjsLib.version || '4.0.379';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
+
+          let successCount = 0;
+
+          for (let i = 0; i < logsWithDocs.length; i++) {
+            const log = logsWithDocs[i];
+            try {
+              const response = await fetch(`/api/download?id=${log['document_id']}&action=download`);
+              if (!response.ok) throw new Error('Failed to fetch PDF');
+              
+              const arrayBuffer = await response.arrayBuffer();
+              const uint8Array = new Uint8Array(arrayBuffer);
+              
+              const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+              const pdf = await loadingTask.promise;
+              const page = await pdf.getPage(1);
+              
+              const viewport = page.getViewport({ scale: 1.5 });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              if (!context) throw new Error('No canvas context');
+              
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              
+              await page.render({ canvasContext: context, viewport: viewport } as any).promise;
+              
+              const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+              if (blob) {
+                const fileName = getFormattedFileName(log) || `contract_${log['document_id']}`;
+                zip.file(`${fileName}.jpg`, blob);
+                successCount++;
+              }
+            } catch (err) {
+              console.error(`Error downloading document ${log['document_id']}:`, err);
+            }
+            setBulkDownloadProgress({ current: i + 1, total: logsWithDocs.length });
+          }
+
+          if (successCount > 0) {
+            const content = await zip.generateAsync({ type: 'blob' });
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+            saveAs(content, `${dateStr}_계약서.zip`);
+            toast(`${successCount}건의 이미지가 다운로드되었습니다.`, 'success');
+          } else {
+            toast('다운로드에 성공한 이미지가 없습니다.', 'warning');
+          }
+        } catch (error: any) {
+          console.error('Error during bulk download:', error);
+          toast(`일괄 다운로드 중 오류가 발생했습니다: ${error.message || error}`, 'error');
+        } finally {
+          setIsBulkDownloading(false);
+        }
       }
-    } catch (error: any) {
-      console.error('Error during bulk download:', error);
-      alert(`일괄 다운로드 중 오류가 발생했습니다: ${error.message || error}`);
-    } finally {
-      setIsBulkDownloading(false);
-    }
+    });
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '880805') {
       setIsAuthenticated(true);
-        } else {
-      alert('비밀번호가 일치하지 않습니다.');
+      toast('관리자 모드로 접속되었습니다.', 'success');
+    } else {
+      toast('비밀번호가 일치하지 않습니다.', 'error');
       setPasswordInput('');
     }
   };
@@ -1297,7 +1312,7 @@ export default function AdminDashboard() {
     if (!product) return;
 
     if (!product.supplierName) {
-      alert('선택한 제품에 연결된 공급사명이 존재하지 않습니다. 공급제품 관리를 통해 공급사를 매핑해 주세요.');
+      toast('선택한 제품에 연결된 공급사명이 존재하지 않습니다. 공급제품 관리를 통해 공급사를 매핑해 주세요.', 'warning');
       return;
     }
 
@@ -1353,7 +1368,7 @@ export default function AdminDashboard() {
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderSelectedProduct) {
-      alert('공급제품을 선택해주세요.');
+      toast('공급제품을 선택해주세요.', 'warning');
       return;
     }
     const product = supplyProducts.find(p => p.name === orderSelectedProduct);
@@ -1386,14 +1401,14 @@ export default function AdminDashboard() {
         setIsOrderModalOpen(false);
         fetchOrders();
         setActiveTab('orders');
-        alert('발주 데이터가 등록되었습니다.\n목록에서 선택하여 발주서를 생성하거나 상태를 변경할 수 있습니다.');
+        toast('발주 데이터가 성공적으로 등록되었습니다!', 'success');
       } else {
         const err = await res.json();
-        alert(err.error || '발주 등록에 실패했습니다.');
+        toast(err.error || '발주 등록에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSubmittingOrder(false);
     }
@@ -1403,7 +1418,7 @@ export default function AdminDashboard() {
   const handleCreateSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSupplierName) {
-      alert('공급사명을 입력해주세요.');
+      toast('공급사명을 입력해주세요.', 'warning');
       return;
     }
     setIsSubmittingSupplier(true);
@@ -1422,49 +1437,57 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert('공급사 정보가 성공적으로 저장되었습니다.');
+        toast('공급사 정보가 성공적으로 저장되었습니다.', 'success');
         setNewSupplierName('');
         setNewSupplierBank('');
         setNewSupplierAccount('');
         setNewSupplierHolder('');
         fetchSuppliers();
+        toast('공급사 정보가 저장되었습니다.', 'success');
       } else {
         const err = await res.json();
-        alert(err.error || '공급사 저장에 실패했습니다.');
+        toast(err.error || '공급사 저장에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSubmittingSupplier(false);
     }
   };
 
   // 공급사 삭제 핸들러
-  const handleDeleteSupplier = async (name: string) => {
-    if (!confirm(`정말로 공급사 '${name}' 설정을 삭제하시겠습니까?`)) return;
-    try {
-      const res = await fetch(`/api/suppliers?name=${encodeURIComponent(name)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        alert('공급사가 성공적으로 삭제되었습니다.');
-        fetchSuppliers();
-      } else {
-        const err = await res.json();
-        alert(err.error || '공급사 삭제에 실패했습니다.');
+  const handleDeleteSupplier = (name: string) => {
+    showConfirm({
+      title: '공급사 설정 삭제',
+      message: `정말로 공급사 '${name}' 설정을 삭제하시겠습니까?`,
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/suppliers?name=${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            toast('공급사가 성공적으로 삭제되었습니다.', 'success');
+            fetchSuppliers();
+          } else {
+            const err = await res.json();
+            toast(err.error || '공급사 삭제에 실패했습니다.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('오류가 발생했습니다.', 'error');
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('오류가 발생했습니다.');
-    }
+    });
   };
 
   // 공급제품 등록/수정 핸들러
   const handleCreateSupplyProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProductName || !newProductSupplier) {
-      alert('제품명과 공급사명을 선택/입력해주세요.');
+      toast('제품명과 공급사명을 선택/입력해주세요.', 'warning');
       return;
     }
     setIsSubmittingSupplyProduct(true);
@@ -1480,81 +1503,94 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert('공급제품이 성공적으로 저장되었습니다.');
+        toast('공급제품이 성공적으로 저장되었습니다.', 'success');
         setNewProductName('');
         setNewProductPrice('');
         fetchSupplyProducts();
       } else {
         const err = await res.json();
-        alert(err.error || '공급제품 저장에 실패했습니다.');
+        toast(err.error || '공급제품 저장에 실패했습니다.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSubmittingSupplyProduct(false);
     }
   };
 
   // 공급제품 삭제 핸들러
-  const handleDeleteSupplyProduct = async (name: string) => {
-    if (!confirm(`정말로 제품 '${name}'을 삭제하시겠습니까?`)) return;
-    try {
-      const res = await fetch(`/api/supply-products?name=${encodeURIComponent(name)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        alert('제품이 성공적으로 삭제되었습니다.');
-        fetchSupplyProducts();
-      } else {
-        const err = await res.json();
-        alert(err.error || '제품 삭제에 실패했습니다.');
+  const handleDeleteSupplyProduct = (name: string) => {
+    showConfirm({
+      title: '공급 제품 삭제',
+      message: `정말로 제품 '${name}'을 삭제하시겠습니까?`,
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/supply-products?name=${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            toast('제품이 성공적으로 삭제되었습니다.', 'success');
+            fetchSupplyProducts();
+          } else {
+            const err = await res.json();
+            toast(err.error || '제품 삭제에 실패했습니다.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('오류가 발생했습니다.', 'error');
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('오류가 발생했습니다.');
-    }
+    });
   };
 
   // 발주 다중 상태 변경 핸들러
-  const handleUpdateOrdersStatus = async (status: string) => {
+  const handleUpdateOrdersStatus = (status: string) => {
     if (selectedOrderIds.length === 0) {
-      alert('선택된 발주 내역이 없습니다.');
+      toast('선택된 발주 내역이 없습니다.', 'warning');
       return;
     }
-    if (!confirm(`선택한 ${selectedOrderIds.length}건의 발주를 '${status}' 상태로 변경하시겠습니까?`)) return;
-    
-    setIsUpdatingOrderStatus(true);
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ids: selectedOrderIds,
-          status: status
-        })
-      });
+    showConfirm({
+      title: '발주 상태 변경',
+      message: `선택한 ${selectedOrderIds.length}건의 발주를 '${status}' 상태로 변경하시겠습니까?`,
+      type: 'info',
+      confirmText: '변경',
+      onConfirm: async () => {
+        setIsUpdatingOrderStatus(true);
+        try {
+          const res = await fetch('/api/orders', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ids: selectedOrderIds,
+              status: status
+            })
+          });
 
-      if (res.ok) {
-        alert('상태가 변경되었습니다.');
-        setSelectedOrderIds([]);
-        fetchOrders();
-      } else {
-        const err = await res.json();
-        alert(err.error || '상태 업데이트에 실패했습니다.');
+          if (res.ok) {
+            toast('상태가 변경되었습니다.', 'success');
+            setSelectedOrderIds([]);
+            fetchOrders();
+          } else {
+            const err = await res.json();
+            toast(err.error || '상태 업데이트에 실패했습니다.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('오류가 발생했습니다.', 'error');
+        } finally {
+          setIsUpdatingOrderStatus(false);
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('오류가 발생했습니다.');
-    } finally {
-      setIsUpdatingOrderStatus(false);
-    }
+    });
   };
 
   // 발주서 다중 미리보기 열기 (엑셀용 한 시트 텍스트 생성)
   const handleOpenPreviewModal = () => {
     if (selectedOrderIds.length === 0) {
-      alert('선택된 발주 내역이 없습니다.');
+      toast('선택된 발주 내역이 없습니다.', 'warning');
       return;
     }
     
@@ -1629,29 +1665,36 @@ export default function AdminDashboard() {
   };
 
   // 단건 발주 내역 삭제 핸들러
-  const handleDeleteOrder = async (id: string) => {
-    if (!confirm('정말로 이 발주 내역을 삭제하시겠습니까? (구글 시트에서도 삭제됩니다)')) return;
-    try {
-      const res = await fetch(`/api/orders?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        alert('발주 내역이 성공적으로 삭제되었습니다.');
-        fetchOrders();
-      } else {
-        const err = await res.json();
-        alert(err.error || '발주 삭제에 실패했습니다.');
+  const handleDeleteOrder = (id: string) => {
+    showConfirm({
+      title: '발주 내역 삭제',
+      message: '정말로 이 발주 내역을 삭제하시겠습니까? (구글 시트에서도 삭제됩니다)',
+      type: 'danger',
+      confirmText: '삭제',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/orders?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            toast('발주 내역이 성공적으로 삭제되었습니다.', 'success');
+            fetchOrders();
+          } else {
+            const err = await res.json();
+            toast(err.error || '발주 내역 삭제에 실패했습니다.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          toast('오류가 발생했습니다.', 'error');
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert('오류가 발생했습니다.');
-    }
+    });
   };
 
   // 총무팀 전달 복사 핸들러
   const handleCopySettlementText = () => {
     if (selectedOrderIds.length === 0) {
-      alert('복사할 발주 내역을 선택해주세요.');
+      toast('복사할 발주 내역을 선택해주세요.', 'warning');
       return;
     }
 
@@ -1691,7 +1734,7 @@ export default function AdminDashboard() {
     text += `정산 요청을 확인해 주시기 바랍니다. 감사합니다.`;
 
     navigator.clipboard.writeText(text);
-    alert('총무팀 전달용 텍스트가 클립보드에 복사되었습니다. 메신저에 바로 붙여넣어 전송하세요!');
+    toast('총무팀 전달용 텍스트가 클립보드에 복사되었습니다.', 'success');
   };
   
   if (!isAuthenticated) {
@@ -2116,13 +2159,9 @@ export default function AdminDashboard() {
                               }}
                             >
                               <option value="" disabled>추가할 상품 선택...</option>
-                              {Array.from(new Set([
-                                ...products.map(prod => prod.name).filter(Boolean),
-                                ...products.map(prod => prod.id).filter(Boolean),
-                                ...links.flatMap(link => link.products || []).filter(Boolean),
-                                ...products.map(prod => prod.targetSheetName).filter(Boolean),
-                                ...AVAILABLE_SHEETS.filter(Boolean)
-                              ]))
+                              {Array.from(new Set(
+                                products.map(prod => prod.name).filter(Boolean)
+                              ))
                                 .filter(name => !editingLinkProducts.includes(name))
                                 .map(name => (
                                   <option key={name} value={name}>{name}</option>
@@ -3887,7 +3926,7 @@ export default function AdminDashboard() {
                                         <button
                                           onClick={async () => {
                                             if (!order.deliveryCompany || !order.trackingNumber) {
-                                              alert('택배사와 운송장번호를 모두 기입해주세요.');
+                                              toast('택배사와 운송장번호를 모두 기입해주세요.', 'warning');
                                               return;
                                             }
                                             try {
@@ -3901,13 +3940,13 @@ export default function AdminDashboard() {
                                                 })
                                               });
                                               if (res.ok) {
-                                                alert('저장되었습니다.');
+                                                toast('저장되었습니다.', 'success');
                                               } else {
                                                 const err = await res.json();
-                                                alert(err.error || '저장에 실패했습니다.');
+                                                toast(err.error || '저장에 실패했습니다.', 'error');
                                               }
                                             } catch (err) {
-                                              alert('오류가 발생했습니다.');
+                                              toast('오류가 발생했습니다.', 'error');
                                             }
                                           }}
                                           className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1.5 rounded text-[10px] font-black whitespace-nowrap transition-colors"
@@ -3918,7 +3957,7 @@ export default function AdminDashboard() {
                                         <button
                                           onClick={() => {
                                             if (!order.deliveryCompany || !order.trackingNumber) {
-                                              alert('택배사와 운송장번호를 모두 기입해주세요.');
+                                              toast('택배사와 운송장번호를 모두 기입해주세요.', 'warning');
                                               return;
                                             }
                                             let trackingUrl = '';
@@ -4592,7 +4631,7 @@ export default function AdminDashboard() {
                     onClick={() => {
                       const activeText = finalOrderGroups.find(g => g.supplierName === activePreviewTab)?.text || finalOrderText;
                       navigator.clipboard.writeText(activeText);
-                      alert(`[${activePreviewTab || '전체'}] 발주서 내용이 클립보드에 복사되었습니다.`);
+                      toast(`[${activePreviewTab || '전체'}] 발주서 내용이 클립보드에 복사되었습니다.`, 'success');
                     }}
                     className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm"
                   >
