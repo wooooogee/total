@@ -896,7 +896,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   const saveSignature = () => {
     if (sigCanvas.current?.isEmpty()) {
-      alert('서명을 먼저 진행해 주세요.');
+      toast('서명을 먼저 진행해 주세요.', 'warning');
       return false;
     }
     const dataURL = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png');
@@ -907,32 +907,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const handleNext = () => {
     if (currentStep === 0) { // Product Selection
       if (!formData.product) {
-        alert('가입하실 상품을 선택해 주세요.');
+        toast('가입하실 상품을 선택해 주세요.', 'warning');
         return;
       }
     }
     if (currentStep === 1) { // Info
       const requireProdName = !['좋은건강크루즈', '더좋은헬스케어580'].includes(formData.product) && !formData.product?.includes('크루즈');
       if (requireProdName && !formData.productName) {
-        alert('제품명을 입력해 주세요.');
+        toast('제품명을 입력해 주세요.', 'warning');
         return;
       }
       if (formData.product === '더좋은라이즈498' && formData.hasMultipleProducts && !formData.productName2) {
-        alert('두 번째 제품명을 입력해 주세요.');
+        toast('두 번째 제품명을 입력해 주세요.', 'warning');
         return;
       }
       if (formData.product === '더좋은통신결합' && !formData.planName) {
-        alert('요금제를 선택해 주세요.');
+        toast('요금제를 선택해 주세요.', 'warning');
         return;
       }
       if (!formData.name || !formData.phone || !formData.address || !formData.residentId || !formData.gender) {
-        alert('계약자 정보를 모두 정확히 입력해 주세요.');
+        toast('계약자 정보를 모두 정확히 입력해 주세요.', 'warning');
         return;
       }
       if (formData.product === '더좋은헬스케어580') {
         const countNum = Number(formData.productCount);
         if (!formData.productCount || isNaN(countNum) || countNum <= 0) {
-          alert('신청 구좌 수를 올바르게 입력해 주세요 (1 이상의 숫자).');
+          toast('신청 구좌 수를 올바르게 입력해 주세요 (1 이상의 숫자).', 'warning');
           return;
         }
       }
@@ -949,7 +949,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       
       const isTargetValid = formData.healthcareTargets.slice(0, count).every(t => t.relation && t.name && t.birth && t.phone);
       if (!isTargetValid) {
-        alert('대상자 정보를 모두 누락 없이 입력해 주세요.');
+        toast('대상자 정보를 모두 누락 없이 입력해 주세요.', 'warning');
         return;
       }
     }
@@ -959,7 +959,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         if (formData.paymentMethod1 === 'card') {
           const pureCard = formData.paymentInfo1.cardNumber.replace(/[^0-9]/g, '');
           if (pureCard.length < 11 || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
-            alert('1회차 카드 정보를 모두 정확히 입력해 주세요.');
+            toast('1회차 카드 정보를 모두 정확히 입력해 주세요.', 'warning');
             return;
           }
         }
@@ -967,12 +967,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         if (formData.paymentMethod2 === 'card') {
           const pureCard = formData.paymentInfo2.cardNumber.replace(/[^0-9]/g, '');
           if (pureCard.length < 11 || !formData.paymentInfo2.cardCompany || !formData.paymentInfo2.cardExpiry) {
-            alert('2~101회차 카드 정보를 모두 정확히 입력해 주세요.');
+            toast('2~101회차 카드 정보를 모두 정확히 입력해 주세요.', 'warning');
             return;
           }
         } else if (formData.paymentMethod2 === 'cms') {
           if (!formData.paymentInfo2.accountNumber || !formData.paymentInfo2.bankName) {
-            alert('2~101회차 계좌 정보를 모두 입력해 주세요.');
+            toast('2~101회차 계좌 정보를 모두 입력해 주세요.', 'warning');
             return;
           }
         }
@@ -980,12 +980,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         if (formData.paymentMethod === 'card') {
           const pureCard = formData.paymentInfo.cardNumber.replace(/[^0-9]/g, '');
           if (pureCard.length < 11 || !formData.paymentInfo.cardCompany || !formData.paymentInfo.cardExpiry) {
-            alert('카드 정보를 모두 정확히 입력해 주세요 (번호는 11~16자리 가능).');
+            toast('카드 정보를 모두 정확히 입력해 주세요 (번호는 11~16자리 가능).', 'warning');
             return;
           }
         } else {
           if (!formData.paymentInfo.accountNumber || !formData.paymentInfo.bankName) {
-            alert('계좌 정보를 모두 입력해 주세요.');
+            toast('계좌 정보를 모두 입력해 주세요.', 'warning');
             return;
           }
         }
@@ -997,7 +997,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       const requiredTerms = currentTerms.filter(t => t.required).map(t => t.id);
       const isAllRequiredAgreed = requiredTerms.every(id => (formData.agreement as any)[id]);
       if (!isAllRequiredAgreed) {
-        alert('필수 약관에 모두 동의해 주세요.');
+        toast('필수 약관에 모두 동의해 주세요.', 'warning');
         return;
       }
     }
@@ -1006,7 +1006,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
     if (currentStep === 7) { // Sales Info step
       if (!formData.salesName || !formData.salesAffiliation) {
-        alert('영업사원 정보(소속 포함)를 모두 정확히 입력해 주세요.');
+        toast('영업사원 정보(소속 포함)를 모두 정확히 입력해 주세요.', 'warning');
         return;
       }
       handleSubmit();
@@ -1017,7 +1017,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         setCurrentStep(3);
         return;
       }
-      const currentProductConfig = products.find(p => p.id === formData.product);
+      const currentProductConfig = getProductConfig(formData.product);
       const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
       if (!isHealthcareRequired) {
         setCurrentStep(3); // 헬스케어대상자(Step 2)를 건너뛰고 상품정보(Step 3)로 바로 이동
@@ -1034,7 +1034,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         setCurrentStep(1);
         return;
       }
-      const currentProductConfig = products.find(p => p.id === formData.product);
+      const currentProductConfig = getProductConfig(formData.product);
       const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
       if (!isHealthcareRequired) {
         setCurrentStep(1); // 헬스케어대상자(Step 2)를 건너뛰고 계약자정보(Step 1)로 바로 이동
@@ -1072,11 +1072,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           setCurrentStep(8); // Final step
         }
       } else {
-        alert(result.message || '등록 중 오류가 발생했습니다.');
+        toast(result.message || '등록 중 오류가 발생했습니다.', 'error');
       }
     } catch (error: any) {
       console.error('Registration Error:', error);
-      alert(error.message || '신청 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      toast(error.message || '신청 중 오류가 발생했습니다. 다시 시도해 주세요.', 'error');
     } finally {
       setIsSubmitting(false);
     }
