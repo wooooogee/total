@@ -2119,6 +2119,7 @@ export default function AdminDashboard() {
                               {Array.from(new Set([
                                 ...products.map(prod => prod.name).filter(Boolean),
                                 ...products.map(prod => prod.id).filter(Boolean),
+                                ...links.flatMap(link => link.products || []).filter(Boolean),
                                 ...products.map(prod => prod.targetSheetName).filter(Boolean),
                                 ...AVAILABLE_SHEETS.filter(Boolean)
                               ]))

@@ -7,11 +7,15 @@ export async function GET() {
     // 구글 시트에서 가져오기 시도
     let products = await getProductConfigsFromSheet();
     
-    // 시트에서 값을 무사히 가져왔다면 (빈 배열 포함) 그대로 반환합니다.
+    // 시트에서 가져온 상품이 없으면 로컬 DB에서 불러옵니다.
+    if (!products || products.length === 0) {
+      products = getProductConfigs();
+    }
+    
     return NextResponse.json(products);
   } catch (error) {
     console.error('Failed to get products:', error);
-    // 에러 발생 시에만 Fallback으로 로컬 DB 사용
+    // 에러 발생 시 Fallback으로 로컬 DB 사용
     return NextResponse.json(getProductConfigs());
   }
 }
