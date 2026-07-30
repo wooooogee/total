@@ -43,7 +43,7 @@ const KLJ_DEFAULT_TEMPLATE = `송하인\\t수취인\\t진화번호\\t주소\\t�
 import { useToast } from '@/components/ToastContext';
 
 export default function AdminDashboard() {
-  const { toast, showConfirm } = useToast();
+  const { toast, showAlert, showConfirm } = useToast();
   const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products' | 'orders' | 'prefill'>('logs');
   
   // 인증 상태
@@ -186,9 +186,20 @@ export default function AdminDashboard() {
 
     setIsCreatingPrefill(true);
     try {
-      const res = await createPrefillLinkAction(prefillForm);
+      let res: any;
+      try {
+        const apiRes = await fetch('/api/prefill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData: prefillForm })
+        });
+        res = await apiRes.json();
+      } catch (fetchErr) {
+        res = await createPrefillLinkAction(prefillForm);
+      }
+
       if (res.success) {
-        toast('고객 사전입력 맞춤 가입신청 링크가 생성되었습니다!', 'success');
+        toast('고객 사전입력 맞춤 가입신청 링크가 성공적으로 생성되었습니다!', 'success', '생성 완료');
         setPrefillForm({
           name: '',
           birth: '',
@@ -208,10 +219,26 @@ export default function AdminDashboard() {
         fetchPrefillList();
         setPrefillSubTab('list');
       } else {
-        toast(res.message || '링크 생성 실패', 'error');
+        showAlert({
+          title: '링크 생성 실패',
+          message: res.message || '맞춤 가입신청 링크 생성 중 오류가 발생했습니다.',
+          type: 'error'
+        });
       }
     } catch (err: any) {
-      toast('오류 발생: ' + err.message, 'error');
+      const isServerActionErr = err.message?.includes('Server Action') || err.message?.includes('failed-to-find-server-action');
+      showAlert({
+        title: isServerActionErr ? '서버 업데이트 안내' : '오류 발생',
+        message: isServerActionErr
+          ? '시스템이 최신 버전으로 업데이트되었습니다. 안정적인 이용을 위해 페이지를 새로고침 해주세요.'
+          : '사전 입력 데이터 처리 중 오류가 발생했습니다.',
+        type: isServerActionErr ? 'warning' : 'error',
+        details: err.message,
+        actionButton: isServerActionErr ? {
+          text: '페이지 새로고침',
+          onClick: () => window.location.reload()
+        } : undefined
+      });
     } finally {
       setIsCreatingPrefill(false);
     }
@@ -231,7 +258,7 @@ export default function AdminDashboard() {
         const data: any[] = XLSX.utils.sheet_to_json(ws);
 
         if (data.length === 0) {
-          toast('엑셀 파일에 데이터가 없습니다.', 'warning');
+          toast('엑셀 파일에 데이터가 없습니다. 내용이 있는 엑셀 파일을 업로드 해주세요.', 'warning');
           return;
         }
 
@@ -251,16 +278,44 @@ export default function AdminDashboard() {
         }));
 
         const batchName = `${file.name.replace(/\.[^/.]+$/, '')} (${formattedItems.length}건 엑셀업로드)`;
-        const res = await createPrefillLinkAction(formattedItems, batchName);
+
+        let res: any;
+        try {
+          const apiRes = await fetch('/api/prefill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inputData: formattedItems, customBatchName: batchName })
+          });
+          res = await apiRes.json();
+        } catch (fetchErr) {
+          res = await createPrefillLinkAction(formattedItems, batchName);
+        }
+
         if (res.success) {
-          toast(`엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`, 'success');
+          toast(`엑셀 대량 업로드를 통해 ${res.data?.length || 0}건의 고객 맞춤 서명 링크가 성공적으로 생성되었습니다!`, 'success', '업로드 성공');
           fetchPrefillList();
           setPrefillSubTab('list');
         } else {
-          toast(res.message || '대량 링크 생성 중 오류가 발생했습니다.', 'error');
+          showAlert({
+            title: '대량 업로드 실패',
+            message: res.message || '대량 링크 생성 중 오류가 발생했습니다.',
+            type: 'error'
+          });
         }
       } catch (err: any) {
-        toast('엑셀 파싱 중 오류 발생: ' + err.message, 'error');
+        const isServerActionErr = err.message?.includes('Server Action') || err.message?.includes('failed-to-find-server-action');
+        showAlert({
+          title: isServerActionErr ? '서버 업데이트 안내' : '엑셀 파싱 중 오류 발생',
+          message: isServerActionErr
+            ? '시스템이 최신 버전으로 업데이트되었습니다. 페이지를 새로고침 하시면 정상 작동합니다.'
+            : '엑셀 파일을 해석하는 중 오류가 발생했습니다. 양식을 확인해 주세요.',
+          type: isServerActionErr ? 'warning' : 'error',
+          details: err.message,
+          actionButton: isServerActionErr ? {
+            text: '페이지 새로고침',
+            onClick: () => window.location.reload()
+          } : undefined
+        });
       } finally {
         setIsCreatingPrefill(false);
       }
