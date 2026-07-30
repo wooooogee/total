@@ -465,38 +465,66 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   }, []);
 
   const getTermsForProduct = (productName: string) => {
-    const config = getProductConfig(productName);
-    
-    // 1. 상품 내용 고지 약관
-    const productNotice = config?.productNoticeTerm || 
-      (productName === '더좋은하이브리드698' ? HYBRID_698_TERMS[0].content :
-       productName === '더좋은프리미엄540' ? PREMIUM_540_TERMS[0].content :
-       productName === '더좋은통신결합' ? TONGSIN_TERMS[0].content :
-       productName === '더좋은라이즈498' ? RISE_498_TERMS[0].content :
-       (productName?.includes('크루즈')) ? CRUISE_TERMS[0].content :
-       productName === '굿라이프헬스케어' ? GOODLIFE_TERMS[0].content : 
-       DEFAULT_TERMS[0].content);
+    const clean = String(productName || '').trim();
+    const config = getProductConfig(clean);
 
-    // 2. 개인정보
-    const privacy = config?.privacyTerm || 
-      (productName === '더좋은라이즈498' ? RISE_498_TERMS[1].content :
-       (productName?.includes('크루즈')) ? CRUISE_TERMS[1].content :
-       productName === '굿라이프헬스케어' ? GOODLIFE_TERMS[1].content :
-       DEFAULT_TERMS[1].content);
+    // 1. DB/Config에 등록된 약관 문구 우선 사용
+    let productNotice = config?.productNoticeTerm;
+    let privacy = config?.privacyTerm;
+    let thirdParty = config?.thirdPartyTerm;
+    let marketing = config?.marketingTerm;
 
-    // 3. 제3자 제공
-    const thirdParty = config?.thirdPartyTerm || 
-      (productName === '더좋은라이즈498' ? RISE_498_TERMS[2].content :
-       (productName?.includes('크루즈')) ? CRUISE_TERMS[2].content :
-       productName === '굿라이프헬스케어' ? GOODLIFE_TERMS[2].content :
-       DEFAULT_TERMS[2].content);
+    // 2. 만약 Config 약관이 없을 경우 키워드 기반 정밀 폴백
+    if (!productNotice) {
+      if (clean.includes('580') || clean.includes('헬스케어580')) {
+        productNotice = `본 신청과 관련하여 계약자 본인은 상기 금융거래정보(카드 정보, 은행, 계좌번호 등)를 만기·해지 신청 때까지 청구 기관에 제공하고, 자동이체를 신청하며, 월 부금이 동일한 정보로 자동이체됨에 동의합니다.
+본 상품은 192회 약정 의무 납입 상품으로, 청약 철회 기간(14일) 이후 해지 시 잔여금을 완납하여야 하며 이에 동의합니다.
+본 상품의 헬스케어서비스는 사은품이 아님을 안내해드립니다.
+본 결합 상품의 총 납입 금액은 480만원(1구좌 기준 월 25,000원, 총 192회 납입), 192회 납입 완료 및 2년 예치 후 해약하실 경우 납입금 전액(100%)을 환급해 드립니다. 단, 고객님께서 만기 회차 이전에 해지할 경우, 해지 시점을 기준으로 납입된 금액에 대해 공정거래위원회 해약 환급금 산정 기준 고시에 따라 환급합니다.`;
+      } else if (clean.includes('698') || clean.includes('하이브리드698')) {
+        productNotice = HYBRID_698_TERMS[0].content;
+      } else if (clean.includes('540') || clean.includes('프리미엄540')) {
+        productNotice = PREMIUM_540_TERMS[0].content;
+      } else if (clean.includes('통신')) {
+        productNotice = TONGSIN_TERMS[0].content;
+      } else if (clean.includes('498') || clean.includes('라이즈498')) {
+        productNotice = RISE_498_TERMS[0].content;
+      } else if (clean.includes('크루즈')) {
+        productNotice = CRUISE_TERMS[0].content;
+      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
+        productNotice = GOODLIFE_TERMS[0].content;
+      } else {
+        productNotice = DEFAULT_TERMS[0].content;
+      }
+    }
 
-    // 4. 마케팅
-    const marketing = config?.marketingTerm || 
-      (productName === '더좋은라이즈498' ? RISE_498_TERMS[3].content :
-       (productName?.includes('크루즈')) ? CRUISE_TERMS[3].content :
-       productName === '굿라이프헬스케어' ? GOODLIFE_TERMS[3].content :
-       DEFAULT_TERMS[3].content);
+    if (!privacy) {
+      if (clean.includes('498') || clean.includes('라이즈')) {
+        privacy = RISE_498_TERMS[1].content;
+      } else if (clean.includes('크루즈')) {
+        privacy = CRUISE_TERMS[1].content;
+      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
+        privacy = GOODLIFE_TERMS[1].content;
+      } else {
+        privacy = DEFAULT_TERMS[1].content;
+      }
+    }
+
+    if (!thirdParty) {
+      if (clean.includes('498') || clean.includes('라이즈')) {
+        thirdParty = RISE_498_TERMS[2].content;
+      } else if (clean.includes('크루즈')) {
+        thirdParty = CRUISE_TERMS[2].content;
+      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
+        thirdParty = GOODLIFE_TERMS[2].content;
+      } else {
+        thirdParty = DEFAULT_TERMS[2].content;
+      }
+    }
+
+    if (!marketing) {
+      marketing = DEFAULT_TERMS[3].content;
+    }
 
     return [
       { id: 'product_notice', title: '1. 상품내용 고지에 대한 동의 (필수)', content: productNotice, required: true },
