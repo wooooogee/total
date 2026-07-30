@@ -1465,7 +1465,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   {formData.product === '더좋은라이즈498' ? (
                     <div className="grid grid-cols-3 gap-2 bg-theme p-1 rounded-2xl border border-theme h-14">
                       {['A', 'B', 'C'].map(grade => (
-                        <button key={grade} type="button" onClick={() => updateFormData('productCount', grade)} className={`rounded-xl font-bold transition-all text-xs ${formData.productCount === grade ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
+                        <button key={grade} type="button" onClick={() => updateFormData('productCount', grade)} className={`rounded-xl font-bold transition-all text-xs ${String(formData.productCount).toUpperCase() === grade ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
                           {grade}
                         </button>
                       ))}
@@ -1481,7 +1481,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                               setIsCustomProductCount(false);
                               updateFormData('productCount', num);
                             }} 
-                            className={`flex-1 rounded-xl font-bold transition-all ${!isCustomProductCount && formData.productCount === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                            className={`flex-1 rounded-xl font-bold transition-all ${!isCustomProductCount && Number(formData.productCount) === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
                           >
                             {num}구좌
                           </button>
@@ -1518,8 +1518,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       {[1, 2, 3].map(num => {
                         const disabled = (formData.product === '더좋은통신결합' && num > 1) || ((formData.product?.includes('크루즈')) && num > 2);
                         if (disabled) return null;
+                        const isSelected = Number(formData.productCount) === num;
                         return (
-                          <button key={num} type="button" onClick={() => updateFormData('productCount', num)} className={`flex-1 rounded-xl font-bold transition-all ${formData.productCount === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
+                          <button key={num} type="button" onClick={() => updateFormData('productCount', num)} className={`flex-1 rounded-xl font-bold transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
                             {num}구좌
                           </button>
                         );
