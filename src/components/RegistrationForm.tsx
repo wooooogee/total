@@ -1041,7 +1041,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     setIsSubmitting(true);
     setSubmittingMessage('가입 신청서를 전송하고 있습니다...');
     try {
-      const result = await registerAction({ ...formData, linkId });
+      const activePrefillToken = initialPrefillData?.token || initialPrefillData?.id || initialPrefillData?.prefillToken || (formData as any).prefillToken;
+      const result = await registerAction({ ...formData, linkId, prefillToken: activePrefillToken });
       if (result.success) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('registration_form_draft');
