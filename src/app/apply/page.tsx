@@ -3,11 +3,11 @@ import RegistrationForm from '@/components/RegistrationForm';
 import Link from 'next/link';
 
 interface ApplyRootPageProps {
-  searchParams: Promise<{ token?: string; product?: string; skipHealthcare?: string }>;
+  searchParams: Promise<{ token?: string; product?: string; skipHealthcare?: string; rewrite?: string }>;
 }
 
 export default async function ApplyRootPage({ searchParams }: ApplyRootPageProps) {
-  const { token, product, skipHealthcare } = await searchParams;
+  const { token, product, skipHealthcare, rewrite } = await searchParams;
 
   let prefillData = null;
   if (token) {
@@ -40,7 +40,13 @@ export default async function ApplyRootPage({ searchParams }: ApplyRootPageProps
     );
   }
 
-  if (prefillData && prefillData.status === '작성완료') {
+  if (prefillData && prefillData.status === '작성완료' && rewrite !== 'true') {
+    const params = new URLSearchParams();
+    if (token) params.set('token', token);
+    if (product) params.set('product', product);
+    if (skipHealthcare) params.set('skipHealthcare', skipHealthcare);
+    params.set('rewrite', 'true');
+
     return (
       <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center justify-center p-6 selection:bg-indigo-500/30">
         <div className="w-full max-w-md card-theme p-8 sm:p-10 rounded-[3rem] text-center space-y-7 shadow-2xl relative overflow-hidden">
@@ -61,8 +67,8 @@ export default async function ApplyRootPage({ searchParams }: ApplyRootPageProps
               이미 신청서 작성이 완료되었습니다
             </h2>
             <p className="text-sub text-xs leading-relaxed font-bold opacity-80 pt-1">
-              해당 맞춤 신청 링크를 통한 가입 신청서 작성이<br />
-              이미 성공적으로 완료 처리되었습니다.
+              해당 맞춤 신청 링크를 통한 가입 신청서 작성이 이미 완료되었습니다.<br />
+              다시 입력하시려면 아래 버튼을 눌러 첫 화면부터 시작해 주세요.
             </p>
           </div>
 
@@ -81,8 +87,8 @@ export default async function ApplyRootPage({ searchParams }: ApplyRootPageProps
             </div>
           </div>
 
-          <Link href="/" className="w-full block py-4.5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-colors">
-            메인 페이지로 이동
+          <Link href={`/apply?${params.toString()}`} className="w-full block py-4.5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-colors">
+            다시 작성하기
           </Link>
         </div>
       </div>

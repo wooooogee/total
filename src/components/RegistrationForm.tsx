@@ -1107,13 +1107,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           <form onSubmit={handleVerifyBirthPassword} className="space-y-4 pt-2">
             <div className="space-y-1.5 text-left">
               <label className="text-xs font-black text-slate-700 dark:text-slate-300 block ml-1">
-                생년월일 (숫자 6자리 또는 8자리)
+                생년월일 (숫자 6자리)
               </label>
               <input
                 type="password"
                 inputMode="numeric"
-                maxLength={8}
-                placeholder="예: 920519 또는 19920519"
+                maxLength={6}
+                placeholder="예: 920519"
                 value={birthPasswordInput}
                 onChange={e => {
                   setBirthPasswordInput(e.target.value.replace(/[^0-9]/g, ''));
