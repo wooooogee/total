@@ -263,32 +263,70 @@ export default function AdminDashboard() {
         }
 
         setIsCreatingPrefill(true);
-        const formattedItems = data.map(item => ({
-          name: item['이름'] || item['계약자'] || item['성명'] || item['계약자명'] || item['name'] || '',
-          birth: String(item['생년월일'] || item['주민번호'] || item['birth'] || ''),
-          phone: formatPhone(String(item['연락처'] || item['계약자연락처'] || item['전화번호'] || item['휴대폰'] || item['phone'] || '')),
-          address: item['주소'] || item['address'] || '',
-          addressDetail: item['상세주소'] || item['addressDetail'] || '',
-          product: item['상품'] || item['상품ID'] || item['상품명'] || item['product'] || '더좋은프리미엄540',
-          productCount: Number(item['구좌수'] || item['productCount'] || 1),
-          productName: item['제품명'] || item['제품명1'] || item['productName'] || '',
-          salesAffiliation: item['영업자소속'] || item['소속'] || item['salesAffiliation'] || '',
-          salesName: item['영업자성명'] || item['영업자'] || item['영업자명'] || item['salesName'] || '',
-          salesPhone: formatPhone(String(item['영업자연락처'] || item['salesPhone'] || ''))
-        }));
 
-        const batchName = `${file.name.replace(/\.[^/.]+$/, '')} (${formattedItems.length}건 엑셀업로드)`;
+        const formattedItems = data.map((item: any) => {
+          const keys = Object.keys(item);
+
+          const getValue = (pattern: RegExp, excludePattern?: RegExp) => {
+            const matchedKey = keys.find(k => {
+              const cleanKey = k.trim().replace(/\s+/g, '');
+              if (excludePattern && excludePattern.test(cleanKey)) return false;
+              return pattern.test(cleanKey);
+            });
+            return matchedKey ? item[matchedKey] : '';
+          };
+
+          const name = String(getValue(/이름|계약자|성명|계약자명|name/i) || '').trim();
+          const birthRaw = String(getValue(/생년월일|주민번호|birth/i, /계약서/i) || '').trim();
+          const phoneRaw = String(getValue(/연락처|전화번호|휴대폰|핸드폰|phone/i, /영업자/i) || '').trim();
+          const address = String(getValue(/주소|address/i, /상세주소/i) || '').trim();
+          const addressDetail = String(getValue(/상세주소|addressdetail/i) || '').trim();
+          const product = String(getValue(/^상품$|^상품명$|^상품id$|^product$/i) || getValue(/상품/i, /제품/i) || '더좋은프리미엄540').trim();
+          const productCountVal = getValue(/구좌수|구좌|productcount/i);
+          const productCount = productCountVal && !isNaN(Number(productCountVal)) ? Number(productCountVal) : 1;
+          const productName = String(getValue(/제품명|제품|옵션|productname/i) || '').trim();
+          const salesAffiliation = String(getValue(/영업자소속|소속|agency/i) || '').trim();
+          const salesName = String(getValue(/영업자성명|영업자명|영업자|salesname/i) || '').trim();
+          const salesPhoneRaw = String(getValue(/영업자연락처|영업자전화/i) || '').trim();
+
+          return {
+            name,
+            birth: birthRaw,
+            phone: formatPhone(phoneRaw),
+            address,
+            addressDetail,
+            product: product || '더좋은프리미엄540',
+            productCount,
+            productName,
+            salesAffiliation,
+            salesName,
+            salesPhone: formatPhone(salesPhoneRaw)
+          };
+        });
+
+        const validItems = formattedItems.filter(item => item.name || item.phone);
+        if (validItems.length === 0) {
+          showAlert({
+            title: '엑셀 데이터 매핑 오류',
+            message: '엑셀에서 고객명이나 연락처 컬럼을 찾지 못했습니다. 엑셀 헤더명(이름, 생년월일, 연락처, 주소, 상품 등)을 확인해 주세요.',
+            type: 'warning'
+          });
+          setIsCreatingPrefill(false);
+          return;
+        }
+
+        const batchName = `${file.name.replace(/\.[^/.]+$/, '')} (${validItems.length}건 엑셀업로드)`;
 
         let res: any;
         try {
           const apiRes = await fetch('/api/prefill', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ inputData: formattedItems, customBatchName: batchName })
+            body: JSON.stringify({ inputData: validItems, customBatchName: batchName })
           });
           res = await apiRes.json();
         } catch (fetchErr) {
-          res = await createPrefillLinkAction(formattedItems, batchName);
+          res = await createPrefillLinkAction(validItems, batchName);
         }
 
         if (res.success) {
@@ -439,19 +477,38 @@ export default function AdminDashboard() {
       return;
     }
 
-    // A열: 계약자연락처, B열: 계약자명, C열: 상품명, D열: 토큰ID (요청대로 A,B,C,D열만 포함)
-    const exportData = listToExport.map((item: any) => ({
-      '계약자연락처': item.phone || '',
-      '계약자명': item.name || '',
-      '상품명': item.product || '',
-      '토큰ID': item.token || ''
-    }));
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://totalsign.netlify.app';
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    // 1번째 첨부 이미지 양식대로 헤더 설정
+    const headers = [
+      '수신자 번호(숫자, 공백, 하이픈(-)만)',
+      '#{계약자}',
+      '#{상품명}',
+      '#{계약자}',
+      '#{상품명}',
+      '#{링크}',
+      '#{링크}'
+    ];
+
+    const rows = listToExport.map((item: any) => {
+      const linkUrl = `${baseUrl}/apply?token=${item.token}`;
+      return [
+        item.phone || '',
+        item.name || '',
+        item.product || '',
+        item.name || '',
+        item.product || '',
+        linkUrl,
+        linkUrl
+      ];
+    });
+
+    const aoaData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(aoaData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '생성된맞춤링크');
+    XLSX.utils.book_append_sheet(wb, ws, '발송용_맞춤링크');
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const fileName = customFileName || `고객맞춤가입링크_목록_${today}.xlsx`;
+    const fileName = customFileName || `고객맞춤가입링크_발송용_${today}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -2582,7 +2639,7 @@ export default function AdminDashboard() {
                         </span>
                       </h2>
                       <p className="text-xs text-slate-500 font-bold mt-1">
-                        대량 생성된 링크 묶음별로 모아보거나 각 묶음 단위로 엑셀(A,B,C,D열)을 다운로드받을 수 있습니다.
+                        대량 생성된 링크 묶음별로 모아보거나 각 묶음 단위로 발송용 엑셀(문자/알림톡 양식)을 다운로드받을 수 있습니다.
                       </p>
                     </div>
 
@@ -2616,7 +2673,7 @@ export default function AdminDashboard() {
                         disabled={prefillList.length === 0}
                         className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-colors cursor-pointer shadow-md shadow-emerald-600/20"
                       >
-                        <Download size={14} /> {selectedBatchFilter === 'all' ? '전체 엑셀 다운로드 (A,B,C,D열)' : '선택 묶음 엑셀 다운로드 (A,B,C,D열)'}
+                        <Download size={14} /> {selectedBatchFilter === 'all' ? '전체 엑셀 다운로드 (발송용 양식)' : '선택 묶음 엑셀 다운로드 (발송용 양식)'}
                       </button>
                     </div>
                   </div>
@@ -2659,7 +2716,7 @@ export default function AdminDashboard() {
                                 onClick={() => downloadPrefillListExcel(group.items, `${group.batchName.replace(/[\s\/:*?"<>|]/g, '_')}.xlsx`)}
                                 className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
                               >
-                                <Download size={13} /> 이 묶음만 엑셀 다운로드 (A,B,C,D열)
+                                <Download size={13} /> 이 묶음만 엑셀 다운로드 (발송용 양식)
                               </button>
                             </div>
 
