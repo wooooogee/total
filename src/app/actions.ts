@@ -124,17 +124,34 @@ export async function getPrefillDataAction(token: string) {
   }
 }
 
+function sortPrefillNewestFirst(list: any[]) {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    const timeA = String(a.createdAt || '');
+    const timeB = String(b.createdAt || '');
+    if (timeA && timeB && timeA !== timeB) {
+      return timeB.localeCompare(timeA);
+    }
+    const tokA = a.token ? parseInt(String(a.token).split('_')[1] || '0', 10) : 0;
+    const tokB = b.token ? parseInt(String(b.token).split('_')[1] || '0', 10) : 0;
+    if (tokA !== tokB && !isNaN(tokA) && !isNaN(tokB)) {
+      return tokB - tokA;
+    }
+    return 0;
+  });
+}
+
 export async function getPrefillListAction() {
   try {
     let list = await getPrefillDataFromSheet();
     if (!list || list.length === 0) {
       list = getPrefillConfigs();
     }
-    return { success: true, data: list };
+    return { success: true, data: sortPrefillNewestFirst(list) };
   } catch (error: any) {
     console.error('getPrefillListAction error:', error);
     const list = getPrefillConfigs();
-    return { success: true, data: list };
+    return { success: true, data: sortPrefillNewestFirst(list) };
   }
 }
 

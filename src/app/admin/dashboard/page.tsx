@@ -91,7 +91,13 @@ export default function AdminDashboard() {
       groupMap[bId].items.push(item);
     });
 
-    return Object.values(groupMap);
+    const groups = Object.values(groupMap);
+    groups.sort((a, b) => {
+      const timeA = String(a.createdAt || '');
+      const timeB = String(b.createdAt || '');
+      return timeB.localeCompare(timeA);
+    });
+    return groups;
   }, [prefillList]);
 
   // 단건 사전등록 Form
@@ -960,7 +966,20 @@ export default function AdminDashboard() {
     setIsLoadingOrders(true);
     try {
       const res = await fetch('/api/orders');
-      if (res.ok) setOrders(await res.json());
+      if (res.ok) {
+        const rawData = await res.json();
+        if (Array.isArray(rawData)) {
+          const sorted = [...rawData].sort((a: any, b: any) => {
+            const dateA = String(a.createdAt || a.orderDate || a.date || '');
+            const dateB = String(b.createdAt || b.orderDate || b.date || '');
+            if (dateA && dateB && dateA !== dateB) return dateB.localeCompare(dateA);
+            return (b.id || 0) - (a.id || 0);
+          });
+          setOrders(sorted);
+        } else {
+          setOrders(rawData);
+        }
+      }
     } catch (err) { console.error(err); }
     finally { setIsLoadingOrders(false); }
   };
