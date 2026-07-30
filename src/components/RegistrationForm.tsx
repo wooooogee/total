@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon, Copy, Check } from 'lucide-react';
+import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon, Copy, Check, Lock, AlertCircle } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import TermsAgreement from './TermsAgreement';
 import { registerAction } from '@/app/actions';
@@ -573,6 +573,47 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const [formData, setFormData] = useState(getInitialFormData());
   const [prefillBannerVisible, setPrefillBannerVisible] = useState(false);
 
+  // 사전신청 토큰 링크 접속 시 생년월일 비밀번호 인증 상태
+  const [isPrefillLocked, setIsPrefillLocked] = useState<boolean>(() => {
+    if (initialPrefillData && initialPrefillData.birth) {
+      const cleaned = String(initialPrefillData.birth).replace(/[^0-9]/g, '');
+      return cleaned.length >= 6;
+    }
+    return false;
+  });
+  const [birthPasswordInput, setBirthPasswordInput] = useState('');
+  const [birthPasswordError, setBirthPasswordError] = useState('');
+
+  const handleVerifyBirthPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!initialPrefillData || !initialPrefillData.birth) {
+      setIsPrefillLocked(false);
+      return;
+    }
+
+    const targetDigits = String(initialPrefillData.birth).replace(/[^0-9]/g, '');
+    const inputDigits = birthPasswordInput.replace(/[^0-9]/g, '');
+
+    if (!inputDigits) {
+      setBirthPasswordError('생년월일을 입력해 주세요.');
+      return;
+    }
+
+    const isMatch = 
+      targetDigits === inputDigits ||
+      targetDigits.endsWith(inputDigits) ||
+      inputDigits.endsWith(targetDigits) ||
+      (targetDigits.length >= 6 && inputDigits.length >= 6 && targetDigits.slice(-6) === inputDigits.slice(-6));
+
+    if (isMatch) {
+      setIsPrefillLocked(false);
+      setBirthPasswordError('');
+      toast('본인 확인이 완료되었습니다.', 'success', '확인 완료');
+    } else {
+      setBirthPasswordError('생년월일이 일치하지 않습니다. 다시 확인 후 입력해 주세요.');
+    }
+  };
+
   useEffect(() => {
     if (initialPrefillData) {
       setFormData(prev => ({
@@ -767,7 +808,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     if (isRise) {
       setFormData(prev => ({
         ...prev,
-        productCount: 'A',
+        productCount: prev.productCount && ['A','B','C','D'].includes(String(prev.productCount)) ? prev.productCount : 'A',
         hasMultipleProducts: false,
         productName2: '',
         contractorType: 'individual'
@@ -775,7 +816,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     } else {
       setFormData(prev => ({
         ...prev,
-        productCount: 1,
+        productCount: prev.productCount && prev.productCount !== 'A' ? prev.productCount : 1,
         hasMultipleProducts: false,
         productName2: '',
         contractorType: isHealthcare580 ? prev.contractorType : 'individual'
@@ -1082,6 +1123,75 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
   };
 
+  if (isPrefillLocked && initialPrefillData) {
+    return (
+      <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center justify-center p-6 selection:bg-indigo-500/30">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 sm:p-10 rounded-[2.5rem] text-center space-y-7 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-indigo-500/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
+          
+          <div className="inline-flex w-20 h-20 bg-indigo-50 dark:bg-indigo-950/60 rounded-[2rem] items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 shadow-inner mx-auto">
+            <Lock size={36} />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
+              보안 본인 확인
+            </span>
+            <h2 className="text-xl font-black italic tracking-tight text-slate-900 dark:text-slate-100 pt-2">
+              맞춤 가입신청서 본인 확인
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-relaxed pt-1">
+              안전한 개인정보 보호를 위해 계약자님의 생년월일을 입력해 주세요.
+            </p>
+          </div>
+
+          {initialPrefillData.name && (
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span className="text-slate-400 font-medium">계약자성명</span>
+              <span className="font-black text-indigo-600 dark:text-indigo-400">{initialPrefillData.name} 님</span>
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyBirthPassword} className="space-y-4 pt-2">
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-black text-slate-700 dark:text-slate-300 block ml-1">
+                생년월일 (숫자 6자리 또는 8자리)
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={8}
+                placeholder="예: 920519 또는 19920519"
+                value={birthPasswordInput}
+                onChange={e => {
+                  setBirthPasswordInput(e.target.value.replace(/[^0-9]/g, ''));
+                  setBirthPasswordError('');
+                }}
+                className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-600 dark:focus:border-indigo-500 transition-all text-center tracking-widest"
+                autoFocus
+              />
+            </div>
+
+            {birthPasswordError && (
+              <p className="text-xs font-bold text-rose-500 flex items-center justify-center gap-1.5 animate-pulse">
+                <AlertCircle size={14} />
+                {birthPasswordError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs transition-all shadow-lg shadow-indigo-600/25 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={16} />
+              본인 확인 및 서명하기
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center py-12 px-4 selection:bg-indigo-500/30">
       <AnimatePresence>
@@ -1209,10 +1319,26 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Package size={14} /> 상품 선택</label>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Package size={14} /> 상품 선택</label>
+                    {initialPrefillData && (
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Lock size={12} /> 사전 지정 (변경 불가)
+                      </span>
+                    )}
+                  </div>
+
+                  {initialPrefillData && (
+                    <div className="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl flex items-center gap-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                      <Lock size={15} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+                      <span>담당자에 의해 사전 지정된 맞춤 상품입니다. 상품 변경이 불가능합니다.</span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3 pt-1">
                     {productsToDisplay.map((p, idx) => {
                       const isSelected = formData.product === p;
+                      const isPrefillLocked = !!initialPrefillData;
                       const themes = [
                         { active: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 border-transparent ring-2 ring-blue-600/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-blue-300 hover:text-blue-600 text-sub hover:bg-blue-50/30' },
                         { active: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/20 border-transparent ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-transparent', inactive: 'bg-theme border border-theme hover:border-emerald-300 hover:text-emerald-600 text-sub hover:bg-emerald-50/30' },
@@ -1226,7 +1352,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                         <button
                           key={p}
                           type="button"
+                          disabled={isPrefillLocked && !isSelected}
                           onClick={() => {
+                            if (isPrefillLocked) {
+                              toast('사전 지정된 상품은 변경하실 수 없습니다.', 'warning');
+                              return;
+                            }
                             if (formData.product !== p) {
                               setFormData({
                                 ...getInitialFormData(),
@@ -1234,11 +1365,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                               });
                             }
                           }}
-                          className={`w-full py-5 px-7 rounded-[1.25rem] font-black text-lg text-left transition-all duration-300 flex items-center justify-between ${isSelected ? theme.active : theme.inactive}`}
+                          className={`w-full py-5 px-7 rounded-[1.25rem] font-black text-lg text-left transition-all duration-300 flex items-center justify-between ${
+                            isSelected ? theme.active : (isPrefillLocked ? 'opacity-40 cursor-not-allowed bg-theme border border-theme text-sub' : theme.inactive)
+                          }`}
                         >
                           <span className="tracking-tight">{getProductDisplayName(p)}</span>
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'border-white bg-white/20' : 'border-slate-300/50 bg-transparent'}`}>
                             {isSelected && <Check size={14} className="text-white" />}
+                            {isPrefillLocked && !isSelected && <Lock size={12} className="text-slate-400" />}
                           </div>
                         </button>
                       );
@@ -1603,8 +1737,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
                 <div className="space-y-3">
                   {(() => {
-                    // 1. 하드코딩된 동적 계산 로직 우선 적용
-                    if (formData.product === '더좋은헬스케어580') {
+                    const prodName = String(formData.product || '');
+
+                    if (prodName.includes('580') || prodName.includes('헬스케어580')) {
                       const count = Number(formData.productCount) || 1;
                       return (
                         <>
@@ -1619,7 +1754,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    if (formData.product === '더좋은하이브리드698') {
+                    if (prodName.includes('698') || prodName.includes('하이브리드') || prodName.includes('굿라이프')) {
                       const count = Number(formData.productCount) || 1;
                       return (
                         <>
@@ -1638,7 +1773,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    if (formData.product === '더좋은프리미엄540') {
+                    if (prodName.includes('540') || prodName.includes('프리미엄')) {
                       const count = Number(formData.productCount) || 1;
                       return (
                         <>
@@ -1657,28 +1792,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    if (formData.product === '굿라이프헬스케어') {
-                      const count = Number(formData.productCount) || 1;
-                      return (
-                        <>
-                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                            <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                            <span className="text-lg font-black text-indigo-500">{(35000 * count).toLocaleString()}원</span>
-                          </div>
-                          <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                            <span className="text-xs font-bold">61~240회차 (월 납입)</span>
-                            <span className="text-lg font-black text-indigo-500">{(16000 * count).toLocaleString()}원</span>
-                          </div>
-                          <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
-                          </div>
-                        </>
-                      );
-                    }
-
-                    if (formData.product === '더좋은라이즈498') {
+                    if (prodName.includes('498') || prodName.includes('라이즈')) {
                       const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
-                      const count = countMap[formData.productCount as string] || 1;
+                      const count = typeof formData.productCount === 'string' && countMap[formData.productCount] 
+                        ? countMap[formData.productCount] 
+                        : (Number(formData.productCount) || 1);
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1800,7 +1918,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    return null;
+                    const countVal = Number(formData.productCount) || 1;
+                    return (
+                      <>
+                        <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                          <span className="text-xs font-bold">신청 구좌 수</span>
+                          <span className="text-lg font-black text-indigo-500">{countVal}구좌</span>
+                        </div>
+                        <div className="flex flex-col items-center py-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/10 text-center">
+                          <span className="text-indigo-600 font-black text-sm italic">상품별 상세 납입금액 및 혜택은 약관 및 안내서를 참조해 주세요.</span>
+                        </div>
+                      </>
+                    );
                   })()}
                 </div>
               </div>
