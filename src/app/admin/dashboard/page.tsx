@@ -463,7 +463,7 @@ export default function AdminDashboard() {
       let phone = '';
       let address = '';
       let product = '';
-      let productCount = 1;
+      let productCount = 0;
       let productName = '';
       let salesAffiliation = '';
       let salesName = '';
@@ -516,13 +516,17 @@ export default function AdminDashboard() {
           }
         });
 
-        // 구좌수 찾기
+        // 구좌수 찾기 ('2' 단독 토큰 또는 '2구좌' / '2구좌_...' 키워드 토큰)
         tokens.forEach((t, idx) => {
-          const match = t.match(/^(\d+)\s*구좌$/);
-          if (match) {
-            productCount = Number(match[1]) || 1;
-          } else if (/^[1-4]$/.test(t) && !productCount) {
+          if (/^[1-9]$/.test(t) && !productCount) {
             productCount = Number(t);
+          }
+          const match = t.match(/(\d+)\s*구좌/);
+          if (match) {
+            const countVal = Number(match[1]);
+            if (!isNaN(countVal) && countVal > 0) {
+              productCount = countVal;
+            }
           }
         });
 
