@@ -160,12 +160,18 @@ export default function AdminDashboard() {
   const fetchPrefillList = async () => {
     setIsLoadingPrefills(true);
     try {
-      const res = await getPrefillListAction();
+      let res: any;
+      try {
+        const apiRes = await fetch('/api/prefill');
+        res = await apiRes.json();
+      } catch (fetchErr) {
+        res = await getPrefillListAction();
+      }
       if (res.success && res.data) {
         setPrefillList(res.data);
       }
     } catch (e) {
-      console.error(e);
+      console.error('fetchPrefillList error:', e);
     } finally {
       setIsLoadingPrefills(false);
     }
@@ -454,7 +460,18 @@ export default function AdminDashboard() {
     setIsCreatingPrefill(true);
     try {
       const batchName = `텍스트 복사 등록 (${formattedItems.length}건 묶음)`;
-      const res = await createPrefillLinkAction(formattedItems, batchName);
+      let res: any;
+      try {
+        const apiRes = await fetch('/api/prefill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData: formattedItems, customBatchName: batchName })
+        });
+        res = await apiRes.json();
+      } catch (fetchErr) {
+        res = await createPrefillLinkAction(formattedItems, batchName);
+      }
+
       if (res.success) {
         toast(`${res.data?.length || 0}건의 고객 맞춤 서명 링크가 일괄 생성되었습니다!`, 'success');
         setQuickPasteText('');
@@ -464,7 +481,21 @@ export default function AdminDashboard() {
         toast(res.message || '링크 생성 중 오류가 발생했습니다.', 'error');
       }
     } catch (err: any) {
-      toast('오류 발생: ' + err.message, 'error');
+      const isServerActionErr = err.message?.includes('Server Action') || err.message?.includes('failed-to-find-server-action');
+      if (isServerActionErr) {
+        showAlert({
+          title: '최신 버전 업데이트 필요',
+          message: '서버가 최신 버전으로 업데이트되었습니다. 페이지를 새로고침(F5) 후 다시 시도해 주세요.',
+          type: 'warning',
+          details: err.message,
+          actionButton: {
+            text: '페이지 새로고침',
+            onClick: () => window.location.reload()
+          }
+        });
+      } else {
+        toast('오류 발생: ' + err.message, 'error');
+      }
     } finally {
       setIsCreatingPrefill(false);
     }
@@ -517,12 +548,18 @@ export default function AdminDashboard() {
       type: 'danger',
       confirmText: '삭제',
       onConfirm: async () => {
-        const res = await deletePrefillLinkAction(token);
+        let res: any;
+        try {
+          const apiRes = await fetch(`/api/prefill?token=${token}`, { method: 'DELETE' });
+          res = await apiRes.json();
+        } catch (fetchErr) {
+          res = await deletePrefillLinkAction(token);
+        }
         if (res.success) {
           toast('삭제되었습니다.', 'success');
           fetchPrefillList();
         } else {
-          toast(res.message, 'error');
+          toast(res.message || '삭제 중 오류가 발생했습니다.', 'error');
         }
       }
     });
