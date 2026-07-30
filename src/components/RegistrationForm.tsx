@@ -326,7 +326,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   const getProductConfig = (targetName: string) => {
     if (!targetName) return undefined;
-    return products.find(p => p.id === targetName || p.name === targetName || p.targetSheetName === targetName);
+    const clean = targetName.trim();
+    let found = products.find(p => p.id === clean || p.name === clean || p.targetSheetName === clean);
+    if (found) return found;
+    return products.find(p => clean.includes(p.id) || clean.includes(p.name) || p.id.includes(clean) || (p.name && p.name.includes(clean)));
   };
 
   const getProductDisplayName = (targetName: string) => {
@@ -1739,9 +1742,49 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="space-y-3">
                   {(() => {
                     const prodName = String(formData.product || '');
+                    const count = Number(formData.productCount) || 1;
 
+                    // 1. DB/products.json에 등록된 상품 설정(Config) 우선 적용
+                    const currentConfig = getProductConfig(prodName);
+                    const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
+                    
+                    if (hasCustomConfig) {
+                      const multiplyAmounts = (text: string, multiplier: number) => {
+                        if (!text) return text;
+                        return text.replace(/(\d{1,3}(?:,\d{3})*|\d+)\s*(원|만원|만)/g, (match, p1, p2) => {
+                          const num = parseInt(p1.replace(/,/g, ''), 10);
+                          if (!isNaN(num)) {
+                            return (num * multiplier).toLocaleString() + p2;
+                          }
+                          return match;
+                        });
+                      };
+
+                      return (
+                        <>
+                          {currentConfig.monthlyPayment1 && (
+                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                              <span className="text-xs font-bold">{currentConfig.monthlyPayment1Title || '1차 납입금'}</span>
+                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment1, count)}</span>
+                            </div>
+                          )}
+                          {currentConfig.monthlyPayment2 && currentConfig.monthlyPayment2 !== '전 회차 동일' && (
+                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                              <span className="text-xs font-bold">{currentConfig.monthlyPayment2Title || '2차 납입금'}</span>
+                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment2, count)}</span>
+                            </div>
+                          )}
+                          {currentConfig.refundNotice && (
+                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
+                              <span className="text-emerald-600 font-black text-sm italic">{multiplyAmounts(currentConfig.refundNotice, count)}</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    }
+
+                    // 2. 키워드 기반 폴백
                     if (prodName.includes('580') || prodName.includes('헬스케어580')) {
-                      const count = Number(formData.productCount) || 1;
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1755,8 +1798,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    if (prodName.includes('698') || prodName.includes('하이브리드') || prodName.includes('굿라이프')) {
-                      const count = Number(formData.productCount) || 1;
+                    if (prodName.includes('698') || prodName.includes('하이브리드698')) {
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1775,7 +1817,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     }
 
                     if (prodName.includes('540') || prodName.includes('프리미엄')) {
-                      const count = Number(formData.productCount) || 1;
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1795,28 +1836,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
                     if (prodName.includes('498') || prodName.includes('라이즈')) {
                       const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
-                      const count = typeof formData.productCount === 'string' && countMap[formData.productCount] 
+                      const countVal = typeof formData.productCount === 'string' && countMap[formData.productCount] 
                         ? countMap[formData.productCount] 
                         : (Number(formData.productCount) || 1);
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                             <span className="text-xs font-bold">1~60회차 (월 납입)</span>
-                            <span className="text-lg font-black text-indigo-500">{(33000 * count).toLocaleString()}원</span>
+                            <span className="text-lg font-black text-indigo-500">{(33000 * countVal).toLocaleString()}원</span>
                           </div>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
                             <span className="text-xs font-bold">61~260회차 (월 납입)</span>
-                            <span className="text-lg font-black text-indigo-500">{(15000 * count).toLocaleString()}원</span>
+                            <span className="text-lg font-black text-indigo-500">{(15000 * countVal).toLocaleString()}원</span>
                           </div>
                           <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10">
-                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * count).toLocaleString()}원 100% 환급</span>
+                            <span className="text-emerald-600 font-black text-sm italic">만기 시 {(4980000 * countVal).toLocaleString()}원 100% 환급</span>
                           </div>
                         </>
                       );
                     }
 
                     if (formData.product === '더좋은통신결합') {
-                      const count = Number(formData.productCount) || 1;
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1841,7 +1881,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     }
 
                     if (formData.product === '좋은건강크루즈') {
-                      const count = Number(formData.productCount) || 1;
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1862,7 +1901,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     }
 
                     if (formData.product?.includes('크루즈') && formData.product !== '좋은건강크루즈') {
-                      const count = Number(formData.productCount) || 1;
                       return (
                         <>
                           <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -1879,45 +1917,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       );
                     }
 
-                    // 2. 알 수 없는 신규 상품인 경우 products.json 설정 기반 폴백
-                    const currentConfig = getProductConfig(formData.product);
-                    const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
-                    
-                    if (hasCustomConfig) {
-                      const count = Number(formData.productCount) || 1;
-                      const multiplyAmounts = (text: string, multiplier: number) => {
-                        if (!text) return text;
-                        return text.replace(/(\d{1,3}(?:,\d{3})*|\d+)\s*(원|만원|만)/g, (match, p1, p2) => {
-                          const num = parseInt(p1.replace(/,/g, ''), 10);
-                          if (!isNaN(num)) {
-                            return (num * multiplier).toLocaleString() + p2;
-                          }
-                          return match;
-                        });
-                      };
 
-                      return (
-                        <>
-                          {currentConfig.monthlyPayment1 && (
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">{currentConfig.monthlyPayment1Title || '1차 납입금'}</span>
-                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment1, count)}</span>
-                            </div>
-                          )}
-                          {currentConfig.monthlyPayment2 && (
-                            <div className="flex justify-between items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                              <span className="text-xs font-bold">{currentConfig.monthlyPayment2Title || '2차 납입금'}</span>
-                              <span className="text-lg font-black text-indigo-500">{multiplyAmounts(currentConfig.monthlyPayment2, count)}</span>
-                            </div>
-                          )}
-                          {currentConfig.refundNotice && (
-                            <div className="flex flex-col items-center py-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
-                              <span className="text-emerald-600 font-black text-sm italic">{multiplyAmounts(currentConfig.refundNotice, count)}</span>
-                            </div>
-                          )}
-                        </>
-                      );
-                    }
 
                     const countVal = Number(formData.productCount) || 1;
                     return (
