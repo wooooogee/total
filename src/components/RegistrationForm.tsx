@@ -327,9 +327,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const getProductConfig = (targetName: string) => {
     if (!targetName) return undefined;
     const clean = targetName.trim();
-    let found = products.find(p => p.id === clean || p.name === clean || p.targetSheetName === clean);
-    if (found) return found;
-    return products.find(p => clean.includes(p.id) || clean.includes(p.name) || p.id.includes(clean) || (p.name && p.name.includes(clean)));
+    return products.find(p => p.id === clean || p.name === clean || p.targetSheetName === clean);
   };
 
   const getProductDisplayName = (targetName: string) => {
@@ -474,36 +472,41 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     let thirdParty = config?.thirdPartyTerm;
     let marketing = config?.marketingTerm;
 
-    // 2. 만약 Config 약관이 없을 경우 키워드 기반 정밀 폴백
+    // 2. 정확히 등록된 상품명 매칭 (모호한 키워드 임의 추정 금지)
     if (!productNotice) {
-      if (clean.includes('580') || clean.includes('헬스케어580')) {
+      if (clean === '더좋은하이브리드698') {
+        productNotice = HYBRID_698_TERMS[0].content;
+      } else if (clean === '더좋은프리미엄540') {
+        productNotice = PREMIUM_540_TERMS[0].content;
+      } else if (clean === '더좋은통신결합') {
+        productNotice = TONGSIN_TERMS[0].content;
+      } else if (clean === '더좋은라이즈498') {
+        productNotice = RISE_498_TERMS[0].content;
+      } else if (clean === '좋은건강크루즈' || clean === '더좋은크루즈') {
+        productNotice = CRUISE_TERMS[0].content;
+      } else if (clean === '굿라이프헬스케어') {
+        productNotice = GOODLIFE_TERMS[0].content;
+      } else if (clean === '굿라이프헬스케어골드' || clean === '굿라이프헬스케어 골드') {
+        productNotice = `본 신청과 관련하여 계약자 본인은 상기 금융거래정보(카드 정보, 은행, 계좌번호 등)를 만기·해지 신청 때까지 청구 기관에 제공하고, 자동이체를 신청합니다.
+본 상품은 60회 약정 의무 납입 상품으로, 청약 철회 기간(14일) 이후 해지 시 잔여금을 완납하여야 하며 이에 동의합니다.
+본 상품은 더좋은라이프 상조 서비스와 에넥스텔레콤 결합 상품으로, 상조 서비스와 렌탈 계약은 각각 별개로 진행됩니다. 60회까지의 렌탈 계약으로 제공되는 제품 및 건강 안심 케어 서비스는 사은품이 아님을 알려드립니다.
+본 결합 상품의 총 납입 금액은 540만원(실 상조 납입금 312만 원, 제품 1구좌 228만 원 기준), 210회 만기 상품입니다. 고객님께서 만기 회차 도래 시점까지 상품 금액을 완납하고 익월까지 상조 서비스를 이용하지 않고 해약하실 경우, 실 상조 납입금 전액과 만기 축하금을 지급해 드립니다. 단, 고객님께서 만기 회차 이전에 해지할 경우, 해지 시점을 기준으로 납입된 실 상조 납입금에 대해 공정거래위원회 해약 환급금 산정 기준 고시에 따라 환급합니다.`;
+      } else if (clean === '더좋은헬스케어580') {
         productNotice = `본 신청과 관련하여 계약자 본인은 상기 금융거래정보(카드 정보, 은행, 계좌번호 등)를 만기·해지 신청 때까지 청구 기관에 제공하고, 자동이체를 신청하며, 월 부금이 동일한 정보로 자동이체됨에 동의합니다.
 본 상품은 192회 약정 의무 납입 상품으로, 청약 철회 기간(14일) 이후 해지 시 잔여금을 완납하여야 하며 이에 동의합니다.
 본 상품의 헬스케어서비스는 사은품이 아님을 안내해드립니다.
 본 결합 상품의 총 납입 금액은 480만원(1구좌 기준 월 25,000원, 총 192회 납입), 192회 납입 완료 및 2년 예치 후 해약하실 경우 납입금 전액(100%)을 환급해 드립니다. 단, 고객님께서 만기 회차 이전에 해지할 경우, 해지 시점을 기준으로 납입된 금액에 대해 공정거래위원회 해약 환급금 산정 기준 고시에 따라 환급합니다.`;
-      } else if (clean.includes('698') || clean.includes('하이브리드698')) {
-        productNotice = HYBRID_698_TERMS[0].content;
-      } else if (clean.includes('540') || clean.includes('프리미엄540')) {
-        productNotice = PREMIUM_540_TERMS[0].content;
-      } else if (clean.includes('통신')) {
-        productNotice = TONGSIN_TERMS[0].content;
-      } else if (clean.includes('498') || clean.includes('라이즈498')) {
-        productNotice = RISE_498_TERMS[0].content;
-      } else if (clean.includes('크루즈')) {
-        productNotice = CRUISE_TERMS[0].content;
-      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
-        productNotice = GOODLIFE_TERMS[0].content;
       } else {
         productNotice = DEFAULT_TERMS[0].content;
       }
     }
 
     if (!privacy) {
-      if (clean.includes('498') || clean.includes('라이즈')) {
+      if (clean === '더좋은라이즈498') {
         privacy = RISE_498_TERMS[1].content;
-      } else if (clean.includes('크루즈')) {
+      } else if (clean === '좋은건강크루즈' || clean === '더좋은크루즈') {
         privacy = CRUISE_TERMS[1].content;
-      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
+      } else if (clean === '굿라이프헬스케어') {
         privacy = GOODLIFE_TERMS[1].content;
       } else {
         privacy = DEFAULT_TERMS[1].content;
@@ -511,11 +514,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
 
     if (!thirdParty) {
-      if (clean.includes('498') || clean.includes('라이즈')) {
+      if (clean === '더좋은라이즈498') {
         thirdParty = RISE_498_TERMS[2].content;
-      } else if (clean.includes('크루즈')) {
+      } else if (clean === '좋은건강크루즈' || clean === '더좋은크루즈') {
         thirdParty = CRUISE_TERMS[2].content;
-      } else if (clean.includes('굿라이프') || clean.includes('헬스케어')) {
+      } else if (clean === '굿라이프헬스케어') {
         thirdParty = GOODLIFE_TERMS[2].content;
       } else {
         thirdParty = DEFAULT_TERMS[2].content;
