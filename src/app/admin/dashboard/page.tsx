@@ -423,6 +423,8 @@ export default function AdminDashboard() {
     }
 
     const formattedItems: any[] = [];
+    let headerMap: { [key: string]: number } | null = null;
+
     for (const line of lines) {
       let tokens = line.split('\t');
       if (tokens.length < 2 && line.includes(',')) {
@@ -430,31 +432,132 @@ export default function AdminDashboard() {
       }
       tokens = tokens.map(t => t.trim());
 
-      // 헤더행 건너뛰기
-      if (tokens[0] === '가입일자' || tokens[0] === '이름' || tokens[0] === '계약자') continue;
-
-      let idxOffset = 0;
-      if (tokens[0] && (tokens[0].includes('-') || tokens[0].includes('.'))) {
-        idxOffset = 1;
+      // 1. 헤더행인 경우 컬럼 인덱스 맵 생성 후 continue
+      const isHeaderLine = tokens.some(t => /이름|계약자|생년월일|연락처|전화|주소|상품|구좌|제품/i.test(t));
+      if (isHeaderLine) {
+        headerMap = {};
+        tokens.forEach((t, idx) => {
+          const clean = t.replace(/\s+/g, '');
+          if (/이름|계약자|성명/i.test(clean) && headerMap!.name === undefined) headerMap!.name = idx;
+          else if (/생년월일|주민번호/i.test(clean) && !/계약서/i.test(clean) && headerMap!.birth === undefined) headerMap!.birth = idx;
+          else if (/연락처|전화번호|휴대폰|핸드폰/i.test(clean) && !/영업자/i.test(clean) && headerMap!.phone === undefined) headerMap!.phone = idx;
+          else if (/주소/i.test(clean) && !/상세/i.test(clean) && headerMap!.address === undefined) headerMap!.address = idx;
+          else if (/상품/i.test(clean) && !/제품/i.test(clean) && headerMap!.product === undefined) headerMap!.product = idx;
+          else if (/구좌/i.test(clean) && headerMap!.productCount === undefined) headerMap!.productCount = idx;
+          else if (/제품/i.test(clean) && headerMap!.productName === undefined) headerMap!.productName = idx;
+          else if (/영업자소속|소속/i.test(clean) && headerMap!.salesAffiliation === undefined) headerMap!.salesAffiliation = idx;
+          else if (/영업자성명|영업자명/i.test(clean) && headerMap!.salesName === undefined) headerMap!.salesName = idx;
+          else if (/영업자연락처|영업자전화/i.test(clean) && headerMap!.salesPhone === undefined) headerMap!.salesPhone = idx;
+        });
+        continue;
       }
 
-      const name = tokens[0 + idxOffset] || '';
-      const birth = tokens[1 + idxOffset] || '';
-      const phone = formatPhone(tokens[2 + idxOffset] || '');
+      // 2. 데이터행 추출
+      let name = '';
+      let birth = '';
+      let phone = '';
+      let address = '';
+      let product = '';
+      let productCount = 1;
+      let productName = '';
+      let salesAffiliation = '';
+      let salesName = '';
+      let salesPhone = '';
+
+      if (headerMap && (headerMap.name !== undefined || headerMap.phone !== undefined)) {
+        name = headerMap.name !== undefined ? (tokens[headerMap.name] || '') : '';
+        birth = headerMap.birth !== undefined ? (tokens[headerMap.birth] || '') : '';
+        phone = headerMap.phone !== undefined ? formatPhone(tokens[headerMap.phone] || '') : '';
+        address = headerMap.address !== undefined ? (tokens[headerMap.address] || '') : '';
+        product = headerMap.product !== undefined ? (tokens[headerMap.product] || '') : '';
+        const countVal = headerMap.productCount !== undefined ? tokens[headerMap.productCount] : '1';
+        productCount = countVal && !isNaN(Number(countVal.replace(/[^0-9]/g, ''))) ? Number(countVal.replace(/[^0-9]/g, '')) : 1;
+        productName = headerMap.productName !== undefined ? (tokens[headerMap.productName] || '') : '';
+        salesAffiliation = headerMap.salesAffiliation !== undefined ? (tokens[headerMap.salesAffiliation] || '') : '';
+        salesName = headerMap.salesName !== undefined ? (tokens[headerMap.salesName] || '') : '';
+        salesPhone = headerMap.salesPhone !== undefined ? formatPhone(tokens[headerMap.salesPhone] || '') : '';
+      } else {
+        // 헤더가 포함되지 않고 데이터만 복사된 경우 지능형 패턴 검출
+        const phoneIndices: number[] = [];
+        tokens.forEach((t, idx) => {
+          const cleanPhone = t.replace(/[^0-9]/g, '');
+          if (cleanPhone.startsWith('01') && (cleanPhone.length === 10 || cleanPhone.length === 11)) {
+            phoneIndices.push(idx);
+          }
+        });
+
+        if (phoneIndices.length > 0) {
+          phone = formatPhone(tokens[phoneIndices[0]]);
+          if (phoneIndices.length > 1) {
+            salesPhone = formatPhone(tokens[phoneIndices[1]]);
+          }
+        }
+
+        // 생년월일 찾기 (전화번호 제외)
+        tokens.forEach((t, idx) => {
+          if (phoneIndices.includes(idx)) return;
+          const digits = t.replace(/[^0-9]/g, '');
+          if ((digits.length === 6 || digits.length === 8) && !birth) {
+            birth = t;
+          }
+        });
+
+        // 상품 찾기
+        tokens.forEach((t, idx) => {
+          if (/라이즈|헬스케어|프리미엄|하이브리드|통신|크루즈|540|580|698|498/i.test(t) && !product) {
+            product = t;
+          }
+        });
+
+        // 주소 찾기
+        tokens.forEach((t, idx) => {
+          if (/시|구|동|로|길|아파트|빌라|호/.test(t) && t.length > 6 && !address) {
+            address = t;
+          }
+        });
+
+        // 구좌수 찾기
+        tokens.forEach((t, idx) => {
+          if (/^\d+구좌$/.test(t)) {
+            productCount = Number(t.replace(/[^0-9]/g, '')) || 1;
+          }
+        });
+
+        // 이름 찾기
+        tokens.forEach((t, idx) => {
+          if (phoneIndices.includes(idx)) return;
+          if (t === birth || t === product || t === address) return;
+          if (/미제출|\(X\)|가입일자|계약자/i.test(t)) return;
+          if (/^[가-힣]{2,5}$/.test(t) && !name) {
+            name = t;
+          }
+        });
+
+        // 폴백 (기본 위치)
+        let idxOffset = 0;
+        if (tokens[0] && (tokens[0].includes('-') || tokens[0].includes('.'))) idxOffset = 1;
+
+        if (!name) name = tokens[0 + idxOffset] || '';
+        if (!birth) birth = tokens[1 + idxOffset] || '';
+        if (!phone) phone = formatPhone(tokens[2 + idxOffset] || '');
+        if (!address) address = tokens[3 + idxOffset] || '';
+        if (!product) product = tokens[4 + idxOffset] || '더좋은프리미엄540';
+      }
+
       if (!name || !phone) continue;
 
       formattedItems.push({
         name,
         birth,
         phone,
-        address: tokens[3 + idxOffset] || '',
+        address,
         addressDetail: '',
-        product: tokens[4 + idxOffset] || '더좋은프리미엄540',
-        productCount: tokens[5 + idxOffset] && !isNaN(Number(tokens[5 + idxOffset])) ? Number(tokens[5 + idxOffset]) : 1,
-        productName: tokens[6 + idxOffset] || '',
-        salesAffiliation: tokens[7 + idxOffset] || '',
-        salesName: tokens[8 + idxOffset] || '',
-        salesPhone: tokens[9 + idxOffset] ? formatPhone(tokens[9 + idxOffset]) : ''
+        product: product || '더좋은프리미엄540',
+        productCount: productCount || 1,
+        productName,
+        salesAffiliation,
+        salesName,
+        salesPhone
       });
     }
 
