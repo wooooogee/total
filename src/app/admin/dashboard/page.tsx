@@ -49,6 +49,7 @@ export default function AdminDashboard() {
   // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [userRole, setUserRole] = useState<'admin' | 'logs_only'>('admin');
 
   // PDF 모달 상태
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
@@ -1481,8 +1482,14 @@ export default function AdminDashboard() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === '880805') {
+      setUserRole('admin');
       setIsAuthenticated(true);
       toast('관리자 모드로 접속되었습니다.', 'success');
+    } else if (passwordInput === '1701!') {
+      setUserRole('logs_only');
+      setActiveTab('logs');
+      setIsAuthenticated(true);
+      toast('통합 신청 내역 조회 모드로 접속되었습니다.', 'success');
     } else {
       toast('비밀번호가 일치하지 않습니다.', 'error');
       setPasswordInput('');
@@ -2079,7 +2086,9 @@ export default function AdminDashboard() {
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight flex items-center gap-1.5 text-slate-900">
-              통합 신청 시스템 <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">관리자 대시보드</span>
+              통합 신청 시스템 <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                {userRole === 'logs_only' ? '통합 신청 내역 전용' : '관리자 대시보드'}
+              </span>
             </h1>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">PREMIUM ADMIN PANEL V3</p>
           </div>
@@ -2093,30 +2102,34 @@ export default function AdminDashboard() {
           >
             <UserCheck size={14} /> 통합 신청 내역
           </button>
-          <button 
-            onClick={() => setActiveTab('prefill')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'prefill' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <UserPlus size={14} /> 고객 맞춤 가입신청
-          </button>
-          <button 
-            onClick={() => setActiveTab('links')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <Link2 size={14} /> 신청 링크 매니저
-          </button>
-          <button 
-            onClick={() => setActiveTab('products')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <Settings size={14} /> 상품/약관 매니저
-          </button>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <FileText size={14} /> 수기 발주 및 정산
-          </button>
+          {userRole === 'admin' && (
+            <>
+              <button 
+                onClick={() => setActiveTab('prefill')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'prefill' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+              >
+                <UserPlus size={14} /> 고객 맞춤 가입신청
+              </button>
+              <button 
+                onClick={() => setActiveTab('links')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+              >
+                <Link2 size={14} /> 신청 링크 매니저
+              </button>
+              <button 
+                onClick={() => setActiveTab('products')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+              >
+                <Settings size={14} /> 상품/약관 매니저
+              </button>
+              <button 
+                onClick={() => setActiveTab('orders')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+              >
+                <FileText size={14} /> 수기 발주 및 정산
+              </button>
+            </>
+          )}
         </div>
       </header>
 
