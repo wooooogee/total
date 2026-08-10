@@ -903,6 +903,7 @@ export async function getOrdersFromSheet(): Promise<any[]> {
     const memoKey = findHeader(['메모', '비고', '특이사항']) || '메모';
     const deliveryCompanyKey = findHeader(['택배사', '배송사']) || '택배사';
     const trackingNumberKey = findHeader(['운송장번호', '송장번호']) || '운송장번호';
+    const deliveredAtKey = findHeader(['배송완료일자', '배송완료일', '배송완료일시', '완료일자', '완료일']) || '배송완료일자';
 
     return rows.map(row => ({
       id: row.get(idKey) || '',
@@ -917,7 +918,8 @@ export async function getOrdersFromSheet(): Promise<any[]> {
       status: row.get(statusKey) || '정산대기',
       memo: row.get(memoKey) || '',
       deliveryCompany: row.get(deliveryCompanyKey) || '',
-      trackingNumber: row.get(trackingNumberKey) || ''
+      trackingNumber: row.get(trackingNumberKey) || '',
+      deliveredAt: row.get(deliveredAtKey) || ''
     }));
   } catch (error) {
     console.error('Failed to get orders from Sheet:', error);
@@ -939,7 +941,7 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
     if (!sheet) {
       sheet = await doc.addSheet({
         title: '발주내역',
-        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모', '택배사', '운송장번호']
+        headerValues: ['발주ID', '발주일시', '고객명', '연락처', '주소', '공급사명', '제품명', '공급가', '정산방식', '정산상태', '메모', '택배사', '운송장번호', '배송완료일자']
       });
     }
     const rows = await sheet.getRows();
@@ -966,7 +968,8 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
       '정산상태': order.status || '정산대기',
       '메모': order.memo || '',
       '택배사': order.deliveryCompany || '',
-      '운송장번호': order.trackingNumber || ''
+      '운송장번호': order.trackingNumber || '',
+      '배송완료일자': order.deliveredAt || ''
     };
     if (existingRow) {
       existingRow.set('발주일시', rowData['발주일시']);
@@ -981,6 +984,7 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
       existingRow.set('메모', rowData['메모']);
       existingRow.set('택배사', rowData['택배사']);
       existingRow.set('운송장번호', rowData['운송장번호']);
+      existingRow.set('배송완료일자', rowData['배송완료일자']);
       await existingRow.save();
     } else {
       await sheet.addRow(rowData);
@@ -992,7 +996,7 @@ export async function saveOrderToSheet(order: any): Promise<boolean> {
   }
 }
 
-export async function updateOrderInSheet(orderId: string, updates: {status?: string, deliveryCompany?: string, trackingNumber?: string}): Promise<boolean> {
+export async function updateOrderInSheet(orderId: string, updates: {status?: string, deliveryCompany?: string, trackingNumber?: string, deliveredAt?: string}): Promise<boolean> {
   if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) return false;
   try {
     const serviceAccountAuth = new JWT({
@@ -1016,6 +1020,10 @@ export async function updateOrderInSheet(orderId: string, updates: {status?: str
       currentHeaders.push('운송장번호');
       needsUpdate = true;
     }
+    if (!currentHeaders.includes('배송완료일자')) {
+      currentHeaders.push('배송완료일자');
+      needsUpdate = true;
+    }
     if (needsUpdate) {
       if (currentHeaders.length > sheet.columnCount) {
         await sheet.resize({ rowCount: sheet.rowCount || 100, columnCount: currentHeaders.length });
@@ -1036,12 +1044,14 @@ export async function updateOrderInSheet(orderId: string, updates: {status?: str
     const statusKey = findHeader(['정산상태', '상태']) || '정산상태';
     const deliveryCompanyKey = findHeader(['택배사', '배송사']) || '택배사';
     const trackingNumberKey = findHeader(['운송장번호', '송장번호']) || '운송장번호';
+    const deliveredAtKey = findHeader(['배송완료일자', '배송완료일', '배송완료일시', '완료일자', '완료일']) || '배송완료일자';
     
     const existingRow = rows.find(r => r.get(idKey) === orderId);
     if (existingRow) {
       if (updates.status !== undefined) existingRow.set(statusKey, updates.status);
       if (updates.deliveryCompany !== undefined) existingRow.set(deliveryCompanyKey, updates.deliveryCompany);
       if (updates.trackingNumber !== undefined) existingRow.set(trackingNumberKey, updates.trackingNumber);
+      if (updates.deliveredAt !== undefined) existingRow.set(deliveredAtKey, updates.deliveredAt);
       await existingRow.save();
       return true;
     }

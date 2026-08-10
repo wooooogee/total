@@ -30,9 +30,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const data = await request.json();
-    const { id, ids, status, deliveryCompany, trackingNumber } = data;
+    const { id, ids, status, deliveryCompany, trackingNumber, deliveredAt } = data;
     
-    if (!status && deliveryCompany === undefined && trackingNumber === undefined) {
+    if (!status && deliveryCompany === undefined && trackingNumber === undefined && deliveredAt === undefined) {
       return NextResponse.json({ error: '변경할 데이터가 없습니다.' }, { status: 400 });
     }
 
@@ -53,6 +53,7 @@ export async function PATCH(request: Request) {
     if (status !== undefined) updates.status = status;
     if (deliveryCompany !== undefined) updates.deliveryCompany = deliveryCompany;
     if (trackingNumber !== undefined) updates.trackingNumber = trackingNumber;
+    if (deliveredAt !== undefined) updates.deliveredAt = deliveredAt;
 
     const success = await updateOrderInSheet(id, updates);
     if (success) {

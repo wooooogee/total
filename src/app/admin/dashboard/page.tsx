@@ -1047,6 +1047,9 @@ export default function AdminDashboard() {
   const [editingPrice, setEditingPrice] = useState('');
   const [isUpdatingSupplyProduct, setIsUpdatingSupplyProduct] = useState(false);
 
+  // 발주 정렬 상태 ('desc': 최신순 내림차순, 'asc': 오래된순 오름차순)
+  const [orderSortOrder, setOrderSortOrder] = useState<'desc' | 'asc'>('desc');
+
   // 링크 데이터 가져오기
   const fetchLinks = async () => {
     setIsLoadingLinks(true);
@@ -4089,8 +4092,18 @@ export default function AdminDashboard() {
                         placeholder="고객명, 제품명 검색..."
                         value={orderSearchTerm}
                         onChange={(e) => setOrderSearchTerm(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 min-w-[200px]"
+                        className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 min-w-[180px]"
                       />
+
+                      {/* 정렬 필터 */}
+                      <select
+                        value={orderSortOrder}
+                        onChange={(e) => setOrderSortOrder(e.target.value as 'desc' | 'asc')}
+                        className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-indigo-600 outline-none cursor-pointer"
+                      >
+                        <option value="desc">발주일시: 내림차순 (최신순)</option>
+                        <option value="asc">발주일시: 오름차순 (오래된순)</option>
+                      </select>
                     </div>
 
                     <button
@@ -4207,12 +4220,20 @@ export default function AdminDashboard() {
                                   className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
                                 />
                               </th>
-                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">발주일시</th>
+                              <th 
+                                onClick={() => setOrderSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                                className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 transition-colors select-none"
+                              >
+                                <div className="flex items-center gap-1">
+                                  <span>발주일시</span>
+                                  {orderSortOrder === 'desc' ? <ArrowDown size={11} className="text-indigo-600" /> : <ArrowUp size={11} className="text-indigo-600" />}
+                                </div>
+                              </th>
                               <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급사</th>
                               <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급 제품</th>
                               <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">고객 정보</th>
                               <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">공급가</th>
-                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">배송 정보</th>
+                              <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">배송 / 완료일자</th>
                               <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">상태 / 작업</th>
                             </tr>
                           </thead>
@@ -4231,6 +4252,11 @@ export default function AdminDashboard() {
                                   mMonth = o.createdAt.startsWith(`${y}. ${parseInt(m)}.`);
                                 }
                                 return mSup && mSet && mSta && mSearch && mMonth;
+                              })
+                              .sort((a, b) => {
+                                const strA = String(a.createdAt || '');
+                                const strB = String(b.createdAt || '');
+                                return orderSortOrder === 'desc' ? strB.localeCompare(strA) : strA.localeCompare(strB);
                               })
                               .map((order, idx) => (
                                 <tr key={order.id || idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
@@ -4270,10 +4296,10 @@ export default function AdminDashboard() {
                                     <span className="text-indigo-600 font-black">{Number(order.price || 0).toLocaleString()}원</span>
                                   </td>
                                   <td className="px-2 py-3">
-                                    <div className="flex flex-col gap-1.5 w-[160px]">
+                                    <div className="flex flex-col gap-1.5 w-[170px]">
                                       <div className="flex items-center gap-1">
                                         <select 
-                                          className="text-[10px] p-1.5 border border-slate-200 rounded outline-none focus:border-indigo-500 text-slate-700 bg-white flex-1"
+                                          className="text-[10px] p-1.5 border border-slate-200 rounded outline-none focus:border-indigo-500 text-slate-700 bg-white flex-1 min-w-0"
                                           value={order.deliveryCompany || ''}
                                           onChange={(e) => {
                                             const newOrders = [...orders];
@@ -4295,8 +4321,8 @@ export default function AdminDashboard() {
                                         </select>
                                         <button
                                           onClick={async () => {
-                                            if (!order.deliveryCompany || !order.trackingNumber) {
-                                              toast('택배사와 운송장번호를 모두 기입해주세요.', 'warning');
+                                            if (!order.deliveryCompany && !order.trackingNumber && !order.deliveredAt) {
+                                              toast('배송 정보나 배송완료일자를 기입해주세요.', 'warning');
                                               return;
                                             }
                                             try {
@@ -4306,7 +4332,8 @@ export default function AdminDashboard() {
                                                 body: JSON.stringify({
                                                   id: order.id,
                                                   deliveryCompany: order.deliveryCompany,
-                                                  trackingNumber: order.trackingNumber
+                                                  trackingNumber: order.trackingNumber,
+                                                  deliveredAt: order.deliveredAt
                                                 })
                                               });
                                               if (res.ok) {
@@ -4319,7 +4346,7 @@ export default function AdminDashboard() {
                                               toast('오류가 발생했습니다.', 'error');
                                             }
                                           }}
-                                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1.5 rounded text-[10px] font-black whitespace-nowrap transition-colors"
+                                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-2 py-1.5 rounded text-[10px] font-black whitespace-nowrap transition-colors"
                                           title="배송 정보 저장"
                                         >
                                           저장
@@ -4343,7 +4370,7 @@ export default function AdminDashboard() {
                                             }
                                             window.open(trackingUrl, '_blank');
                                           }}
-                                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded text-[10px] font-black whitespace-nowrap transition-colors"
+                                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2 py-1.5 rounded text-[10px] font-black whitespace-nowrap transition-colors"
                                           title="배송 조회"
                                         >
                                           조회
@@ -4363,6 +4390,22 @@ export default function AdminDashboard() {
                                           }
                                         }}
                                       />
+                                      <div className="flex items-center gap-1.5 bg-slate-50 p-1 border border-slate-200 rounded">
+                                        <span className="text-[9px] text-slate-400 font-bold whitespace-nowrap">완료일:</span>
+                                        <input 
+                                          type="date" 
+                                          className="text-[10px] p-0.5 border-none outline-none text-slate-700 bg-transparent flex-1 font-bold" 
+                                          value={order.deliveredAt || ''}
+                                          onChange={(e) => {
+                                            const newOrders = [...orders];
+                                            const idxToUpdate = newOrders.findIndex(o => o.id === order.id);
+                                            if (idxToUpdate > -1) {
+                                              newOrders[idxToUpdate].deliveredAt = e.target.value;
+                                              setOrders(newOrders);
+                                            }
+                                          }}
+                                        />
+                                      </div>
                                     </div>
                                   </td>
                                   <td className="px-2 py-3">
