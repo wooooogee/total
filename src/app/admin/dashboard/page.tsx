@@ -1867,7 +1867,6 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        toast('공급제품 정보가 수정되었습니다.', 'success');
         cancelEditingSupplyProduct();
         fetchSupplyProducts();
       } else {
