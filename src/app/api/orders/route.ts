@@ -30,14 +30,31 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const data = await request.json();
-    const { id, ids, status, deliveryCompany, trackingNumber, deliveredAt } = data;
-    
+    const { id, ids, items, status, deliveryCompany, trackingNumber, deliveredAt } = data;
+
+    // 1) 여러 건 다건 배열 (개별 필드 일괄저장용)
+    if (items && Array.isArray(items)) {
+      const results = await Promise.all(
+        items.map(async (item: any) => {
+          if (!item.id) return false;
+          const itemUpdates: any = {};
+          if (item.status !== undefined) itemUpdates.status = item.status;
+          if (item.deliveryCompany !== undefined) itemUpdates.deliveryCompany = item.deliveryCompany;
+          if (item.trackingNumber !== undefined) itemUpdates.trackingNumber = item.trackingNumber;
+          if (item.deliveredAt !== undefined) itemUpdates.deliveredAt = item.deliveredAt;
+          return updateOrderInSheet(item.id, itemUpdates);
+        })
+      );
+      const successCount = results.filter(Boolean).length;
+      return NextResponse.json({ success: true, count: successCount });
+    }
+
     if (!status && deliveryCompany === undefined && trackingNumber === undefined && deliveredAt === undefined) {
       return NextResponse.json({ error: '변경할 데이터가 없습니다.' }, { status: 400 });
     }
 
     if (ids && Array.isArray(ids)) {
-      // 여러 건 상태 처리 (주로 상태변경에만 사용)
+      // 여러 건 동일 상태 일괄 처리
       const results = await Promise.all(
         ids.map(orderId => updateOrderInSheet(orderId, { status }))
       );

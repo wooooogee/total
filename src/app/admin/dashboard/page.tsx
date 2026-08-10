@@ -6,7 +6,7 @@ import {
     Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, Edit2,
   Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award, ChevronRightIcon,
   X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2, UserPlus, Upload, FileSpreadsheet, MessageSquare,
-  ArrowUp, ArrowDown, Sliders
+  ArrowUp, ArrowDown, Sliders, Save, DownloadCloud
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -1048,8 +1048,15 @@ export default function AdminDashboard() {
   const [editingPrice, setEditingPrice] = useState('');
   const [isUpdatingSupplyProduct, setIsUpdatingSupplyProduct] = useState(false);
 
-  // 발주 정렬 상태 ('desc': 최신순 내림차순, 'asc': 오래된순 오름차순)
+  // 발주 정렬 상태 (키: 'createdAt' | 'productName', 방향: 'desc' | 'asc')
+  const [orderSortKey, setOrderSortKey] = useState<'createdAt' | 'productName'>('createdAt');
   const [orderSortOrder, setOrderSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  // 공급제품 리스트 정렬 방향 ('asc' | 'desc')
+  const [supplyProductSortOrder, setSupplyProductSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // 일괄 저장 로딩 상태
+  const [isBatchSavingOrders, setIsBatchSavingOrders] = useState(false);
 
   // 링크 데이터 가져오기
   const fetchLinks = async () => {
@@ -1951,6 +1958,109 @@ export default function AdminDashboard() {
         }
       }
     });
+  };
+
+  // 수기발주 내역 일괄 저장 핸들러 (전체/변경사항 일괄 저장)
+  const handleBatchSaveOrders = async () => {
+    if (orders.length === 0) {
+      toast('저장할 발주 내역이 없습니다.', 'warning');
+      return;
+    }
+    setIsBatchSavingOrders(true);
+    try {
+      const itemsToUpdate = orders.map(o => ({
+        id: o.id,
+        status: o.status,
+        deliveryCompany: o.deliveryCompany || '',
+        trackingNumber: o.trackingNumber || '',
+        deliveredAt: o.deliveredAt || ''
+      }));
+
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: itemsToUpdate })
+      });
+
+      if (res.ok) {
+        toast('모든 수기발주 내역이 일괄 저장되었습니다.', 'success');
+        fetchOrders();
+      } else {
+        const err = await res.json();
+        toast(err.error || '일괄 저장에 실패했습니다.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('일괄 저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setIsBatchSavingOrders(false);
+    }
+  };
+
+  // 완성된 발주서 양식 엑셀 파일 바로 다운로드 핸들러
+  const handleExportOrdersToExcel = (targetOrders?: any[]) => {
+    const listToExport = targetOrders && targetOrders.length > 0 
+      ? targetOrders 
+      : orders.filter(o => {
+          const mSup = !orderFilterSupplier || o.supplierName === orderFilterSupplier;
+          const mSet = !orderFilterSettlement || o.settlementType === orderFilterSettlement;
+          const mSta = !orderFilterStatus || o.status === orderFilterStatus;
+          const mSearch = !orderSearchTerm || 
+            (o.customerName && o.customerName.includes(orderSearchTerm)) || 
+            (o.productName && o.productName.includes(orderSearchTerm));
+          let mMonth = true;
+          if (orderFilterMonth && o.createdAt) {
+            const [y, m] = orderFilterMonth.split('-');
+            mMonth = o.createdAt.startsWith(`${y}. ${parseInt(m)}.`);
+          }
+          return mSup && mSet && mSta && mSearch && mMonth;
+        });
+
+    if (listToExport.length === 0) {
+      toast('다운로드할 발주 내역이 없습니다.', 'warning');
+      return;
+    }
+
+    const excelData = listToExport.map(o => {
+      const priceNum = Number(o.price || 0);
+      return {
+        '송하인': o.supplierName || '',
+        '수취인': o.customerName || '',
+        '진화번호': o.customerPhone || '',
+        '주소': o.customerAddress || '',
+        '상품명': o.productName || '',
+        '상품옵션': '',
+        '수량': 1,
+        '공급가': priceNum ? priceNum.toLocaleString() : '0',
+        '배송일자': o.deliveredAt || '',
+        '택배사': o.deliveryCompany || '',
+        '운송장번호': o.trackingNumber || ''
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // C, D, E열 등 컬럼 너비(wch)를 넉넉하게 확장 설정
+    worksheet['!cols'] = [
+      { wch: 18 }, // A: 송하인
+      { wch: 15 }, // B: 수취인
+      { wch: 22 }, // C: 진화번호 (키움)
+      { wch: 50 }, // D: 주소 (키움)
+      { wch: 40 }, // E: 상품명 (키움)
+      { wch: 12 }, // F: 상품옵션
+      { wch: 10 }, // G: 수량
+      { wch: 18 }, // H: 공급가
+      { wch: 16 }, // I: 배송일자
+      { wch: 15 }, // J: 택배사
+      { wch: 22 }  // K: 운송장번호
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '발주서');
+    
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    XLSX.writeFile(workbook, `발주서_양식_${today}.xlsx`);
+    toast('발주서 엑셀 파일이 다운로드되었습니다.', 'success');
   };
 
   // 발주서 다중 미리보기 열기 (엑셀용 한 시트 텍스트 생성)
@@ -4055,17 +4165,6 @@ export default function AdminDashboard() {
                         {suppliers.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
                       </select>
 
-                      {/* 정산방식 필터 */}
-                      <select
-                        value={orderFilterSettlement}
-                        onChange={(e) => setOrderFilterSettlement(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 outline-none"
-                      >
-                        <option value="">정산방식: 전체</option>
-                        <option value="건바이건">건바이건</option>
-                        <option value="월정산">월정산</option>
-                      </select>
-
                       {/* 발주상태 필터 */}
                       <select
                         value={orderFilterStatus}
@@ -4095,24 +4194,32 @@ export default function AdminDashboard() {
                         onChange={(e) => setOrderSearchTerm(e.target.value)}
                         className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 min-w-[180px]"
                       />
-
-                      {/* 정렬 필터 */}
-                      <select
-                        value={orderSortOrder}
-                        onChange={(e) => setOrderSortOrder(e.target.value as 'desc' | 'asc')}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-indigo-600 outline-none cursor-pointer"
-                      >
-                        <option value="desc">발주일시: 내림차순 (최신순)</option>
-                        <option value="asc">발주일시: 오름차순 (오래된순)</option>
-                      </select>
                     </div>
 
-                    <button
-                      onClick={fetchOrders}
-                      className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm"
-                    >
-                      <RefreshCw size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleExportOrdersToExcel()}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-sm transition-all"
+                        title="현재 조회중인 발주 내역을 완성된 엑셀 파일로 바로 다운로드합니다."
+                      >
+                        <FileSpreadsheet size={14} /> 발주서 엑셀 다운로드
+                      </button>
+                      <button
+                        onClick={handleBatchSaveOrders}
+                        disabled={isBatchSavingOrders}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-sm transition-all disabled:opacity-50"
+                        title="수정된 배송 정보 및 발주 상태를 한 번에 일괄 저장합니다."
+                      >
+                        {isBatchSavingOrders ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 일괄 저장
+                      </button>
+                      <button
+                        onClick={fetchOrders}
+                        className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm"
+                        title="새로고침"
+                      >
+                        <RefreshCw size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* 발주 목록 테이블 */}
@@ -4411,14 +4518,26 @@ export default function AdminDashboard() {
                                   </td>
                                   <td className="px-2 py-3">
                                     <div className="flex flex-col gap-2 items-start">
-                                      <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-black ${
-                                        order.status === '발주대기' ? 'bg-amber-50 text-amber-600' :
-                                        order.status === '발주완료' ? 'bg-indigo-50 text-indigo-600' :
-                                        order.status === '배송중' ? 'bg-blue-50 text-blue-600' :
-                                        order.status === '배송완료' ? 'bg-emerald-50 text-emerald-600' :
-                                        'bg-slate-100 text-slate-600'
-                                      }`}>
-                                        {order.status}
+                                      <span 
+                                        onClick={() => {
+                                          const statusCycle: ('발주대기' | '발주완료' | '배송중' | '배송완료')[] = ['발주대기', '발주완료', '배송중', '배송완료'];
+                                          const currentStatus = order.status || '발주대기';
+                                          let currentIdx = statusCycle.indexOf(currentStatus as any);
+                                          if (currentIdx === -1) currentIdx = 0;
+                                          const nextStatus = statusCycle[(currentIdx + 1) % statusCycle.length];
+                                          
+                                          setOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, status: nextStatus } : o));
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer hover:scale-105 active:scale-95 transition-all select-none border shadow-xs ${
+                                          order.status === '발주대기' ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100' :
+                                          order.status === '발주완료' ? 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100' :
+                                          order.status === '배송중' ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100' :
+                                          order.status === '배송완료' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' :
+                                          'bg-slate-100 text-slate-600 border-slate-200'
+                                        }`}
+                                        title="클릭하여 상태 변경 (발주대기 ➔ 발주완료 ➔ 배송중 ➔ 배송완료)"
+                                      >
+                                        {order.status || '발주대기'} ✎
                                       </span>
                                       <div className="flex gap-2">
                                         <button
@@ -5134,6 +5253,24 @@ export default function AdminDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* 우측 하단 스크롤 추종 전역 플로팅 일괄저장 네비게이션 버튼 */}
+      {activeTab === 'orders' && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 pointer-events-auto">
+          <button
+            onClick={handleBatchSaveOrders}
+            disabled={isBatchSavingOrders}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-4 rounded-full shadow-2xl border-2 border-indigo-400/40 flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 group cursor-pointer"
+            title="송장번호, 택배사, 완료일자, 발주상태 등 모든 변경사항을 한 번에 일괄 저장합니다."
+          >
+            {isBatchSavingOrders ? (
+              <Loader2 size={18} className="animate-spin text-white" />
+            ) : (
+              <Save size={18} className="group-hover:rotate-12 transition-transform" />
+            )}
+            <span className="text-sm tracking-wide">일괄저장</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
