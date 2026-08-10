@@ -8,13 +8,7 @@ export function parseDateStringToMs(dateStr?: string | null): number {
   const trimmed = dateStr.trim();
   if (!trimmed) return 0;
 
-  // 1) ISO 8601 및 표준 날짜 문자열 파싱
-  const directParsed = Date.parse(trimmed);
-  if (!isNaN(directParsed)) {
-    return directParsed;
-  }
-
-  // 2) 한국어 toLocaleString() format: "2026. 8. 5. 오후 5:31:47" 또는 "2026. 08. 05."
+  // 1) 한국어 toLocaleString() format: "2026. 8. 5. 오후 5:31:47" 또는 "2026. 08. 05." 우선 정규식 파싱
   const match = trimmed.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?(?:\s*(오전|오후))?\s*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?/);
   if (match) {
     const year = parseInt(match[1], 10);
@@ -36,6 +30,12 @@ export function parseDateStringToMs(dateStr?: string | null): number {
     if (!isNaN(timeMs)) {
       return timeMs;
     }
+  }
+
+  // 2) ISO 8601 및 표준 날짜 문자열 파싱
+  const directParsed = Date.parse(trimmed);
+  if (!isNaN(directParsed)) {
+    return directParsed;
   }
 
   return 0;
