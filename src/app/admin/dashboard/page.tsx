@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, 
+    Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, Edit2,
   Search, UserCheck, LayoutDashboard, Loader2, FileText, Settings, Award, ChevronRightIcon,
   X, Eye, Download, Lock, ChevronDown, ChevronLeft, ChevronRight, BarChart2, UserPlus, Upload, FileSpreadsheet, MessageSquare,
   ArrowUp, ArrowDown, Sliders
@@ -1041,6 +1041,12 @@ export default function AdminDashboard() {
   const [newProductPrice, setNewProductPrice] = useState('');
   const [isSubmittingSupplyProduct, setIsSubmittingSupplyProduct] = useState(false);
 
+  // 공급제품 수정 인라인 상태
+  const [editingProductName, setEditingProductName] = useState<string | null>(null);
+  const [editingSupplierName, setEditingSupplierName] = useState('');
+  const [editingPrice, setEditingPrice] = useState('');
+  const [isUpdatingSupplyProduct, setIsUpdatingSupplyProduct] = useState(false);
+
   // 링크 데이터 가져오기
   const fetchLinks = async () => {
     setIsLoadingLinks(true);
@@ -1825,6 +1831,54 @@ export default function AdminDashboard() {
       toast('오류가 발생했습니다.', 'error');
     } finally {
       setIsSubmittingSupplyProduct(false);
+    }
+  };
+
+  // 공급제품 편집 시작
+  const startEditingSupplyProduct = (product: any) => {
+    setEditingProductName(product.name);
+    setEditingSupplierName(product.supplierName || '');
+    setEditingPrice(product.price ? String(product.price) : '');
+  };
+
+  // 공급제품 편집 취소
+  const cancelEditingSupplyProduct = () => {
+    setEditingProductName(null);
+    setEditingSupplierName('');
+    setEditingPrice('');
+  };
+
+  // 공급제품 수정 저장 핸들러
+  const handleUpdateSupplyProduct = async (name: string) => {
+    if (!editingSupplierName) {
+      toast('공급사명을 선택해주세요.', 'warning');
+      return;
+    }
+    setIsUpdatingSupplyProduct(true);
+    try {
+      const res = await fetch('/api/supply-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          supplierName: editingSupplierName,
+          price: editingPrice
+        })
+      });
+
+      if (res.ok) {
+        toast('공급제품 정보가 수정되었습니다.', 'success');
+        cancelEditingSupplyProduct();
+        fetchSupplyProducts();
+      } else {
+        const err = await res.json();
+        toast(err.error || '공급제품 수정에 실패했습니다.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('오류가 발생했습니다.', 'error');
+    } finally {
+      setIsUpdatingSupplyProduct(false);
     }
   };
 
@@ -4609,21 +4663,84 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {supplyProducts.map((p, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
-                              <td className="px-2 py-3 font-black text-slate-900">{p.name}</td>
-                              <td className="px-2 py-3">{p.supplierName}</td>
-                              <td className="px-2 py-3 text-indigo-600 font-black">{Number(p.price || 0).toLocaleString()}원</td>
-                              <td className="px-2 py-3">
-                                <button
-                                  onClick={() => handleDeleteSupplyProduct(p.name)}
-                                  className="p-1.5 bg-red-50 border border-red-150 hover:bg-red-650 hover:text-white rounded-lg text-red-600 transition-colors"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                          {supplyProducts.map((p, idx) => {
+                            const isEditing = editingProductName === p.name;
+                            return (
+                              <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
+                                <td className="px-2 py-3 font-black text-slate-900 max-w-[200px] truncate" title={p.name}>
+                                  {p.name}
+                                </td>
+                                <td className="px-2 py-3">
+                                  {isEditing ? (
+                                    <select
+                                      value={editingSupplierName}
+                                      onChange={(e) => setEditingSupplierName(e.target.value)}
+                                      className="bg-slate-50 border border-slate-300 focus:border-indigo-600 focus:bg-white outline-none rounded-lg py-1 px-2 text-xs font-bold text-slate-800"
+                                    >
+                                      <option value="">공급사 선택</option>
+                                      {suppliers.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                    </select>
+                                  ) : (
+                                    p.supplierName || <span className="text-slate-300 font-normal">미지정</span>
+                                  )}
+                                </td>
+                                <td className="px-2 py-3 text-indigo-600 font-black">
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        value={editingPrice}
+                                        onChange={(e) => setEditingPrice(e.target.value)}
+                                        className="w-24 bg-slate-50 border border-slate-300 focus:border-indigo-600 focus:bg-white outline-none rounded-lg py-1 px-2 text-xs font-bold text-slate-800"
+                                        placeholder="공급가"
+                                      />
+                                      <span className="text-slate-500 font-bold text-[11px]">원</span>
+                                    </div>
+                                  ) : (
+                                    `${Number(p.price || 0).toLocaleString()}원`
+                                  )}
+                                </td>
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        onClick={() => handleUpdateSupplyProduct(p.name)}
+                                        disabled={isUpdatingSupplyProduct}
+                                        title="저장"
+                                        className="p-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-600 hover:text-white rounded-lg text-indigo-600 transition-colors disabled:opacity-50"
+                                      >
+                                        {isUpdatingSupplyProduct ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                      </button>
+                                      <button
+                                        onClick={cancelEditingSupplyProduct}
+                                        title="취소"
+                                        className="p-1.5 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        onClick={() => startEditingSupplyProduct(p)}
+                                        title="공급가/공급사 수정"
+                                        className="p-1.5 bg-indigo-50 border border-indigo-150 hover:bg-indigo-600 hover:text-white rounded-lg text-indigo-600 transition-colors"
+                                      >
+                                        <Edit2 size={12} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSupplyProduct(p.name)}
+                                        title="삭제"
+                                        className="p-1.5 bg-red-50 border border-red-150 hover:bg-red-650 hover:text-white rounded-lg text-red-600 transition-colors"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     )}

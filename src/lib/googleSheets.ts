@@ -766,7 +766,7 @@ export async function getSupplyProductsFromSheet(): Promise<any[]> {
     };
 
     const nameKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
-    const supplierKey = findHeader(['공급사명', '공급사', '제조사', '업체명', '업체']) || '공급사명';
+    const supplierKey = findHeader(['공급사명', '공급사', '제조사', '업체명', '업체', '공급처', '공급업체']) || '공급사명';
     const priceKey = findHeader(['공급가', '공급가격', '원가', '단가', '가격']) || '공급가';
 
     return rows.map(row => ({
@@ -807,17 +807,19 @@ export async function saveSupplyProductToSheet(product: any): Promise<boolean> {
     };
 
     const nameKey = findHeader(['제품명', '상품명', '제품', '상품']) || '제품명';
+    const supplierKey = findHeader(['공급사명', '공급사', '제조사', '업체명', '업체', '공급처', '공급업체']) || '공급사명';
+    const priceKey = findHeader(['공급가', '공급가격', '원가', '단가', '가격']) || '공급가';
+
     const existingRow = rows.find(r => r.get(nameKey) === product.name);
-    const rowData = {
-      '제품명': product.name,
-      '공급사명': product.supplierName,
-      '공급가': product.price
-    };
     if (existingRow) {
-      existingRow.set('공급사명', rowData['공급사명']);
-      existingRow.set('공급가', rowData['공급가']);
+      existingRow.set(supplierKey, product.supplierName);
+      existingRow.set(priceKey, product.price);
       await existingRow.save();
     } else {
+      const rowData: Record<string, any> = {};
+      rowData[nameKey] = product.name;
+      rowData[supplierKey] = product.supplierName;
+      rowData[priceKey] = product.price;
       await sheet.addRow(rowData);
     }
     return true;
