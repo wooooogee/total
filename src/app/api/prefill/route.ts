@@ -30,13 +30,15 @@ function getKoreanDateTime() {
   return `${dateObj.year}-${dateObj.month}-${dateObj.day} ${dateObj.hour}:${dateObj.minute}:${dateObj.second}`;
 }
 
+import { parseDateStringToMs } from '@/lib/dateUtils';
+
 function sortPrefillNewestFirst(list: any[]) {
   if (!Array.isArray(list)) return [];
   return [...list].sort((a, b) => {
-    const timeA = String(a.createdAt || '');
-    const timeB = String(b.createdAt || '');
-    if (timeA && timeB && timeA !== timeB) {
-      return timeB.localeCompare(timeA);
+    const timeA = parseDateStringToMs(a.createdAt);
+    const timeB = parseDateStringToMs(b.createdAt);
+    if (timeA !== timeB) {
+      return timeB - timeA;
     }
     const tokA = a.token ? parseInt(String(a.token).split('_')[1] || '0', 10) : 0;
     const tokB = b.token ? parseInt(String(b.token).split('_')[1] || '0', 10) : 0;

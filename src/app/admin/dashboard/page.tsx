@@ -11,6 +11,7 @@ import {
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { createPrefillLinkAction, getPrefillListAction, deletePrefillLinkAction } from '@/app/actions';
+import { parseDateStringToMs } from '@/lib/dateUtils';
 
 interface LinkConfig {
   id: string;
@@ -94,9 +95,9 @@ export default function AdminDashboard() {
 
     const groups = Object.values(groupMap);
     groups.sort((a, b) => {
-      const timeA = String(a.createdAt || '');
-      const timeB = String(b.createdAt || '');
-      return timeB.localeCompare(timeA);
+      const timeA = parseDateStringToMs(a.createdAt);
+      const timeB = parseDateStringToMs(b.createdAt);
+      return timeB - timeA;
     });
     return groups;
   }, [prefillList]);
@@ -1116,9 +1117,9 @@ export default function AdminDashboard() {
         const rawData = await res.json();
         if (Array.isArray(rawData)) {
           const sorted = [...rawData].sort((a: any, b: any) => {
-            const dateA = String(a.createdAt || a.orderDate || a.date || '');
-            const dateB = String(b.createdAt || b.orderDate || b.date || '');
-            if (dateA && dateB && dateA !== dateB) return dateB.localeCompare(dateA);
+            const timeA = parseDateStringToMs(a.createdAt || a.orderDate || a.date);
+            const timeB = parseDateStringToMs(b.createdAt || b.orderDate || b.date);
+            if (timeA !== timeB) return timeB - timeA;
             return (b.id || 0) - (a.id || 0);
           });
           setOrders(sorted);
@@ -4254,9 +4255,9 @@ export default function AdminDashboard() {
                                 return mSup && mSet && mSta && mSearch && mMonth;
                               })
                               .sort((a, b) => {
-                                const strA = String(a.createdAt || '');
-                                const strB = String(b.createdAt || '');
-                                return orderSortOrder === 'desc' ? strB.localeCompare(strA) : strA.localeCompare(strB);
+                                const timeA = parseDateStringToMs(a.createdAt);
+                                const timeB = parseDateStringToMs(b.createdAt);
+                                return orderSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
                               })
                               .map((order, idx) => (
                                 <tr key={order.id || idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
