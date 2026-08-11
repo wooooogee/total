@@ -3924,12 +3924,109 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
-                              <div className="flex flex-col">
-                                <span className="text-slate-700">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
-                                <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
-                                  {log['카드사/은행명'] || log['결제기관'] || ''}
-                                </span>
-                              </div>
+                              {(() => {
+                                const rawMethod = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').toUpperCase();
+                                const isCMS = rawMethod.includes('CMS') || rawMethod.includes('계좌') || rawMethod.includes('이체');
+
+                                if (!isCMS) {
+                                  return (
+                                    <div className="flex flex-col">
+                                      <span className="text-slate-700 font-bold">{log['결제정보(카드/cms)'] || log['결제수단'] || '카드'}</span>
+                                      <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                        {log['카드사/은행명'] || log['결제기관'] || ''}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+
+                                let birth = String(log['생년월일'] || log['주민번호'] || log['생년월일(6자리)'] || log['residentId'] || log['birth'] || '').trim();
+                                
+                                if (!birth || birth === '-') {
+                                  const targetStr = String(log['대상자1'] || log['헬스케어대상자'] || log['헬스케어 대상자'] || (log['_targets'] ? log['_targets'].join(' ') : '') || '');
+                                  const match = targetStr.match(/\b(19\d{2}|20\d{2})\d{2}\d{2}\b/) || targetStr.match(/\b\d{6}\b/);
+                                  if (match) {
+                                    birth = match[0];
+                                  }
+                                }
+
+                                const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
+                                const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '').trim();
+                                const bankCode = getBankCode(bankName, accountNo);
+
+                                const keyPrefix = `pay-${idx}`;
+
+                                return (
+                                  <div className="flex flex-col gap-1 items-start text-xs">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">CMS</span>
+                                      <span className="text-slate-700 font-bold text-[11px]">{bankName || 'CMS계좌'}</span>
+                                    </div>
+                                    
+                                    {/* 원클릭 복사 칩 그룹 (생년월일, 금융기관 고유코드, 계좌번호) */}
+                                    <div className="flex flex-wrap gap-1 items-center mt-0.5 max-w-[220px]">
+                                      {/* 생년월일 */}
+                                      {birth && birth !== '-' && (
+                                        <button
+                                          onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
+                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                            copiedPaymentItem === `${keyPrefix}-birth`
+                                              ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
+                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                          }`}
+                                          title="클릭하여 생년월일 복사"
+                                        >
+                                          <span className="font-semibold">{birth}</span>
+                                          {copiedPaymentItem === `${keyPrefix}-birth` ? (
+                                            <Check size={10} className="shrink-0 text-white" />
+                                          ) : (
+                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                          )}
+                                        </button>
+                                      )}
+
+                                      {/* 금융기관 고유코드 (은행코드 3자리) */}
+                                      {bankCode && bankCode !== '-' && (
+                                        <button
+                                          onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
+                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                            copiedPaymentItem === `${keyPrefix}-code`
+                                              ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
+                                              : 'bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border-indigo-200/80 font-bold'
+                                          }`}
+                                          title="클릭하여 은행코드 3자리 복사"
+                                        >
+                                          <span>코드:{bankCode}</span>
+                                          {copiedPaymentItem === `${keyPrefix}-code` ? (
+                                            <Check size={10} className="shrink-0 text-white" />
+                                          ) : (
+                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                          )}
+                                        </button>
+                                      )}
+
+                                      {/* 계좌번호 */}
+                                      {accountNo && accountNo !== '-' && (
+                                        <button
+                                          onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
+                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                            copiedPaymentItem === `${keyPrefix}-account`
+                                              ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
+                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                          }`}
+                                          title="클릭하여 계좌번호 복사"
+                                        >
+                                          <span className="font-semibold">{accountNo}</span>
+                                          {copiedPaymentItem === `${keyPrefix}-account` ? (
+                                            <Check size={10} className="shrink-0 text-white" />
+                                          ) : (
+                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                          )}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap text-slate-700">
                               {log['결제일'] || '-'}
