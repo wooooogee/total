@@ -53,34 +53,27 @@ const formatBirth6 = (raw: any): string => {
   return String(raw).trim();
 };
 
-const extractBirth = (log: any): string => {
+const extractContractorBirth = (log: any): string => {
   if (!log) return '-';
 
-  const directKeys = ['생년월일', '주민번호', '생년월일(6자리)', '계약자생년월일', '계약자주민번호', 'residentId', 'birth', 'birthDate', 'resident_id'];
-  for (const key of directKeys) {
+  const contractorKeys = [
+    '생년월일',
+    '주민번호',
+    '계약자생년월일',
+    '계약자 주민번호',
+    '계약자주민번호',
+    '생년월일(6자리)',
+    'residentId',
+    'birth',
+    'birthDate',
+    'resident_id'
+  ];
+
+  for (const key of contractorKeys) {
     if (log[key]) {
       const formatted = formatBirth6(log[key]);
       if (formatted !== '-') return formatted;
     }
-  }
-
-  const targetStr = String(log['대상자1'] || log['헬스케어대상자'] || log['헬스케어 대상자'] || (log['_targets'] ? log['_targets'].join(' ') : '') || '');
-  const match8 = targetStr.match(/\b(19\d{2}|20\d{2})\d{2}\d{2}\b/);
-  if (match8) return formatBirth6(match8[0]);
-
-  const match6 = targetStr.match(/\b\d{6}\b/);
-  if (match6) return match6[0];
-
-  for (const [k, v] of Object.entries(log)) {
-    if (!v) continue;
-    const valStr = String(v).trim();
-    if (k.includes('일시') || k.includes('연락처') || k.includes('전화') || k.includes('계좌') || k.includes('코드') || k.includes('ID') || k.includes('id') || k.includes('일자')) continue;
-
-    const m8 = valStr.match(/\b(19[3-9]\d|20[0-2]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
-    if (m8) return formatBirth6(m8[0]);
-
-    const m6 = valStr.match(/\b([3-9]\d|0\d|1\d|2\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
-    if (m6 && (k.includes('주민') || k.includes('생년') || k.includes('birth') || k.includes('계약자'))) return m6[0];
   }
 
   return '-';
@@ -4007,7 +4000,7 @@ export default function AdminDashboard() {
                                   );
                                 }
 
-                                const birth = extractBirth(log);
+                                const birth = extractContractorBirth(log);
                                 const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
                                 const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
                                 const bankCode = getBankCode(bankName, accountNo);
