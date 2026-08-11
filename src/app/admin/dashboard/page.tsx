@@ -41,6 +41,51 @@ interface ProductConfig {
 
 const KLJ_DEFAULT_TEMPLATE = `송하인\t수취인\t진화번호\t주소\t상품명\t상품옵션\t수량\t공급가\n더홈온라이프\t{고객명}\t{연락처}\t{주소}\t{제품명}\t\t1\t{공급가}`;
 
+const formatBirth6 = (raw: any): string => {
+  if (!raw || raw === '-') return '-';
+  const clean = String(raw).replace(/[^0-9]/g, '');
+  if (clean.length === 8) {
+    return clean.slice(2); // YYYYMMDD -> YYMMDD
+  }
+  if (clean.length === 6) {
+    return clean;
+  }
+  return String(raw).trim();
+};
+
+const extractBirth = (log: any): string => {
+  if (!log) return '-';
+
+  const directKeys = ['생년월일', '주민번호', '생년월일(6자리)', '계약자생년월일', '계약자주민번호', 'residentId', 'birth', 'birthDate', 'resident_id'];
+  for (const key of directKeys) {
+    if (log[key]) {
+      const formatted = formatBirth6(log[key]);
+      if (formatted !== '-') return formatted;
+    }
+  }
+
+  const targetStr = String(log['대상자1'] || log['헬스케어대상자'] || log['헬스케어 대상자'] || (log['_targets'] ? log['_targets'].join(' ') : '') || '');
+  const match8 = targetStr.match(/\b(19\d{2}|20\d{2})\d{2}\d{2}\b/);
+  if (match8) return formatBirth6(match8[0]);
+
+  const match6 = targetStr.match(/\b\d{6}\b/);
+  if (match6) return match6[0];
+
+  for (const [k, v] of Object.entries(log)) {
+    if (!v) continue;
+    const valStr = String(v).trim();
+    if (k.includes('일시') || k.includes('연락처') || k.includes('전화') || k.includes('계좌') || k.includes('코드') || k.includes('ID') || k.includes('id') || k.includes('일자')) continue;
+
+    const m8 = valStr.match(/\b(19[3-9]\d|20[0-2]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
+    if (m8) return formatBirth6(m8[0]);
+
+    const m6 = valStr.match(/\b([3-9]\d|0\d|1\d|2\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
+    if (m6 && (k.includes('주민') || k.includes('생년') || k.includes('birth') || k.includes('계약자'))) return m6[0];
+  }
+
+  return '-';
+};
+
 const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string): string => {
   const cleanName = String(bankOrCardName || '').replace(/[\s\-_]/g, '').toLowerCase();
   const cleanNum = String(accountNumberOrCardNumber || '').replace(/[^0-9]/g, '');
@@ -52,7 +97,29 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
     return '004';
   }
   if (cleanName.includes('기업') || cleanName.includes('ibk')) return '003';
-  if (cleanName.includes('농협') || cleanName.includes('nh')) return '011';
+
+  // 농협 (011: NH농협은행 / 012: 단위농협·지역농축협)
+  if (cleanName.includes('농협') || cleanName.includes('nh') || cleanName.includes('축협')) {
+    if (cleanName.includes('단위') || cleanName.includes('지역') || cleanName.includes('축협') || cleanName.includes('농축협')) {
+      return '012';
+    }
+    if (cleanName.includes('중앙회') || cleanName.includes('은행')) {
+      return '011';
+    }
+    if (cleanNum) {
+      if (/^35[0-9]/.test(cleanNum)) {
+        return '012';
+      }
+      if (/^3[016][0-9]/.test(cleanNum)) {
+        return '011';
+      }
+      if (/^(51|52|56|79)/.test(cleanNum)) {
+        return '012';
+      }
+    }
+    return '011';
+  }
+
   if (cleanName.includes('우리')) return '020';
   if (cleanName.includes('신한')) {
     if (cleanName.includes('카드')) return '041';
@@ -83,7 +150,8 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
 
   if (cleanNum.startsWith('3333')) return '090';
   if (cleanNum.startsWith('1000')) return '092';
-  if (cleanNum.startsWith('351') || cleanNum.startsWith('352') || cleanNum.startsWith('301') || cleanNum.startsWith('302')) return '011';
+  if (cleanNum.startsWith('351') || cleanNum.startsWith('352') || cleanNum.startsWith('355') || cleanNum.startsWith('356')) return '012';
+  if (cleanNum.startsWith('301') || cleanNum.startsWith('302') || cleanNum.startsWith('312')) return '011';
 
   const codeMatch = cleanName.match(/\d{3}/);
   if (codeMatch) return codeMatch[0];
@@ -3931,55 +3999,46 @@ export default function AdminDashboard() {
                                 if (!isCMS) {
                                   return (
                                     <div className="flex flex-col">
-                                      <span className="text-slate-700 font-bold">{log['결제정보(카드/cms)'] || log['결제수단'] || '카드'}</span>
-                                      <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                      <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '카드'}</span>
+                                      <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
                                         {log['카드사/은행명'] || log['결제기관'] || ''}
                                       </span>
                                     </div>
                                   );
                                 }
 
-                                let birth = String(log['생년월일'] || log['주민번호'] || log['생년월일(6자리)'] || log['residentId'] || log['birth'] || '').trim();
-                                
-                                if (!birth || birth === '-') {
-                                  const targetStr = String(log['대상자1'] || log['헬스케어대상자'] || log['헬스케어 대상자'] || (log['_targets'] ? log['_targets'].join(' ') : '') || '');
-                                  const match = targetStr.match(/\b(19\d{2}|20\d{2})\d{2}\d{2}\b/) || targetStr.match(/\b\d{6}\b/);
-                                  if (match) {
-                                    birth = match[0];
-                                  }
-                                }
-
+                                const birth = extractBirth(log);
                                 const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
-                                const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '').trim();
+                                const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
                                 const bankCode = getBankCode(bankName, accountNo);
 
                                 const keyPrefix = `pay-${idx}`;
 
                                 return (
-                                  <div className="flex flex-col gap-1 items-start text-xs">
+                                  <div className="flex flex-col gap-1.5 items-start text-xs font-sans">
                                     <div className="flex items-center gap-1.5">
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">CMS</span>
-                                      <span className="text-slate-700 font-bold text-[11px]">{bankName || 'CMS계좌'}</span>
+                                      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider">CMS</span>
+                                      <span className="text-slate-800 font-black text-xs">{bankName || 'CMS계좌'}</span>
                                     </div>
                                     
-                                    {/* 원클릭 복사 칩 그룹 (생년월일, 금융기관 고유코드, 계좌번호) */}
-                                    <div className="flex flex-wrap gap-1 items-center mt-0.5 max-w-[220px]">
-                                      {/* 생년월일 */}
+                                    {/* 원클릭 복사 칩 그룹 (생년월일 6자리, 금융기관 고유코드 3자리, 계좌번호) */}
+                                    <div className="flex flex-wrap gap-1.5 items-center mt-0.5 max-w-[240px]">
+                                      {/* 생년월일 6자리 */}
                                       {birth && birth !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
-                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-birth`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
-                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
                                           }`}
-                                          title="클릭하여 생년월일 복사"
+                                          title="클릭하여 생년월일(6자리) 복사"
                                         >
-                                          <span className="font-semibold">{birth}</span>
+                                          <span className="font-bold">{birth}</span>
                                           {copiedPaymentItem === `${keyPrefix}-birth` ? (
-                                            <Check size={10} className="shrink-0 text-white" />
+                                            <Check size={12} className="shrink-0 text-white" />
                                           ) : (
-                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                            <Copy size={11} className="shrink-0 opacity-40 group-hover:opacity-100" />
                                           )}
                                         </button>
                                       )}
@@ -3988,18 +4047,18 @@ export default function AdminDashboard() {
                                       {bankCode && bankCode !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
-                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-code`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
-                                              : 'bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border-indigo-200/80 font-bold'
+                                              : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 font-bold'
                                           }`}
                                           title="클릭하여 은행코드 3자리 복사"
                                         >
                                           <span>코드:{bankCode}</span>
                                           {copiedPaymentItem === `${keyPrefix}-code` ? (
-                                            <Check size={10} className="shrink-0 text-white" />
+                                            <Check size={12} className="shrink-0 text-white" />
                                           ) : (
-                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                            <Copy size={11} className="shrink-0 opacity-40 group-hover:opacity-100" />
                                           )}
                                         </button>
                                       )}
@@ -4008,18 +4067,18 @@ export default function AdminDashboard() {
                                       {accountNo && accountNo !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
-                                          className={`group inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-account`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
-                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                              : 'bg-slate-50 hover:bg-indigo-50 text-slate-900 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
                                           }`}
                                           title="클릭하여 계좌번호 복사"
                                         >
-                                          <span className="font-semibold">{accountNo}</span>
+                                          <span className="font-bold">{accountNo}</span>
                                           {copiedPaymentItem === `${keyPrefix}-account` ? (
-                                            <Check size={10} className="shrink-0 text-white" />
+                                            <Check size={12} className="shrink-0 text-white" />
                                           ) : (
-                                            <Copy size={9} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                            <Copy size={11} className="shrink-0 opacity-40 group-hover:opacity-100" />
                                           )}
                                         </button>
                                       )}
