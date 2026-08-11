@@ -217,6 +217,7 @@ export async function registerAction(data: any) {
         '상품명': productConfig ? productConfig.name : data.product,
         '제품명': data.hasMultipleProducts ? `${data.productName}, ${data.productName2}` : (data.productName || ''),
         '계약자': data.name,
+        '생년월일': data.residentId || '',
         '연락처': data.phone,
         '주소': `${data.address} ${data.addressDetail || ''}`.trim(),
         '기업명': data.companyName || '',

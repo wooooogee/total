@@ -39,7 +39,57 @@ interface ProductConfig {
   requireHealthcare?: boolean;
 }
 
-const KLJ_DEFAULT_TEMPLATE = `송하인\\t수취인\\t진화번호\\t주소\\t상품명\\t상품옵션\\t수량\\t공급가\n더홈온라이프\\t{고객명}\\t{연락처}\\t{주소}\\t{제품명}\\t\\t1\\t{공급가}`;
+const KLJ_DEFAULT_TEMPLATE = `송하인\t수취인\t진화번호\t주소\t상품명\t상품옵션\t수량\t공급가\n더홈온라이프\t{고객명}\t{연락처}\t{주소}\t{제품명}\t\t1\t{공급가}`;
+
+const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string): string => {
+  const cleanName = String(bankOrCardName || '').replace(/[\s\-_]/g, '').toLowerCase();
+  const cleanNum = String(accountNumberOrCardNumber || '').replace(/[^0-9]/g, '');
+
+  if (!cleanName && !cleanNum) return '-';
+
+  if (cleanName.includes('국민') || cleanName.includes('kb')) {
+    if (cleanName.includes('카드')) return '008';
+    return '004';
+  }
+  if (cleanName.includes('기업') || cleanName.includes('ibk')) return '003';
+  if (cleanName.includes('농협') || cleanName.includes('nh')) return '011';
+  if (cleanName.includes('우리')) return '020';
+  if (cleanName.includes('신한')) {
+    if (cleanName.includes('카드')) return '041';
+    return '088';
+  }
+  if (cleanName.includes('하나') || cleanName.includes('keb')) return '081';
+  if (cleanName.includes('카카오') || cleanName.includes('kakaobank')) return '090';
+  if (cleanName.includes('케이') || cleanName.includes('kbank')) return '089';
+  if (cleanName.includes('토스') || cleanName.includes('toss')) return '092';
+  if (cleanName.includes('제일') || cleanName.includes('sc')) return '023';
+  if (cleanName.includes('씨티') || cleanName.includes('citi')) return '027';
+  if (cleanName.includes('수협')) return '007';
+  if (cleanName.includes('대구') || cleanName.includes('im')) return '031';
+  if (cleanName.includes('부산')) return '032';
+  if (cleanName.includes('광주')) return '034';
+  if (cleanName.includes('제주')) return '035';
+  if (cleanName.includes('전북')) return '037';
+  if (cleanName.includes('경남')) return '039';
+  if (cleanName.includes('새마을')) return '045';
+  if (cleanName.includes('신협')) return '048';
+  if (cleanName.includes('우체국')) return '071';
+  if (cleanName.includes('저축')) return '050';
+  if (cleanName.includes('산림')) return '064';
+  if (cleanName.includes('삼성')) return '016';
+  if (cleanName.includes('현대')) return '029';
+  if (cleanName.includes('롯데')) return '027';
+  if (cleanName.includes('비씨') || cleanName.includes('bc')) return '026';
+
+  if (cleanNum.startsWith('3333')) return '090';
+  if (cleanNum.startsWith('1000')) return '092';
+  if (cleanNum.startsWith('351') || cleanNum.startsWith('352') || cleanNum.startsWith('301') || cleanNum.startsWith('302')) return '011';
+
+  const codeMatch = cleanName.match(/\d{3}/);
+  if (codeMatch) return codeMatch[0];
+
+  return '-';
+};
 
 import { useToast } from '@/components/ToastContext';
 
@@ -945,7 +995,15 @@ export default function AdminDashboard() {
   const [copiedAffiliation, setCopiedAffiliation] = useState<string | null>(null);
   const [copiedHealthcareTarget, setCopiedHealthcareTarget] = useState<string | null>(null);
   const [copiedCertificateMethod, setCopiedCertificateMethod] = useState<string | null>(null);
+  const [copiedPaymentItem, setCopiedPaymentItem] = useState<string | null>(null);
   const [isQuickBarOpen, setIsQuickBarOpen] = useState(true);
+
+  const handleCopyPaymentItem = (text: string, key: string) => {
+    if (!text || text === '-') return;
+    navigator.clipboard.writeText(text);
+    setCopiedPaymentItem(key);
+    setTimeout(() => setCopiedPaymentItem(null), 2000);
+  };
 
   const handleCopyHealthcareTarget = (targetText: string) => {
     if (!targetText || targetText === '-') return;
