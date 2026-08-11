@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getRegistrationsFromSheet } from '@/lib/googleSheets';
+import { getRegistrationsFromSheet, getPrefillDataFromSheet } from '@/lib/googleSheets';
+import { getPrefillConfigs } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,12 +60,44 @@ function parseKoreanDate(dateStr: string) {
 export async function GET() {
   try {
     const rawLogs = await getRegistrationsFromSheet('통합신청내역');
+    let prefillList: any[] = [];
+    try {
+      prefillList = await getPrefillDataFromSheet();
+      if (!prefillList || prefillList.length === 0) {
+        prefillList = getPrefillConfigs();
+      }
+    } catch (e) {
+      prefillList = getPrefillConfigs();
+    }
 
-    // 하위 호환성을 위해 '상품명'을 '시트구분' 필드로 매핑해 줍니다.
-    const flatLogs = rawLogs.map(log => ({
-      ...log,
-      '시트구분': log['상품명'] || '미분류'
-    }));
+    const prefillMap = new Map<string, any>();
+    if (Array.isArray(prefillList)) {
+      prefillList.forEach(item => {
+        if (item.token) prefillMap.set(item.token, item);
+      });
+    }
+
+    // 하위 호환성 및 사전등록 생년월일 보완 매핑
+    const flatLogs = rawLogs.map(log => {
+      let birth = log['생년월일'] || log['주민번호'] || log['계약자생년월일'] || log['residentId'] || log['birth'] || '';
+      
+      if (!birth || birth === '-') {
+        const link = String(log['유입링크'] || '');
+        const tokenMatch = link.match(/사전등록\((p_[^)]+)\)/);
+        if (tokenMatch && tokenMatch[1]) {
+          const matchedPrefill = prefillMap.get(tokenMatch[1]);
+          if (matchedPrefill && matchedPrefill.birth) {
+            birth = matchedPrefill.birth;
+          }
+        }
+      }
+
+      return {
+        ...log,
+        '생년월일': birth || log['생년월일'] || '',
+        '시트구분': log['상품명'] || '미분류'
+      };
+    });
 
     // 신청일시 기준으로 내림차순(최근 순) 정렬
     flatLogs.sort((a, b) => {
