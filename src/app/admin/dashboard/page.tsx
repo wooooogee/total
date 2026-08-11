@@ -59,6 +59,7 @@ const extractContractorBirth = (log: any): string => {
   const contractorKeys = [
     '생년월일',
     '주민번호',
+    '주민등록번호',
     '계약자생년월일',
     '계약자 주민번호',
     '계약자주민번호',
@@ -74,6 +75,19 @@ const extractContractorBirth = (log: any): string => {
       const formatted = formatBirth6(log[key]);
       if (formatted !== '-') return formatted;
     }
+  }
+
+  for (const [k, v] of Object.entries(log)) {
+    if (!v) continue;
+    const kLower = k.toLowerCase();
+    if (kLower.includes('대상자') || kLower.includes('헬스케어') || kLower.includes('영업') || kLower.includes('연락처') || kLower.includes('전화') || kLower.includes('일시') || kLower.includes('계좌') || kLower.includes('코드') || kLower.includes('id')) continue;
+
+    const valStr = String(v).trim();
+    const m8 = valStr.match(/\b(19[3-9]\d|20[0-2]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
+    if (m8) return formatBirth6(m8[0]);
+
+    const m6 = valStr.match(/\b([3-9]\d|0\d|1\d|2\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
+    if (m6) return m6[0];
   }
 
   return '-';
@@ -100,14 +114,11 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
       return '011';
     }
     if (cleanNum) {
-      if (/^35[0-9]/.test(cleanNum)) {
+      if (/^903?/.test(cleanNum) || /^35[0-9]/.test(cleanNum) || /^(51|52|56|79)/.test(cleanNum)) {
         return '012';
       }
       if (/^3[016][0-9]/.test(cleanNum)) {
         return '011';
-      }
-      if (/^(51|52|56|79)/.test(cleanNum)) {
-        return '012';
       }
     }
     return '011';
@@ -3970,57 +3981,39 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="px-2 py-3">
-                              <div className="flex flex-col">
-                                <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
-                                {log['제품명'] && (
-                                  <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
-                                    제품: {log['제품명']}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
-                              <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
-                                {log['구좌수'] || log['수량'] || '1'}
-                              </span>
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
-                              {(() => {
-                                const rawMethod = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').toUpperCase();
-                                const isCMS = rawMethod.includes('CMS') || rawMethod.includes('계좌') || rawMethod.includes('이체');
+                              <div className="flex flex-col gap-1.5">
+                                <div>
+                                  <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
+                                  {log['제품명'] && (
+                                    <span className="text-[10px] text-slate-400 mt-0.5 block font-normal">
+                                      제품: {log['제품명']}
+                                    </span>
+                                  )}
+                                </div>
 
-                                if (!isCMS) {
+                                {/* CMS 결제 정보 가로 나열 복사 칩 그룹 */}
+                                {(() => {
+                                  const rawMethod = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').toUpperCase();
+                                  const isCMS = rawMethod.includes('CMS') || rawMethod.includes('계좌') || rawMethod.includes('이체');
+
+                                  if (!isCMS) return null;
+
+                                  const birth = extractContractorBirth(log);
+                                  const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
+                                  const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
+                                  const bankCode = getBankCode(bankName, accountNo);
+                                  const keyPrefix = `pay-${idx}`;
+
                                   return (
-                                    <div className="flex flex-col">
-                                      <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '카드'}</span>
-                                      <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
-                                        {log['카드사/은행명'] || log['결제기관'] || ''}
-                                      </span>
-                                    </div>
-                                  );
-                                }
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-1.5 border-t border-slate-100">
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">CMS</span>
+                                      {bankName && <span className="text-slate-700 font-bold text-xs mr-0.5">{bankName}</span>}
 
-                                const birth = extractContractorBirth(log);
-                                const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
-                                const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
-                                const bankCode = getBankCode(bankName, accountNo);
-
-                                const keyPrefix = `pay-${idx}`;
-
-                                return (
-                                  <div className="flex flex-col gap-1.5 items-start text-xs font-sans">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider">CMS</span>
-                                      <span className="text-slate-800 font-black text-xs">{bankName || 'CMS계좌'}</span>
-                                    </div>
-                                    
-                                    {/* 원클릭 복사 칩 그룹 (생년월일 6자리, 금융기관 고유코드 3자리, 계좌번호) */}
-                                    <div className="flex flex-wrap gap-1.5 items-center mt-0.5 max-w-[240px]">
                                       {/* 생년월일 6자리 */}
                                       {birth && birth !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
-                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-birth`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4036,11 +4029,11 @@ export default function AdminDashboard() {
                                         </button>
                                       )}
 
-                                      {/* 금융기관 고유코드 (은행코드 3자리) */}
+                                      {/* 금융기관 고유코드 3자리 */}
                                       {bankCode && bankCode !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
-                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-code`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 font-bold'
@@ -4060,7 +4053,7 @@ export default function AdminDashboard() {
                                       {accountNo && accountNo !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
-                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
                                             copiedPaymentItem === `${keyPrefix}-account`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-900 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4076,9 +4069,22 @@ export default function AdminDashboard() {
                                         </button>
                                       )}
                                     </div>
-                                  </div>
-                                );
-                              })()}
+                                  );
+                                })()}
+                              </div>
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                              <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
+                                {log['구좌수'] || log['수량'] || '1'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
+                                <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
+                                  {log['카드사/은행명'] || log['결제기관'] || ''}
+                                </span>
+                              </div>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap text-slate-700">
                               {log['결제일'] || '-'}
