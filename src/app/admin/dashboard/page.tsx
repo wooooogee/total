@@ -110,9 +110,6 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
     if (cleanName.includes('단위') || cleanName.includes('지역') || cleanName.includes('축협') || cleanName.includes('농축협')) {
       return '012';
     }
-    if (cleanName.includes('중앙회') || cleanName.includes('은행')) {
-      return '011';
-    }
     if (cleanNum) {
       if (/^903?/.test(cleanNum) || /^35[0-9]/.test(cleanNum) || /^(51|52|56|79)/.test(cleanNum)) {
         return '012';
@@ -120,6 +117,9 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
       if (/^3[016][0-9]/.test(cleanNum)) {
         return '011';
       }
+    }
+    if (cleanName.includes('중앙회') || cleanName.includes('은행')) {
+      return '011';
     }
     return '011';
   }
