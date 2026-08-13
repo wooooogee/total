@@ -2,6 +2,7 @@
 
 import { createEformsignDocument } from '@/lib/eformsign';
 import { parseDateStringToMs } from '@/lib/dateUtils';
+import { normalizeAccountNumber } from '@/lib/bankUtils';
 import { 
   addRegistrationToSheet, 
   getProductConfigsFromSheet, 
@@ -247,12 +248,16 @@ export async function registerAction(data: any) {
 
         sheetData['2~101회차 납부방법'] = data.paymentMethod2 === 'card' ? '카드결제' : 'CMS';
         sheetData['2~101회차 카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardCompany : data.paymentInfo2.bankName;
-        sheetData['2~101회차 계좌/카드번호'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardNumber : data.paymentInfo2.accountNumber;
+        sheetData['2~101회차 계좌/카드번호'] = data.paymentMethod2 === 'card' 
+          ? data.paymentInfo2.cardNumber 
+          : normalizeAccountNumber(data.paymentInfo2.bankName, data.paymentInfo2.accountNumber);
         sheetData['2~101회차 유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
       } else {
         sheetData['결제정보(카드/cms)'] = data.paymentMethod === 'card' ? '카드' : 'CMS';
         sheetData['카드사/은행명'] = data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName;
-        sheetData['카드번호/계좌번호'] = data.paymentMethod === 'card' ? data.paymentInfo.cardNumber : data.paymentInfo.accountNumber;
+        sheetData['카드번호/계좌번호'] = data.paymentMethod === 'card' 
+          ? data.paymentInfo.cardNumber 
+          : normalizeAccountNumber(data.paymentInfo.bankName, data.paymentInfo.accountNumber);
         sheetData['유효기간'] = data.paymentMethod === 'card' ? data.paymentInfo.cardExpiry : '';
         sheetData['결제일'] = data.paymentDate;
       }

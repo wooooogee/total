@@ -12,6 +12,7 @@ import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { createPrefillLinkAction, getPrefillListAction, deletePrefillLinkAction } from '@/app/actions';
 import { parseDateStringToMs } from '@/lib/dateUtils';
+import { normalizeAccountNumber } from '@/lib/bankUtils';
 
 interface LinkConfig {
   id: string;
@@ -4000,7 +4001,8 @@ export default function AdminDashboard() {
 
                                   const birth = extractContractorBirth(log);
                                   const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
-                                  const accountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
+                                  const rawAccountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
+                                  const accountNo = normalizeAccountNumber(bankName, rawAccountNo);
                                   const bankCode = getBankCode(bankName, accountNo);
                                   const keyPrefix = `pay-${idx}`;
 

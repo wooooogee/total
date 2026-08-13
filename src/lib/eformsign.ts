@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { getProductConfigs } from './db';
 import { getProductConfigsFromSheet } from './googleSheets';
+import { normalizeAccountNumber } from './bankUtils';
 
 const EFORMSIGN_API_SERVER = 'https://api.eformsign.com'; // Token Auth requires the main api.eformsign.com domain
 const EFORMSIGN_KR_SERVER = 'https://kr-api.eformsign.com'; // KR Server (Production)
@@ -164,7 +165,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '대상자3_연락처', value: data.healthcareTargets?.[2]?.phone || '' },
                 { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
                 { id: '카드/은행명', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardCompany || '') : (data.paymentInfo?.bankName || '') },
-                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : (data.paymentInfo?.accountNumber || '') },
+                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : normalizeAccountNumber(data.paymentInfo?.bankName, data.paymentInfo?.accountNumber || '') },
                 { id: '유효기간', value: (data.paymentMethod === 'card' && data.paymentInfo?.cardExpiry) ? data.paymentInfo.cardExpiry : '-' },
                 { id: '카드할부', value: (data.paymentMethod === 'card' && data.paymentInfo?.installmentPeriod) ? data.paymentInfo.installmentPeriod : '' },
                 { id: '이체일', value: `${(data.paymentDate || '05').toString().padStart(2, '0')}일` },
@@ -194,7 +195,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '휴대폰', value: data.phone },
                 { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
                 { id: '카드/은행명', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardCompany || '') : (data.paymentInfo?.bankName || '') },
-                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : (data.paymentInfo?.accountNumber || '') },
+                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : normalizeAccountNumber(data.paymentInfo?.bankName, data.paymentInfo?.accountNumber || '') },
                 { id: '유효기간', value: (data.paymentMethod === 'card' && data.paymentInfo?.cardExpiry) ? data.paymentInfo.cardExpiry : '-' },
                 { id: '카드할부', value: (data.paymentMethod === 'card' && data.paymentInfo?.installmentPeriod) ? data.paymentInfo.installmentPeriod : '' },
                 { id: '이체일', value: `${(data.paymentDate || '05').toString().padStart(2, '0')}일` },
@@ -304,7 +305,7 @@ export async function createEformsignDocument(data: any) {
                 : (paymentInfo2?.bankName || '');
             const cardOrAccount2 = isCard2 
                 ? (paymentInfo2?.cardNumber || '') 
-                : (paymentInfo2?.accountNumber || '');
+                : normalizeAccountNumber(paymentInfo2?.bankName, paymentInfo2?.accountNumber || '');
             const cardExpiry2 = isCard2 
                 ? (paymentInfo2?.cardExpiry || '') 
                 : '-';
@@ -393,7 +394,7 @@ export async function createEformsignDocument(data: any) {
                 { id: '대상자3_연락처', value: data.healthcareTargets?.[2]?.phone || '' },
                 { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
                 { id: '카드/은행명', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardCompany || '') : (data.paymentInfo?.bankName || '') },
-                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : (data.paymentInfo?.accountNumber || '') },
+                { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : normalizeAccountNumber(data.paymentInfo?.bankName, data.paymentInfo?.accountNumber || '') },
                 { id: '유효기간', value: (data.paymentMethod === 'card' && data.paymentInfo?.cardExpiry) ? data.paymentInfo.cardExpiry : '-' },
                 { id: '카드할부', value: (data.paymentMethod === 'card' && data.paymentInfo?.installmentPeriod) ? data.paymentInfo.installmentPeriod : '' },
                 { id: '이체일', value: `${(data.paymentDate || '05').toString().padStart(2, '0')}일` },
