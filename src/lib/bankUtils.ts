@@ -37,8 +37,18 @@ export const normalizeAccountNumber = (bankOrCardName: string, rawAccountNo: str
     }
   }
 
+  // 부산은행 계좌 (예: 084120604376 -> 앞 0 누락시 84120604376로 11자리가 됨)
+  if (cleanName.includes('부산')) {
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('84')) {
+      return '0' + digitsOnly;
+    }
+  }
+
   // 은행명이 명시되지 않았거나 '국민' 키워드가 들어간 11자리 계좌 (46..., 47... 시작)
   if (digitsOnly.length === 11) {
+    if (cleanName.includes('부산') || digitsOnly.startsWith('84')) {
+      return '0' + digitsOnly;
+    }
     if (cleanName.includes('국민') || cleanName.includes('kb') || !cleanName || cleanName === '-') {
       if (/^(46|47|48|41|42|43|45)/.test(digitsOnly)) {
         return '0' + digitsOnly;

@@ -2068,7 +2068,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Landmark size={14} /> 은행명</label>
-                            <input type="text" placeholder="예: 국민은행" value={formData.paymentInfo2.bankName} onChange={(e) => updatePaymentInfo2('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo2.bankName} onChange={(e) => updatePaymentInfo2('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[12px] font-bold text-sub ml-1">계좌번호</label>
@@ -2147,7 +2147,29 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Landmark size={14} /> 은행명</label>
-                          <input type="text" placeholder="예: 국민은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                          <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                          <datalist id="bank-list">
+                            <option value="NH농협은행" />
+                            <option value="농축협(단위농협)" />
+                            <option value="KB국민은행" />
+                            <option value="신한은행" />
+                            <option value="우리은행" />
+                            <option value="하나은행" />
+                            <option value="IBK기업은행" />
+                            <option value="부산은행" />
+                            <option value="대구은행(iM뱅크)" />
+                            <option value="경남은행" />
+                            <option value="광주은행" />
+                            <option value="전북은행" />
+                            <option value="제주은행" />
+                            <option value="카카오뱅크" />
+                            <option value="케이뱅크" />
+                            <option value="토스뱅크" />
+                            <option value="새마을금고" />
+                            <option value="신협" />
+                            <option value="우체국" />
+                            <option value="수협" />
+                          </datalist>
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-sub ml-1">계좌번호</label>

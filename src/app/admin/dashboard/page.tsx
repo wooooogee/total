@@ -108,14 +108,14 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
 
   // 농협 (011: NH농협은행 / 012: 단위농협·지역농축협)
   if (cleanName.includes('농협') || cleanName.includes('nh') || cleanName.includes('축협')) {
-    if (cleanName.includes('단위') || cleanName.includes('지역') || cleanName.includes('축협') || cleanName.includes('농축협')) {
+    if (cleanName.includes('단위') || cleanName.includes('지역') || cleanName.includes('축협') || cleanName.includes('농축협') || cleanName.includes('조합')) {
       return '012';
     }
     if (cleanNum) {
-      if (/^903?/.test(cleanNum) || /^35[0-9]/.test(cleanNum) || /^(51|52|56|79)/.test(cleanNum)) {
+      if (/^(351|352|355|356|357|903|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) {
         return '012';
       }
-      if (/^3[016][0-9]/.test(cleanNum)) {
+      if (/^(301|302|312|322|361|01|02|12|17|21|23|24)/.test(cleanNum)) {
         return '011';
       }
     }
@@ -155,8 +155,8 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
 
   if (cleanNum.startsWith('3333')) return '090';
   if (cleanNum.startsWith('1000')) return '092';
-  if (cleanNum.startsWith('351') || cleanNum.startsWith('352') || cleanNum.startsWith('355') || cleanNum.startsWith('356')) return '012';
-  if (cleanNum.startsWith('301') || cleanNum.startsWith('302') || cleanNum.startsWith('312')) return '011';
+  if (/^(351|352|355|356|357|903|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) return '012';
+  if (/^(301|302|312|322|361|01|02|12|17|21|23|24)/.test(cleanNum)) return '011';
 
   const codeMatch = cleanName.match(/\d{3}/);
   if (codeMatch) return codeMatch[0];
@@ -181,6 +181,7 @@ export default function AdminDashboard() {
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [bulkDownloadProgress, setBulkDownloadProgress] = useState({ current: 0, total: 0 });
+  const [selectedLogKeys, setSelectedLogKeys] = useState<string[]>([]);
 
   // 사전 등록 링크 state
   const [prefillSubTab, setPrefillSubTab] = useState<'single' | 'excel' | 'list'>('single');
@@ -1546,35 +1547,31 @@ export default function AdminDashboard() {
     return timeB - timeA;
   });
 
-  const handleBulkDownloadImages = async () => {
-    const logsWithDocs = filteredLogs.filter(log => log['document_id']);
-    if (logsWithDocs.length === 0) {
+  const downloadImagesEach = async (logsToDownload: any[], confirmTitle: string, confirmMsg: string) => {
+    if (logsToDownload.length === 0) {
       toast('다운로드할 이미지(계약서)가 없습니다.', 'warning');
       return;
     }
 
     showConfirm({
-      title: '계약서 이미지 일괄 다운로드',
-      message: `현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 일괄 다운로드하시겠습니까?`,
+      title: confirmTitle,
+      message: confirmMsg,
       type: 'info',
       confirmText: '다운로드',
       onConfirm: async () => {
         try {
           setIsBulkDownloading(true);
-          setBulkDownloadProgress({ current: 0, total: logsWithDocs.length });
+          setBulkDownloadProgress({ current: 0, total: logsToDownload.length });
 
-          const JSZip = (await import('jszip')).default;
           const { saveAs } = await import('file-saver');
-          const zip = new JSZip();
-
           const pdfjsLib = await import('pdfjs-dist');
           const pdfjsVersion = pdfjsLib.version || '4.0.379';
           pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
           let successCount = 0;
 
-          for (let i = 0; i < logsWithDocs.length; i++) {
-            const log = logsWithDocs[i];
+          for (let i = 0; i < logsToDownload.length; i++) {
+            const log = logsToDownload[i];
             try {
               const response = await fetch(`/api/download?id=${log['document_id']}&action=download`);
               if (!response.ok) throw new Error('Failed to fetch PDF');
@@ -1596,35 +1593,72 @@ export default function AdminDashboard() {
               
               await page.render({ canvasContext: context, viewport: viewport } as any).promise;
               
-              const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+              const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
               if (blob) {
                 const fileName = getFormattedFileName(log) || `contract_${log['document_id']}`;
-                zip.file(`${fileName}.jpg`, blob);
+                saveAs(blob, `${fileName}.jpg`);
                 successCount++;
+                // 브라우저 연속 다운로드 차단 방지 간격
+                await new Promise(r => setTimeout(r, 250));
               }
             } catch (err) {
               console.error(`Error downloading document ${log['document_id']}:`, err);
             }
-            setBulkDownloadProgress({ current: i + 1, total: logsWithDocs.length });
+            setBulkDownloadProgress({ current: i + 1, total: logsToDownload.length });
           }
 
           if (successCount > 0) {
-            const content = await zip.generateAsync({ type: 'blob' });
-            const today = new Date();
-            const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-            saveAs(content, `${dateStr}_계약서.zip`);
-            toast(`${successCount}건의 이미지가 다운로드되었습니다.`, 'success');
+            toast(`총 ${successCount}건의 이미지가 각각 다운로드되었습니다.`, 'success');
           } else {
             toast('다운로드에 성공한 이미지가 없습니다.', 'warning');
           }
         } catch (error: any) {
-          console.error('Error during bulk download:', error);
-          toast(`일괄 다운로드 중 오류가 발생했습니다: ${error.message || error}`, 'error');
+          console.error('Error during download:', error);
+          toast(`다운로드 중 오류가 발생했습니다: ${error.message || error}`, 'error');
         } finally {
           setIsBulkDownloading(false);
         }
       }
     });
+  };
+
+  const handleBulkDownloadImages = () => {
+    const logsWithDocs = filteredLogs.filter(log => log['document_id']);
+    downloadImagesEach(
+      logsWithDocs,
+      '계약서 이미지 일괄 다운로드',
+      `현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 개별 파일로 다운로드하시겠습니까?`
+    );
+  };
+
+  const handleSelectedDownloadImages = () => {
+    const selectedLogs = filteredLogs.filter(log => log['document_id'] && selectedLogKeys.includes(log['document_id']));
+    downloadImagesEach(
+      selectedLogs,
+      '선택 계약서 이미지 다운로드',
+      `선택하신 총 ${selectedLogs.length}건의 이미지를 개별 파일로 다운로드하시겠습니까?`
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const logsWithDocs = filteredLogs.filter(log => log['document_id']);
+    if (logsWithDocs.length === 0) return;
+    
+    const docIds = logsWithDocs.map(log => log['document_id']);
+    const allSelected = docIds.every(id => selectedLogKeys.includes(id));
+
+    if (allSelected) {
+      setSelectedLogKeys(prev => prev.filter(id => !docIds.includes(id)));
+    } else {
+      setSelectedLogKeys(prev => Array.from(new Set([...prev, ...docIds])));
+    }
+  };
+
+  const toggleSelectLog = (docId: string) => {
+    if (!docId) return;
+    setSelectedLogKeys(prev => 
+      prev.includes(docId) ? prev.filter(id => id !== docId) : [...prev, docId]
+    );
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -3887,6 +3921,15 @@ export default function AdminDashboard() {
                     <RefreshCw size={14} />
                   </button>
                   <button 
+                    onClick={handleSelectedDownloadImages}
+                    disabled={isBulkDownloading || selectedLogKeys.length === 0}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:shadow-none text-white rounded-xl text-xs font-black transition-all shadow-md shadow-emerald-600/10 whitespace-nowrap"
+                    title="선택한 항목만 계약서 이미지 다운로드"
+                  >
+                    {isBulkDownloading ? <Loader2 size={14} className="animate-spin" /> : <DownloadCloud size={14} />}
+                    {`선택 다운로드${selectedLogKeys.length > 0 ? ` (${selectedLogKeys.length})` : ''}`}
+                  </button>
+                  <button 
                     onClick={handleBulkDownloadImages}
                     disabled={isBulkDownloading}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-indigo-600/10 whitespace-nowrap"
@@ -3912,6 +3955,18 @@ export default function AdminDashboard() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
+                          <th className="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center w-10">
+                            <input
+                              type="checkbox"
+                              checked={
+                                filteredLogs.filter(log => log['document_id']).length > 0 &&
+                                filteredLogs.filter(log => log['document_id']).every(log => selectedLogKeys.includes(log['document_id']))
+                              }
+                              onChange={toggleSelectAll}
+                              className="accent-indigo-600 w-4 h-4 rounded cursor-pointer align-middle"
+                              title="전체 선택 / 해제"
+                            />
+                          </th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
                           <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품</th>
@@ -3927,6 +3982,23 @@ export default function AdminDashboard() {
                       <tbody className="divide-y divide-slate-100">
                         {filteredLogs.map((log, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
+                            <td className="px-3 py-3 text-center w-10">
+                              {log['document_id'] ? (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedLogKeys.includes(log['document_id'])}
+                                  onChange={() => toggleSelectLog(log['document_id'])}
+                                  className="accent-indigo-600 w-4 h-4 rounded cursor-pointer align-middle"
+                                />
+                              ) : (
+                                <input
+                                  type="checkbox"
+                                  disabled
+                                  className="opacity-30 w-4 h-4 rounded cursor-not-allowed align-middle"
+                                  title="계약서 문서(PDF)가 없어 선택할 수 없습니다"
+                                />
+                              )}
+                            </td>
                             <td className="px-2 py-3 whitespace-nowrap text-slate-400 font-mono">
                               {(() => {
                                 const dt = log['신청일시'];
