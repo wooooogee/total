@@ -44,14 +44,24 @@ const KLJ_DEFAULT_TEMPLATE = `송하인\t수취인\t진화번호\t주소\t상품
 
 const formatBirth6 = (raw: any): string => {
   if (!raw || raw === '-') return '-';
-  const clean = String(raw).replace(/[^0-9]/g, '');
+  const str = String(raw).trim();
+  const clean = str.replace(/[^0-9]/g, '');
   if (clean.length === 8) {
     return clean.slice(2); // YYYYMMDD -> YYMMDD
   }
   if (clean.length === 6) {
     return clean;
   }
-  return String(raw).trim();
+  // 엑셀 등에서 앞자리 0이 누락되어 3~5자리가 된 경우 (예: 10507 -> 010507, 50312 -> 050312)
+  if (clean.length > 0 && clean.length < 6) {
+    const padded = clean.padStart(6, '0');
+    const mm = parseInt(padded.slice(2, 4), 10);
+    const dd = parseInt(padded.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      return padded;
+    }
+  }
+  return str;
 };
 
 const extractContractorBirth = (log: any): string => {
@@ -88,7 +98,7 @@ const extractContractorBirth = (log: any): string => {
     if (m8) return formatBirth6(m8[0]);
 
     const m6 = valStr.match(/\b([3-9]\d|0\d|1\d|2\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
-    if (m6) return m6[0];
+    if (m6) return formatBirth6(m6[0]);
   }
 
   return '-';

@@ -611,7 +611,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const [isPrefillLocked, setIsPrefillLocked] = useState<boolean>(() => {
     if (initialPrefillData && initialPrefillData.birth) {
       const cleaned = String(initialPrefillData.birth).replace(/[^0-9]/g, '');
-      return cleaned.length >= 6;
+      return cleaned.length >= 3;
     }
     return false;
   });
@@ -625,8 +625,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       return;
     }
 
-    const targetDigits = String(initialPrefillData.birth).replace(/[^0-9]/g, '');
-    const inputDigits = birthPasswordInput.replace(/[^0-9]/g, '');
+    const rawTarget = String(initialPrefillData.birth).replace(/[^0-9]/g, '');
+    const targetDigits = (rawTarget.length > 0 && rawTarget.length < 6) ? rawTarget.padStart(6, '0') : rawTarget;
+    const rawInput = birthPasswordInput.replace(/[^0-9]/g, '');
+    const inputDigits = (rawInput.length > 0 && rawInput.length < 6) ? rawInput.padStart(6, '0') : rawInput;
 
     if (!inputDigits) {
       setBirthPasswordError('생년월일을 입력해 주세요.');
@@ -650,11 +652,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   useEffect(() => {
     if (initialPrefillData) {
+      const rawBirth = initialPrefillData.birth ? String(initialPrefillData.birth).replace(/[^0-9]/g, '') : '';
+      const formattedBirth = (rawBirth.length > 0 && rawBirth.length < 6) ? rawBirth.padStart(6, '0') : (initialPrefillData.birth || '');
       setFormData(prev => ({
         ...prev,
         name: initialPrefillData.name || prev.name,
         phone: initialPrefillData.phone || prev.phone,
-        residentId: initialPrefillData.birth || prev.residentId,
+        residentId: formattedBirth || prev.residentId,
         address: initialPrefillData.address || prev.address,
         addressDetail: initialPrefillData.addressDetail || prev.addressDetail,
         product: initialPrefillData.product || prev.product,

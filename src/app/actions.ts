@@ -21,11 +21,22 @@ import {
 } from '@/lib/db';
 
 function formatBirth8(birth: string) {
-  if (!birth || birth.length !== 6) return birth;
-  const year = parseInt(birth.substring(0, 2));
-  // 26년 이전이면 2000년대, 그 이후면 1900년대로 판단
-  const prefix = year <= 26 ? '20' : '19';
-  return prefix + birth;
+  if (!birth) return birth;
+  const clean = String(birth).replace(/[^0-9]/g, '');
+  if (clean.length === 8) return clean;
+  let birth6 = String(birth).trim();
+  if (clean.length === 6) {
+    birth6 = clean;
+  } else if (clean.length > 0 && clean.length < 6) {
+    birth6 = clean.padStart(6, '0');
+  }
+  if (birth6.length === 6) {
+    const year = parseInt(birth6.substring(0, 2), 10);
+    // 26년 이전이면 2000년대, 그 이후면 1900년대로 판단
+    const prefix = year <= 26 ? '20' : '19';
+    return prefix + birth6;
+  }
+  return birth;
 }
 
 function getKoreanDateTime() {
