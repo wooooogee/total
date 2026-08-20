@@ -46,12 +46,25 @@ const formatBirth6 = (raw: any): string => {
   if (!raw || raw === '-') return '-';
   const str = String(raw).trim();
   const clean = str.replace(/[^0-9]/g, '');
+
+  // 8자리 YYYYMMDD (예: 19840814 -> 840814, 20010507 -> 010507)
   if (clean.length === 8) {
-    return clean.slice(2); // YYYYMMDD -> YYMMDD
+    const mm = parseInt(clean.slice(4, 6), 10);
+    const dd = parseInt(clean.slice(6, 8), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      return clean.slice(2); // YYYYMMDD -> YYMMDD
+    }
   }
+
+  // 6자리 YYMMDD (예: 840814, 010507)
   if (clean.length === 6) {
-    return clean;
+    const mm = parseInt(clean.slice(2, 4), 10);
+    const dd = parseInt(clean.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      return clean;
+    }
   }
+
   // 엑셀 등에서 앞자리 0이 누락되어 3~5자리가 된 경우 (예: 10507 -> 010507, 50312 -> 050312)
   if (clean.length > 0 && clean.length < 6) {
     const padded = clean.padStart(6, '0');
@@ -61,6 +74,7 @@ const formatBirth6 = (raw: any): string => {
       return padded;
     }
   }
+
   return str;
 };
 

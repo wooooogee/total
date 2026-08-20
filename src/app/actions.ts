@@ -24,18 +24,19 @@ function formatBirth8(birth: string) {
   if (!birth) return birth;
   const clean = String(birth).replace(/[^0-9]/g, '');
   if (clean.length === 8) return clean;
-  let birth6 = String(birth).trim();
-  if (clean.length === 6) {
-    birth6 = clean;
-  } else if (clean.length > 0 && clean.length < 6) {
+  
+  let birth6 = clean;
+  if (clean.length > 0 && clean.length < 6) {
     birth6 = clean.padStart(6, '0');
   }
+  
   if (birth6.length === 6) {
     const year = parseInt(birth6.substring(0, 2), 10);
-    // 26년 이전이면 2000년대, 그 이후면 1900년대로 판단
+    // 26년 이하이면 2000년대(20xx), 그 이후면 1900년대(19xx)로 판단
     const prefix = year <= 26 ? '20' : '19';
     return prefix + birth6;
   }
+  
   return birth;
 }
 
