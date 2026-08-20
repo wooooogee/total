@@ -59,9 +59,10 @@ export const normalizeAccountNumber = (bankOrCardName: string, rawAccountNo: str
     }
   }
 
-  // 13자리 숫자인 계좌 (기업/농협/신한 등 앞 0 누락 보정)
+  // 13자리 숫자인 계좌 (기업/신한 등 앞 0 누락 보정)
+  // 농협 계좌는 13자리가 정상 계좌(351, 352, 356, 301, 302, 173 등)이므로 앞 0을 붙이지 않음
   if (digitsOnly.length === 13) {
-    if (cleanName.includes('기업') || cleanName.includes('ibk') || cleanName.includes('농협') || cleanName.includes('nh') || cleanName.includes('신한')) {
+    if (cleanName.includes('기업') || cleanName.includes('ibk') || cleanName.includes('신한')) {
       return '0' + digitsOnly;
     }
   }

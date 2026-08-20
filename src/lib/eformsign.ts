@@ -11,8 +11,15 @@ const EFORMSIGN_API_KEY = '3eb1cb36-3d57-4683-9b9b-5993feeb7817';
 
 const EFORMSIGN_TEMPLATE_ID_Health580 = 'a70003fc1c3543f19070867e418ce536';
 
-// 인증 토큰 발급 함수
+// 인증 토큰 발급 함수 (메모리 캐싱 적용)
+let cachedToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
 export async function getEformsignToken() {
+    if (cachedToken && Date.now() < tokenExpiresAt) {
+        return cachedToken;
+    }
+
     const execution_time = Date.now().toString();
     const apiKeyBase64 = Buffer.from(EFORMSIGN_API_KEY).toString('base64');
 
@@ -35,7 +42,10 @@ export async function getEformsignToken() {
     }
 
     const result = JSON.parse(resText);
-    return result.oauth_token.access_token;
+    cachedToken = result.oauth_token.access_token;
+    // 50분 후 만료 (토큰 유효기간 보통 1시간)
+    tokenExpiresAt = Date.now() + 50 * 60 * 1000;
+    return cachedToken;
 }
 
 // 알림톡 재발송/대체 발송 함수

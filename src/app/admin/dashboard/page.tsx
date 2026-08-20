@@ -112,10 +112,10 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
       return '012';
     }
     if (cleanNum) {
-      if (/^(351|352|355|356|357|903|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) {
+      if (/^(351|352|355|356|357|903|173|170|17|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) {
         return '012';
       }
-      if (/^(301|302|312|322|361|01|02|12|17|21|23|24)/.test(cleanNum)) {
+      if (/^(301|302|312|322|361|01|02|12|21|23|24)/.test(cleanNum)) {
         return '011';
       }
     }
@@ -155,8 +155,8 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
 
   if (cleanNum.startsWith('3333')) return '090';
   if (cleanNum.startsWith('1000')) return '092';
-  if (/^(351|352|355|356|357|903|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) return '012';
-  if (/^(301|302|312|322|361|01|02|12|17|21|23|24)/.test(cleanNum)) return '011';
+  if (/^(351|352|355|356|357|903|173|170|17|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) return '012';
+  if (/^(301|302|312|322|361|01|02|12|21|23|24)/.test(cleanNum)) return '011';
 
   const codeMatch = cleanName.match(/\d{3}/);
   if (codeMatch) return codeMatch[0];
@@ -1568,47 +1568,77 @@ export default function AdminDashboard() {
           const pdfjsVersion = pdfjsLib.version || '4.0.379';
           pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
-          let successCount = 0;
+          const isMultiple = logsToDownload.length > 1;
+          const JSZip = isMultiple ? (await import('jszip')).default : null;
+          const zip = JSZip ? new JSZip() : null;
 
-          for (let i = 0; i < logsToDownload.length; i++) {
-            const log = logsToDownload[i];
+          // 파일명 중복 방지를 사전에 처리하여 결정론적 고유 파일명 생성
+          const filenameCountMap: { [key: string]: number } = {};
+          const itemsWithFileNames = logsToDownload.map(log => {
+            const baseName = getFormattedFileName(log) || `contract_${log['document_id']}`;
+            const count = filenameCountMap[baseName] || 0;
+            filenameCountMap[baseName] = count + 1;
+            const fileName = count > 0 ? `${baseName} (${count})` : baseName;
+            return { log, fileName };
+          });
+
+          let successCount = 0;
+          let completedCount = 0;
+
+          // 4개씩 동시 처리 (Concurrency = 4)
+          const CONCURRENCY = 4;
+          const fetchAndRenderItem = async (item: { log: any; fileName: string }) => {
             try {
-              const response = await fetch(`/api/download?id=${log['document_id']}&action=download`);
+              const response = await fetch(`/api/download?id=${item.log['document_id']}&action=download`);
               if (!response.ok) throw new Error('Failed to fetch PDF');
-              
+
               const arrayBuffer = await response.arrayBuffer();
               const uint8Array = new Uint8Array(arrayBuffer);
-              
+
               const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
               const pdf = await loadingTask.promise;
               const page = await pdf.getPage(1);
-              
+
               const viewport = page.getViewport({ scale: 1.5 });
               const canvas = document.createElement('canvas');
               const context = canvas.getContext('2d');
               if (!context) throw new Error('No canvas context');
-              
+
               canvas.width = viewport.width;
               canvas.height = viewport.height;
-              
+
               await page.render({ canvasContext: context, viewport: viewport } as any).promise;
-              
+
               const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
               if (blob) {
-                const fileName = getFormattedFileName(log) || `contract_${log['document_id']}`;
-                saveAs(blob, `${fileName}.jpg`);
+                if (zip) {
+                  zip.file(`${item.fileName}.jpg`, blob);
+                } else {
+                  saveAs(blob, `${item.fileName}.jpg`);
+                }
                 successCount++;
-                // 브라우저 연속 다운로드 차단 방지 간격
-                await new Promise(r => setTimeout(r, 250));
               }
             } catch (err) {
-              console.error(`Error downloading document ${log['document_id']}:`, err);
+              console.error(`Error downloading document ${item.log['document_id']}:`, err);
+            } finally {
+              completedCount++;
+              setBulkDownloadProgress({ current: completedCount, total: logsToDownload.length });
             }
-            setBulkDownloadProgress({ current: i + 1, total: logsToDownload.length });
+          };
+
+          for (let i = 0; i < itemsWithFileNames.length; i += CONCURRENCY) {
+            const batch = itemsWithFileNames.slice(i, i + CONCURRENCY);
+            await Promise.all(batch.map(item => fetchAndRenderItem(item)));
           }
 
-          if (successCount > 0) {
-            toast(`총 ${successCount}건의 이미지가 각각 다운로드되었습니다.`, 'success');
+          if (zip && successCount > 0) {
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const zipFileName = `${confirmTitle.includes('선택') ? '선택' : '일괄'}_계약서_이미지_${successCount}건_${todayStr}.zip`;
+            saveAs(zipBlob, zipFileName);
+            toast(`총 ${successCount}건의 이미지를 압축한 파일(${zipFileName})이 다운로드되었습니다.`, 'success');
+          } else if (successCount > 0) {
+            toast(`이미지 1건이 성공적으로 다운로드되었습니다.`, 'success');
           } else {
             toast('다운로드에 성공한 이미지가 없습니다.', 'warning');
           }
@@ -1624,19 +1654,25 @@ export default function AdminDashboard() {
 
   const handleBulkDownloadImages = () => {
     const logsWithDocs = filteredLogs.filter(log => log['document_id']);
+    const isMultiple = logsWithDocs.length > 1;
     downloadImagesEach(
       logsWithDocs,
       '계약서 이미지 일괄 다운로드',
-      `현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 개별 파일로 다운로드하시겠습니까?`
+      isMultiple
+        ? `현재 조건에 해당하는 총 ${logsWithDocs.length}건의 이미지를 1개의 압축 파일(ZIP)로 빠르게 다운로드하시겠습니까?`
+        : `현재 조건에 해당하는 1건의 이미지를 다운로드하시겠습니까?`
     );
   };
 
   const handleSelectedDownloadImages = () => {
     const selectedLogs = filteredLogs.filter(log => log['document_id'] && selectedLogKeys.includes(log['document_id']));
+    const isMultiple = selectedLogs.length > 1;
     downloadImagesEach(
       selectedLogs,
       '선택 계약서 이미지 다운로드',
-      `선택하신 총 ${selectedLogs.length}건의 이미지를 개별 파일로 다운로드하시겠습니까?`
+      isMultiple
+        ? `선택하신 총 ${selectedLogs.length}건의 이미지를 1개의 압축 파일(ZIP)로 빠르게 다운로드하시겠습니까?`
+        : `선택하신 1건의 이미지를 다운로드하시겠습니까?`
     );
   };
 
