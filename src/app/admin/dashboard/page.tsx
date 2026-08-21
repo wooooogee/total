@@ -4123,8 +4123,23 @@ export default function AdminDashboard() {
                                     </span>
                                   )}
                                 </div>
+                              </div>
+                            </td>
+                            <td className="px-1 py-3 whitespace-nowrap text-center">
+                              <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
+                                {log['구좌수'] || log['수량'] || '1'}
+                              </span>
+                            </td>
+                            <td className="px-1.5 py-3">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex flex-col">
+                                  <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
+                                  <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
+                                    {log['카드사/은행명'] || log['결제기관'] || ''}
+                                  </span>
+                                </div>
 
-                                {/* CMS 결제 정보 복사 칩 그룹 (가로 스크롤 없이 아래로 자연스럽게 배치) */}
+                                {/* CMS 결제 정보 복사 칩 그룹 (결제구분 아래부터 오른쪽 방향으로 길게 나열) */}
                                 {(() => {
                                   const rawMethod = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').toUpperCase();
                                   const isCMS = rawMethod.includes('CMS') || rawMethod.includes('계좌') || rawMethod.includes('이체');
@@ -4139,15 +4154,15 @@ export default function AdminDashboard() {
                                   const keyPrefix = `pay-${idx}`;
 
                                   return (
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-1.5 border-t border-slate-100">
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">CMS</span>
-                                      {bankName && <span className="text-slate-700 font-bold text-xs mr-0.5">{bankName}</span>}
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-1.5 border-t border-slate-100 whitespace-nowrap min-w-[260px]">
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider shrink-0">CMS</span>
+                                      {bankName && <span className="text-slate-700 font-bold text-xs mr-0.5 shrink-0">{bankName}</span>}
 
                                       {/* 생년월일 6자리 */}
                                       {birth && birth !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-birth`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4167,7 +4182,7 @@ export default function AdminDashboard() {
                                       {bankCode && bankCode !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-code`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 font-bold'
@@ -4187,7 +4202,7 @@ export default function AdminDashboard() {
                                       {accountNo && accountNo !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-account`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-900 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4205,19 +4220,6 @@ export default function AdminDashboard() {
                                     </div>
                                   );
                                 })()}
-                              </div>
-                            </td>
-                            <td className="px-1 py-3 whitespace-nowrap text-center">
-                              <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
-                                {log['구좌수'] || log['수량'] || '1'}
-                              </span>
-                            </td>
-                            <td className="px-1.5 py-3 whitespace-nowrap">
-                              <div className="flex flex-col">
-                                <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
-                                <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
-                                  {log['카드사/은행명'] || log['결제기관'] || ''}
-                                </span>
                               </div>
                             </td>
                             <td className="px-1 py-3 text-center text-slate-700 whitespace-nowrap">
@@ -4243,14 +4245,14 @@ export default function AdminDashboard() {
                                         <button
                                           key={tIdx}
                                           onClick={() => handleCopyHealthcareTarget(t)}
-                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-normal text-left ${
+                                          className={`group inline-flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs transition-all border font-normal text-left whitespace-nowrap shrink-0 ${
                                             isCopied
                                               ? 'bg-emerald-500 text-white border-emerald-500 scale-105 font-bold shadow-xs'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
                                           }`}
                                           title="클릭하여 대상자 정보 복사"
                                         >
-                                          <span>{t}</span>
+                                          <span className="whitespace-nowrap">{t}</span>
                                           {isCopied ? (
                                             <Check size={12} className="shrink-0 text-white" />
                                           ) : (
