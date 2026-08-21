@@ -136,7 +136,7 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
       return '012';
     }
     if (cleanNum) {
-      if (/^(351|352|355|356|357|903|173|170|17|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) {
+      if (/^(351|352|355|356|357|903|173|170|17|48|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) {
         return '012';
       }
       if (/^(301|302|312|322|361|01|02|12|21|23|24)/.test(cleanNum)) {
@@ -179,7 +179,7 @@ const getBankCode = (bankOrCardName: string, accountNumberOrCardNumber?: string)
 
   if (cleanNum.startsWith('3333')) return '090';
   if (cleanNum.startsWith('1000')) return '092';
-  if (/^(351|352|355|356|357|903|173|170|17|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) return '012';
+  if (/^(351|352|355|356|357|903|173|170|17|48|51|52|53|55|56|79|81|82|83|15)/.test(cleanNum)) return '012';
   if (/^(301|302|312|322|361|01|02|12|21|23|24)/.test(cleanNum)) return '011';
 
   const codeMatch = cleanName.match(/\d{3}/);
@@ -4011,11 +4011,11 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[1350px]">
                       <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
-                          <th className="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center w-10">
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center w-10">
                             <input
                               type="checkbox"
                               checked={
@@ -4027,22 +4027,22 @@ export default function AdminDashboard() {
                               title="전체 선택 / 해제"
                             />
                           </th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">신청일시</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">계약자 정보</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">상품</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap text-center">구좌수</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제 구분</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">결제일</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">헬스케어 대상자</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">영업 담당</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">증서 발송</th>
-                          <th className="px-2 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">PDF 문서</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[100px]">신청일시</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[120px]">계약자 정보</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[380px]">상품</th>
+                          <th className="px-2 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap text-center min-w-[65px]">구좌수</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[90px]">결제 구분</th>
+                          <th className="px-2 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[65px]">결제일</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[150px]">헬스케어 대상자</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[120px]">영업 담당</th>
+                          <th className="px-2 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[85px]">증서 발송</th>
+                          <th className="px-3 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap min-w-[140px]">PDF 문서</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredLogs.map((log, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
-                            <td className="px-3 py-3 text-center w-10">
+                            <td className="px-3 py-3.5 text-center w-10">
                               {log['document_id'] ? (
                                 <input
                                   type="checkbox"
@@ -4059,7 +4059,7 @@ export default function AdminDashboard() {
                                 />
                               )}
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-slate-400 font-mono">
+                            <td className="px-3 py-3.5 whitespace-nowrap text-slate-400 font-mono">
                               {(() => {
                                 const dt = log['신청일시'];
                                 if (!dt || dt === '-') return '-';
@@ -4107,13 +4107,13 @@ export default function AdminDashboard() {
                                 return dt;
                               })()}
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-3 py-3.5 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-900 font-black text-sm">{log['계약자'] || log['성명'] || '-'}</span>
                                 <span className="text-[10px] text-slate-400 mt-0.5 font-normal">{log['연락처'] || '-'}</span>
                               </div>
                             </td>
-                            <td className="px-2 py-3">
+                            <td className="px-3 py-3.5 min-w-[380px]">
                               <div className="flex flex-col gap-1.5">
                                 <div>
                                   <span className="text-slate-800 font-black whitespace-nowrap">{log['상품명'] || '-'}</span>
@@ -4124,7 +4124,7 @@ export default function AdminDashboard() {
                                   )}
                                 </div>
 
-                                {/* CMS 결제 정보 가로 나열 복사 칩 그룹 */}
+                                {/* CMS 결제 정보 가로 나열 복사 칩 그룹 (한 줄로 길게 펼침) */}
                                 {(() => {
                                   const rawMethod = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').toUpperCase();
                                   const isCMS = rawMethod.includes('CMS') || rawMethod.includes('계좌') || rawMethod.includes('이체');
@@ -4139,15 +4139,15 @@ export default function AdminDashboard() {
                                   const keyPrefix = `pay-${idx}`;
 
                                   return (
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-1.5 border-t border-slate-100">
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">CMS</span>
-                                      {bankName && <span className="text-slate-700 font-bold text-xs mr-0.5">{bankName}</span>}
+                                    <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-slate-100 whitespace-nowrap overflow-x-auto custom-scrollbar">
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider shrink-0">CMS</span>
+                                      {bankName && <span className="text-slate-700 font-bold text-xs mr-0.5 shrink-0">{bankName}</span>}
 
                                       {/* 생년월일 6자리 */}
                                       {birth && birth !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-birth`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4167,7 +4167,7 @@ export default function AdminDashboard() {
                                       {bankCode && bankCode !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-code`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 font-bold'
@@ -4187,7 +4187,7 @@ export default function AdminDashboard() {
                                       {accountNo && accountNo !== '-' && (
                                         <button
                                           onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
-                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono ${
+                                          className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all border font-mono shrink-0 ${
                                             copiedPaymentItem === `${keyPrefix}-account`
                                               ? 'bg-emerald-500 text-white border-emerald-500 font-bold shadow-xs scale-105'
                                               : 'bg-slate-50 hover:bg-indigo-50 text-slate-900 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
@@ -4207,12 +4207,12 @@ export default function AdminDashboard() {
                                 })()}
                               </div>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3.5 whitespace-nowrap text-center">
                               <span className="text-base font-black text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-xl inline-block border border-indigo-100">
                                 {log['구좌수'] || log['수량'] || '1'}
                               </span>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-3 py-3.5 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
                                 <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
@@ -4220,10 +4220,10 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-slate-700">
+                            <td className="px-2 py-3.5 whitespace-nowrap text-slate-700">
                               {log['결제일'] || '-'}
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-3 py-3.5 whitespace-nowrap">
                               {(() => {
                                 const targets: string[] = log['_targets'] && log['_targets'].length > 0 
                                   ? log['_targets'] 
@@ -4263,7 +4263,7 @@ export default function AdminDashboard() {
                                 );
                               })()}
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-3 py-3.5 whitespace-nowrap">
                               <div className="flex flex-col">
                                 <span className="text-slate-700">{log['영업자'] || log['영업담당'] || '-'}</span>
                                 {(() => {
@@ -4276,7 +4276,7 @@ export default function AdminDashboard() {
                                 })()}
                               </div>
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3.5 whitespace-nowrap">
                               {(() => {
                                 const method = String(log['회원증서수령방법'] || log['증서수령방법'] || '-').trim();
                                 if (!method || method === '-') {
@@ -4309,7 +4309,7 @@ export default function AdminDashboard() {
                                 );
                               })()}
                             </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
+                            <td className="px-3 py-3.5 whitespace-nowrap min-w-[140px]">
                               <div className="flex flex-col gap-1.5 items-start">
                                 {log['document_id'] ? (
                                   <>
