@@ -2554,7 +2554,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-8 max-w-7xl w-full mx-auto space-y-8">
+      <main className="flex-1 py-8 pl-6 pr-6 lg:pl-10 lg:pr-72 w-full space-y-8">
         <AnimatePresence mode="wait">
           {activeTab === 'links' && (
             <motion.div
@@ -4265,13 +4265,13 @@ export default function AdminDashboard() {
                                 );
                               })()}
                             </td>
-                            <td className="px-1.5 py-3">
-                              <div className="flex flex-col">
-                                <span className="text-slate-700">{log['영업자'] || log['영업담당'] || '-'}</span>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <div className="flex flex-col whitespace-nowrap">
+                                <span className="text-slate-700 font-bold whitespace-nowrap">{log['영업자'] || log['영업담당'] || '-'}</span>
                                 {(() => {
                                   const aff = String(log['영업자소속'] || log['영업소속'] || '').replace(/^본인섭외-?/, '').trim();
                                   return aff ? (
-                                    <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                    <span className="text-[10px] text-slate-400 mt-0.5 font-normal whitespace-nowrap">
                                       {aff}
                                     </span>
                                   ) : null;
