@@ -47,25 +47,25 @@ const formatBirth6 = (raw: any): string => {
   const str = String(raw).trim();
   const clean = str.replace(/[^0-9]/g, '');
 
-  // 8자리 YYYYMMDD (예: 19840814 -> 840814, 20010507 -> 010507)
-  if (clean.length === 8) {
+  // 1) 8자리 이상 중 19xx 또는 20xx로 시작하는 YYYYMMDD (예: 19860101 -> 860101, 20010507 -> 010507)
+  if (clean.length >= 8 && (clean.startsWith('19') || clean.startsWith('20'))) {
     const mm = parseInt(clean.slice(4, 6), 10);
     const dd = parseInt(clean.slice(6, 8), 10);
     if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
-      return clean.slice(2); // YYYYMMDD -> YYMMDD
+      return clean.slice(2, 8);
     }
   }
 
-  // 6자리 YYMMDD (예: 840814, 010507)
-  if (clean.length === 6) {
+  // 2) 6자리 이상 중 첫 6자리가 YYMMDD인 경우 (예: 860101, 8601011, 86010110 -> 860101)
+  if (clean.length >= 6) {
     const mm = parseInt(clean.slice(2, 4), 10);
     const dd = parseInt(clean.slice(4, 6), 10);
     if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
-      return clean;
+      return clean.slice(0, 6);
     }
   }
 
-  // 엑셀 등에서 앞자리 0이 누락되어 3~5자리가 된 경우 (예: 10507 -> 010507, 50312 -> 050312)
+  // 3) 엑셀 등에서 앞자리 0이 누락되어 3~5자리가 된 경우 (예: 10507 -> 010507, 50312 -> 050312)
   if (clean.length > 0 && clean.length < 6) {
     const padded = clean.padStart(6, '0');
     const mm = parseInt(padded.slice(2, 4), 10);
@@ -99,6 +99,25 @@ const extractContractorBirth = (log: any): string => {
     if (log[key]) {
       const formatted = formatBirth6(log[key]);
       if (formatted !== '-') return formatted;
+    }
+  }
+
+  // 대상자 정보(_targets, 대상자1 등)에서 계약자 본인의 생년월일 우선 추출 시도
+  const contractorName = String(log['계약자'] || log['성명'] || log['name'] || '').trim();
+  const targets: string[] = Array.isArray(log['_targets']) ? [...log['_targets']] : [];
+  for (let i = 1; i <= 5; i++) {
+    if (log[`대상자${i}`]) targets.push(String(log[`대상자${i}`]));
+  }
+  for (const t of targets) {
+    if (!t) continue;
+    const parts = t.trim().split(/\s+/);
+    const tName = parts[0] || '';
+    if (!contractorName || tName === contractorName || targets.length === 1) {
+      const match = t.match(/\b(19[3-9]\d|20[0-2]\d|[3-9]\d|0\d|1\d|2\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/);
+      if (match) {
+        const formatted = formatBirth6(match[0]);
+        if (formatted !== '-') return formatted;
+      }
     }
   }
 

@@ -23,20 +23,31 @@ import {
 function formatBirth8(birth: string) {
   if (!birth) return birth;
   const clean = String(birth).replace(/[^0-9]/g, '');
-  if (clean.length === 8) return clean;
-  
+
+  if (clean.length === 8 && (clean.startsWith('19') || clean.startsWith('20'))) {
+    const mm = parseInt(clean.slice(4, 6), 10);
+    const dd = parseInt(clean.slice(6, 8), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) return clean;
+  }
+
   let birth6 = clean;
-  if (clean.length > 0 && clean.length < 6) {
+  if (clean.length >= 6) {
+    const mm = parseInt(clean.slice(2, 4), 10);
+    const dd = parseInt(clean.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      birth6 = clean.slice(0, 6);
+    }
+  } else if (clean.length > 0 && clean.length < 6) {
     birth6 = clean.padStart(6, '0');
   }
-  
+
   if (birth6.length === 6) {
     const year = parseInt(birth6.substring(0, 2), 10);
     // 26년 이하이면 2000년대(20xx), 그 이후면 1900년대(19xx)로 판단
     const prefix = year <= 26 ? '20' : '19';
     return prefix + birth6;
   }
-  
+
   return birth;
 }
 

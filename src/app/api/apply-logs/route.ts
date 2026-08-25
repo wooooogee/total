@@ -57,6 +57,33 @@ function parseKoreanDate(dateStr: string) {
   return 0;
 }
 
+function cleanBirth6(raw: any): string {
+  if (!raw || raw === '-') return '';
+  const str = String(raw).trim();
+  const clean = str.replace(/[^0-9]/g, '');
+
+  if (clean.length >= 8 && (clean.startsWith('19') || clean.startsWith('20'))) {
+    const mm = parseInt(clean.slice(4, 6), 10);
+    const dd = parseInt(clean.slice(6, 8), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) return clean.slice(2, 8);
+  }
+
+  if (clean.length >= 6) {
+    const mm = parseInt(clean.slice(2, 4), 10);
+    const dd = parseInt(clean.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) return clean.slice(0, 6);
+  }
+
+  if (clean.length > 0 && clean.length < 6) {
+    const padded = clean.padStart(6, '0');
+    const mm = parseInt(padded.slice(2, 4), 10);
+    const dd = parseInt(padded.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) return padded;
+  }
+
+  return str;
+}
+
 export async function GET() {
   try {
     const rawLogs = await getRegistrationsFromSheet('통합신청내역');
@@ -92,9 +119,11 @@ export async function GET() {
         }
       }
 
+      const sanitizedBirth = cleanBirth6(birth);
+
       return {
         ...log,
-        '생년월일': birth || log['생년월일'] || '',
+        '생년월일': sanitizedBirth || birth || log['생년월일'] || '',
         '시트구분': log['상품명'] || '미분류'
       };
     });
