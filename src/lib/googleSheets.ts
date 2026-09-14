@@ -132,7 +132,24 @@ export async function addRegistrationToSheet(data: any, sheetTitle: string = '�
       await sheet.setHeaderRow(newHeaders);
     }
 
-    const result = await sheet.addRow(data);
+    // 구글 시트 저장 시 숫자로 자동 파싱되어 앞자리 '0'이 제거되는 현상 방지
+    // 0으로 시작하는 숫자형 데이터(계좌번호, 카드번호, 사업자번호 등)를 강제 텍스트로 보존
+    const formattedData: any = {};
+    for (const [key, val] of Object.entries(data)) {
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        const isAccountOrNumCol = key.includes('계좌') || key.includes('카드') || key.includes('사업자') || key.includes('생년') || key.includes('주민');
+        if (/^0\d+$/.test(trimmed) || (isAccountOrNumCol && /^\d+$/.test(trimmed))) {
+          formattedData[key] = `'${trimmed}`;
+        } else {
+          formattedData[key] = val;
+        }
+      } else {
+        formattedData[key] = val;
+      }
+    }
+
+    const result = await sheet.addRow(formattedData);
     return { success: true, rowNumber: result.rowNumber };
   } catch (error: any) {
     console.error('Google Sheets AddRow Error:', error);
@@ -279,7 +296,8 @@ export async function getRegistrationsFromSheet(sheetTitle: string): Promise<any
     return rows.map(row => {
       const data: any = {};
       headers.forEach(h => {
-        data[h] = row.get(h) || '';
+        const rawVal = row.get(h);
+        data[h] = typeof rawVal === 'string' ? rawVal.replace(/^['"]+|['"]+$/g, '').trim() : (rawVal ?? '');
       });
       // 각 시트의 R, S, T열 값을 물리 셀 위치 기준(index 17, 18, 19)으로 그대로 가져옵니다.
       // TypeScript 컴파일러의 private 속성 접근 경고를 우회하기 위해 type casting을 적용합니다.
@@ -358,7 +376,8 @@ export async function getAllRegistrationsFromSheets(sheetTitles: string[]): Prom
       return rows.map(row => {
         const data: any = {};
         headers.forEach(h => {
-          data[h] = row.get(h) || '';
+          const rawVal = row.get(h);
+          data[h] = typeof rawVal === 'string' ? rawVal.replace(/^['"]+|['"]+$/g, '').trim() : (rawVal ?? '');
         });
         const raw = (row as any)._rawData;
         const targets: string[] = [];
