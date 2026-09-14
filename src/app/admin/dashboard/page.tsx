@@ -1005,6 +1005,8 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([]);
+  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -1020,6 +1022,30 @@ export default function AdminDashboard() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+
+  const getLogPaymentMethod = (log: any): string => {
+    const raw = String(log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '').trim();
+    if (!raw || raw === '-') return '기타';
+    const upper = raw.toUpperCase();
+    if (upper.includes('CMS') || upper.includes('계좌') || upper.includes('이체')) {
+      return 'CMS';
+    }
+    if (upper.includes('카드') || upper.includes('CARD')) {
+      return '카드';
+    }
+    return raw;
+  };
+
+  const AVAILABLE_PAYMENT_METHODS = useMemo(() => {
+    const methods = new Set<string>(['카드', 'CMS']);
+    logs.forEach(log => {
+      const m = getLogPaymentMethod(log);
+      if (m && m !== '-' && m !== '기타') {
+        methods.add(m);
+      }
+    });
+    return Array.from(methods);
+  }, [logs]);
 
   const AVAILABLE_SHEETS = useMemo(() => {
     const defaultSheets = ['하이브리드698', '프리미엄540', '라이즈498', '크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드', '굿라이프헬스케어실버', '골드', '실버', '헬스케어580', '통신결합'];
@@ -1494,9 +1520,30 @@ export default function AdminDashboard() {
       (log['계약자'] && log['계약자'].includes(searchTerm)) ||
       (log['연락처'] && log['연락처'].includes(searchTerm)) ||
       (log['영업자'] && log['영업자'].includes(searchTerm)) ||
-      (log['상품명'] && log['상품명'].includes(searchTerm));
+      (log['상품명'] && log['상품명'].includes(searchTerm)) ||
+      (log['카드사/은행명'] && log['카드사/은행명'].includes(searchTerm)) ||
+      (log['결제정보(카드/cms)'] && log['결제정보(카드/cms)'].includes(searchTerm));
       
     const matchesSheet = selectedSheets.length === 0 || selectedSheets.includes(log['시트구분']);
+
+    const matchesPayment = selectedPaymentMethods.length === 0 || selectedPaymentMethods.some(selected => {
+      const primaryMethod = getLogPaymentMethod(log);
+      if (primaryMethod === selected) return true;
+
+      const rawFull = String(log['결제정보(카드/cms)'] || log['결제수단'] || '').toUpperCase();
+      const raw1 = String(log['1회차 납부방법'] || '').toUpperCase();
+      const raw2 = String(log['2~101회차 납부방법'] || '').toUpperCase();
+
+      if (selected === '카드') {
+        return rawFull.includes('카드') || rawFull.includes('CARD') || raw1.includes('카드') || raw2.includes('카드');
+      }
+      if (selected === 'CMS') {
+        return rawFull.includes('CMS') || rawFull.includes('계좌') || rawFull.includes('이체') ||
+               raw1.includes('CMS') || raw1.includes('계좌') || raw1.includes('이체') ||
+               raw2.includes('CMS') || raw2.includes('계좌') || raw2.includes('이체');
+      }
+      return false;
+    });
     
     let matchesDate = true;
     if (startDate && endDate) {
@@ -1512,7 +1559,7 @@ export default function AdminDashboard() {
       }
     }
 
-    return matchesSearch && matchesSheet && matchesDate;
+    return matchesSearch && matchesSheet && matchesPayment && matchesDate;
   }).sort((a, b) => {
     const dateA = parseLogDate(a['신청일시']);
     const dateB = parseLogDate(b['신청일시']);
@@ -3927,6 +3974,55 @@ export default function AdminDashboard() {
                       </>
                     )}
                   </div>
+
+                  {/* 결제구분 필터 드롭다운 */}
+                  <div className="relative font-sans text-xs">
+                    <button
+                      onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
+                      className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 focus:border-indigo-600 outline-none rounded-xl py-3 px-4 text-xs font-bold text-slate-800 min-w-[130px] transition-all"
+                    >
+                      <span>
+                        결제: {selectedPaymentMethods.length === 0 ? '전체' : `${selectedPaymentMethods[0]}${selectedPaymentMethods.length > 1 ? ` 외 ${selectedPaymentMethods.length - 1}건` : ''}`}
+                      </span>
+                      <svg className={`w-4 h-4 transition-transform text-slate-400 ${isPaymentDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    {isPaymentDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsPaymentDropdownOpen(false)}></div>
+                        <div className="absolute top-full left-0 mt-2 w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                          <div className="max-h-60 overflow-y-auto py-1">
+                            <label className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedPaymentMethods.length === 0}
+                                onChange={() => setSelectedPaymentMethods([])}
+                                className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
+                              />
+                              <span className={`text-xs font-bold ${selectedPaymentMethods.length === 0 ? 'text-indigo-600' : 'text-slate-700'}`}>전체</span>
+                            </label>
+                            {AVAILABLE_PAYMENT_METHODS.map(method => (
+                              <label key={method} className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPaymentMethods.includes(method)}
+                                  onChange={() => {
+                                    if (selectedPaymentMethods.includes(method)) {
+                                      setSelectedPaymentMethods(selectedPaymentMethods.filter(m => m !== method));
+                                    } else {
+                                      setSelectedPaymentMethods([...selectedPaymentMethods, method]);
+                                    }
+                                  }}
+                                  className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
+                                />
+                                <span className={`text-xs font-bold ${selectedPaymentMethods.includes(method) ? 'text-indigo-600' : 'text-slate-700'}`}>{method}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <button onClick={fetchLogs} title="새로고침" className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm">
                     <RefreshCw size={14} />
                   </button>
@@ -4083,9 +4179,11 @@ export default function AdminDashboard() {
                             <td className="px-1.5 py-3">
                               <div className="flex flex-col gap-1">
                                 <div className="flex flex-col">
-                                  <span className="text-slate-700 font-bold text-xs">{log['결제정보(카드/cms)'] || log['결제수단'] || '-'}</span>
+                                  <span className="text-slate-700 font-bold text-xs">
+                                    {log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '-'}
+                                  </span>
                                   <span className="text-[11px] text-slate-400 mt-0.5 font-normal">
-                                    {log['카드사/은행명'] || log['결제기관'] || ''}
+                                    {log['카드사/은행명'] || log['결제기관'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || ''}
                                   </span>
                                 </div>
 
