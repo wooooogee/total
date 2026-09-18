@@ -147,7 +147,24 @@ export default function AdminDashboard() {
   // 인증 상태
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
-  const [userRole, setUserRole] = useState<'admin' | 'logs_only'>('admin');
+  const [userRole, setUserRole] = useState<'admin' | 'logs_only' | 'mobile'>('admin');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // 세션 복원
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAuth = sessionStorage.getItem('admin_auth');
+      const savedRole = sessionStorage.getItem('admin_role');
+      if (savedAuth === 'true' && savedRole) {
+        setIsAuthenticated(true);
+        setUserRole(savedRole as 'admin' | 'logs_only' | 'mobile');
+        if (savedRole === 'mobile') {
+          setViewMode('cards');
+          setActiveTab('logs');
+        }
+      }
+    }
+  }, []);
 
   // PDF 모달 상태
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
@@ -1007,14 +1024,87 @@ export default function AdminDashboard() {
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([]);
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
+  // 월 범위 계산 헬퍼 함수
+  const getMonthDateRange = (yearMonthStr: string) => {
+    const [yStr, mStr] = yearMonthStr.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const firstDay = `${y}-${String(m).padStart(2, '0')}-01`;
+    const lastDayNum = new Date(y, m, 0).getDate();
+    const lastDay = `${y}-${String(m).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+    return { firstDay, lastDay };
+  };
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [dateFilterMode, setDateFilterMode] = useState<'month' | 'custom'>('month');
+
   const [startDate, setStartDate] = useState<string>(() => {
     const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const [yStr, mStr] = ym.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    return `${y}-${String(m).padStart(2, '0')}-01`;
   });
   const [endDate, setEndDate] = useState<string>(() => {
     const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const [yStr, mStr] = ym.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const lastDayNum = new Date(y, m, 0).getDate();
+    return `${y}-${String(m).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
   });
+
+  // 페이지네이션 상태 (20개씩)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 20;
+
+  // 월 이동 핸들러
+  const handleMonthChange = (newYm: string) => {
+    setSelectedMonth(newYm);
+    const { firstDay, lastDay } = getMonthDateRange(newYm);
+    setStartDate(firstDay);
+    setEndDate(lastDay);
+    setCurrentPage(1);
+  };
+
+  const handlePrevMonth = () => {
+    const [yStr, mStr] = selectedMonth.split('-');
+    let y = parseInt(yStr, 10);
+    let m = parseInt(mStr, 10) - 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    const newYm = `${y}-${String(m).padStart(2, '0')}`;
+    handleMonthChange(newYm);
+  };
+
+  const handleNextMonth = () => {
+    const [yStr, mStr] = selectedMonth.split('-');
+    let y = parseInt(yStr, 10);
+    let m = parseInt(mStr, 10) + 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    const newYm = `${y}-${String(m).padStart(2, '0')}`;
+    handleMonthChange(newYm);
+  };
+
+  const handleCurrentMonth = () => {
+    const today = new Date();
+    const newYm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    handleMonthChange(newYm);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedSheets, selectedPaymentMethods, startDate, endDate]);
 
   // 상품 설정 상태
   const [products, setProducts] = useState<ProductConfig[]>([]);
@@ -1568,6 +1658,12 @@ export default function AdminDashboard() {
     return timeB - timeA;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(start, start + itemsPerPage);
+  }, [filteredLogs, currentPage, itemsPerPage]);
+
   const downloadImagesEach = async (logsToDownload: any[], confirmTitle: string, confirmMsg: string) => {
     if (logsToDownload.length === 0) {
       toast('다운로드할 이미지(계약서)가 없습니다.', 'warning');
@@ -1722,17 +1818,48 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (passwordInput === '880805') {
       setUserRole('admin');
+      setViewMode('table');
       setIsAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('admin_auth', 'true');
+        sessionStorage.setItem('admin_role', 'admin');
+      }
       toast('관리자 모드로 접속되었습니다.', 'success');
-    } else if (passwordInput === '1701!') {
-      setUserRole('logs_only');
+    } else if (passwordInput === '0805') {
+      setUserRole('mobile');
+      setViewMode('cards');
       setActiveTab('logs');
       setIsAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('admin_auth', 'true');
+        sessionStorage.setItem('admin_role', 'mobile');
+      }
+      toast('모바일 간편 모드로 접속되었습니다.', 'success');
+    } else if (passwordInput === '1701!') {
+      setUserRole('logs_only');
+      setViewMode('table');
+      setActiveTab('logs');
+      setIsAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('admin_auth', 'true');
+        sessionStorage.setItem('admin_role', 'logs_only');
+      }
       toast('통합 신청 내역 조회 모드로 접속되었습니다.', 'success');
     } else {
       toast('비밀번호가 일치하지 않습니다.', 'error');
       setPasswordInput('');
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPasswordInput('');
+    setUserRole('admin');
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('admin_auth');
+      sessionStorage.removeItem('admin_role');
+    }
+    toast('로그아웃 되었습니다.', 'info');
   };
 
   // --- 수기 발주 및 정산 처리 핸들러 추가 ---
@@ -2438,14 +2565,14 @@ export default function AdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 w-full max-w-sm space-y-8">
+        <form onSubmit={handleLogin} className="bg-white p-7 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-200 w-full max-w-sm space-y-7">
           <div className="text-center space-y-3">
             <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
               <Lock size={24} />
             </div>
             <div>
               <h1 className="text-lg font-black text-slate-800">통합 신청 시스템</h1>
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1">관리자 접근을 위해 비밀번호를 입력해주세요</p>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1">접속 모드에 맞는 비밀번호를 입력해주세요</p>
             </div>
           </div>
           <div className="space-y-4">
@@ -2457,9 +2584,13 @@ export default function AdminDashboard() {
               placeholder="••••••"
               autoFocus
             />
-            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3.5 font-black text-sm transition-colors shadow-sm">
+            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3.5 font-black text-sm transition-colors shadow-sm cursor-pointer">
               시스템 접속하기
             </button>
+          </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
+            <span className="flex items-center gap-1">모바일 모드 <span className="font-mono text-indigo-600 font-black bg-indigo-50 px-1.5 py-0.5 rounded">0805</span></span>
+            <span className="flex items-center gap-1">PC 관리자 <span className="font-mono text-slate-700 font-black bg-slate-100 px-1.5 py-0.5 rounded">880805</span></span>
           </div>
         </form>
       </div>
@@ -2468,63 +2599,114 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/15">
-            <LayoutDashboard className="text-white" size={20} />
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/15 shrink-0">
+              <LayoutDashboard className="text-white" size={20} />
+            </div>
+            <div>
+              <h1 className="text-base md:text-lg font-black tracking-tight flex items-center gap-1.5 text-slate-900">
+                통합 신청 시스템 <span className="text-[10px] md:text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                  {userRole === 'mobile' ? '모바일 전용 모드' : userRole === 'logs_only' ? '통합 신청 내역 전용' : '관리자 대시보드'}
+                </span>
+              </h1>
+              <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                {userRole === 'mobile' ? 'MOBILE COMPACT PANEL' : 'PREMIUM ADMIN PANEL V3'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-black tracking-tight flex items-center gap-1.5 text-slate-900">
-              통합 신청 시스템 <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                {userRole === 'logs_only' ? '통합 신청 내역 전용' : '관리자 대시보드'}
-              </span>
-            </h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">PREMIUM ADMIN PANEL V3</p>
+
+          {/* 모바일 화면 우측 새로고침 & 로그아웃 버튼 */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <button
+              onClick={fetchLogs}
+              disabled={isLoadingLogs}
+              className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              title="새로고침"
+            >
+              <RefreshCw size={15} className={isLoadingLogs ? 'animate-spin' : ''} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-2.5 py-1 text-slate-500 hover:text-rose-600 text-xs font-bold hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              title="로그아웃"
+            >
+              로그아웃
+            </button>
           </div>
         </div>
         
-        {/* Navigation Tabs */}
-        <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl self-start md:self-center">
-          <button 
-            onClick={() => setActiveTab('logs')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-          >
-            <UserCheck size={14} /> 통합 신청 내역
-          </button>
-          {userRole === 'admin' && (
-            <>
+        {/* Navigation Tabs (모바일 모드일 때는 탭 숨김) */}
+        {userRole !== 'mobile' ? (
+          <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
+            <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl overflow-x-auto max-w-full">
               <button 
-                onClick={() => setActiveTab('prefill')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'prefill' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+                onClick={() => setActiveTab('logs')}
+                className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
               >
-                <UserPlus size={14} /> 고객 맞춤 가입신청
+                <UserCheck size={14} /> 통합 신청 내역
               </button>
-              <button 
-                onClick={() => setActiveTab('links')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-              >
-                <Link2 size={14} /> 신청 링크 매니저
-              </button>
-              <button 
-                onClick={() => setActiveTab('products')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-              >
-                <Settings size={14} /> 상품/약관 매니저
-              </button>
-              <button 
-                onClick={() => setActiveTab('orders')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
-              >
-                <FileText size={14} /> 수기 발주 및 정산
-              </button>
-            </>
-          )}
-        </div>
+              {userRole === 'admin' && (
+                <>
+                  <button 
+                    onClick={() => setActiveTab('prefill')}
+                    className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'prefill' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+                  >
+                    <UserPlus size={14} /> 고객 맞춤 가입신청
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('links')}
+                    className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'links' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+                  >
+                    <Link2 size={14} /> 신청 링크 매니저
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('products')}
+                    className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+                  >
+                    <Settings size={14} /> 상품/약관 매니저
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('orders')}
+                    className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
+                  >
+                    <FileText size={14} /> 수기 발주 및 정산
+                  </button>
+                </>
+              )}
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="hidden md:flex items-center gap-1 px-3 py-2 text-slate-400 hover:text-rose-600 text-xs font-bold hover:bg-rose-50 rounded-xl transition-colors cursor-pointer shrink-0"
+              title="로그아웃"
+            >
+              로그아웃
+            </button>
+          </div>
+        ) : (
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={fetchLogs}
+              disabled={isLoadingLogs}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              <RefreshCw size={14} className={isLoadingLogs ? 'animate-spin' : ''} /> 새로고침
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-2 text-slate-400 hover:text-rose-600 text-xs font-bold hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+            >
+              로그아웃
+            </button>
+          </div>
+        )}
       </header>
 
-      {/* Shortcut Links */}
+      {/* Shortcut Links (모바일 모드에서는 숨김) */}
       {userRole === 'admin' && (
-        <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center gap-3 overflow-x-auto shadow-sm z-30 relative">
+        <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-2.5 md:py-3 flex items-center gap-3 overflow-x-auto shadow-sm z-30 relative">
           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">빠른 링크</span>
           <div className="h-4 w-px bg-slate-200 mx-1"></div>
           <a href="https://docs.google.com/spreadsheets/d/1MMYWdX6-x7OApeZiwg6ASjo9H0sX8z_09Ci_m2shfZY/edit?gid=1312626530#gid=1312626530" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-bold transition-colors whitespace-nowrap border border-green-200">
@@ -2551,7 +2733,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 py-8 pl-6 pr-6 lg:pl-10 lg:pr-72 w-full space-y-8">
+      <main className={`flex-1 py-6 px-3 md:px-8 w-full space-y-6 ${userRole === 'mobile' ? 'max-w-5xl mx-auto' : 'lg:pl-10 lg:pr-72'}`}>
         <AnimatePresence mode="wait">
           {activeTab === 'links' && (
             <motion.div
@@ -3724,34 +3906,34 @@ export default function AdminDashboard() {
                 const sortedHQs = Object.entries(accountsByHQ).sort((a, b) => b[1] - a[1]);
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-[2rem] p-6 text-white shadow-sm flex flex-col justify-center">
-                      <p className="text-indigo-100 font-bold text-xs uppercase tracking-wider mb-2">총 가입 건수</p>
-                      <div className="text-4xl font-black">{totalRegistrations.toLocaleString()}<span className="text-xl font-bold ml-1 opacity-80">건</span></div>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl md:rounded-[2rem] p-4 md:p-6 text-white shadow-sm flex flex-col justify-center">
+                      <p className="text-indigo-100 font-bold text-[10px] md:text-xs uppercase tracking-wider mb-1 md:mb-2">총 가입 건수</p>
+                      <div className="text-2xl md:text-4xl font-black">{totalRegistrations.toLocaleString()}<span className="text-sm md:text-xl font-bold ml-1 opacity-80">건</span></div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[2rem] p-6 text-white shadow-sm flex flex-col justify-center">
-                      <p className="text-blue-100 font-bold text-xs uppercase tracking-wider mb-2">총 구좌 수</p>
-                      <div className="text-4xl font-black">{totalAccounts.toLocaleString()}<span className="text-xl font-bold ml-1 opacity-80">구좌</span></div>
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl md:rounded-[2rem] p-4 md:p-6 text-white shadow-sm flex flex-col justify-center">
+                      <p className="text-blue-100 font-bold text-[10px] md:text-xs uppercase tracking-wider mb-1 md:mb-2">총 구좌 수</p>
+                      <div className="text-2xl md:text-4xl font-black">{totalAccounts.toLocaleString()}<span className="text-sm md:text-xl font-bold ml-1 opacity-80">구좌</span></div>
                     </div>
                     
-                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col">
-                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">상품별 구좌수</p>
-                      <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[100px] custom-scrollbar">
+                    <div className="bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm flex flex-col">
+                      <p className="text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider mb-2 md:mb-3">상품별 구좌수</p>
+                      <div className="flex-1 overflow-y-auto pr-1 md:pr-2 space-y-1.5 md:space-y-2 max-h-[85px] md:max-h-[100px] custom-scrollbar">
                         {sortedProducts.length > 0 ? sortedProducts.map(([p, c]) => (
-                          <div key={p} className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-slate-700 truncate mr-2">{p}</span>
+                          <div key={p} className="flex justify-between items-center text-[11px] md:text-xs">
+                            <span className="font-bold text-slate-700 truncate mr-1 md:mr-2">{p}</span>
                             <span className="font-black text-indigo-600 whitespace-nowrap">{c.toLocaleString()}구좌</span>
                           </div>
                         )) : <div className="text-slate-400 text-xs">데이터 없음</div>}
                       </div>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col">
-                      <p className="text-slate-400 font-bold text-xs uppercase tracking-wider mb-3">소속별 구좌수</p>
-                      <div className="flex-1 overflow-y-auto pr-2 space-y-2 max-h-[100px] custom-scrollbar">
+                    <div className="bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm flex flex-col">
+                      <p className="text-slate-400 font-bold text-[10px] md:text-xs uppercase tracking-wider mb-2 md:mb-3">소속별 구좌수</p>
+                      <div className="flex-1 overflow-y-auto pr-1 md:pr-2 space-y-1.5 md:space-y-2 max-h-[85px] md:max-h-[100px] custom-scrollbar">
                         {sortedHQs.length > 0 ? sortedHQs.map(([h, c]) => (
-                          <div key={h} className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-slate-700 truncate mr-2">{h}</span>
+                          <div key={h} className="flex justify-between items-center text-[11px] md:text-xs">
+                            <span className="font-bold text-slate-700 truncate mr-1 md:mr-2">{h}</span>
                             <span className="font-black text-blue-600 whitespace-nowrap">{c.toLocaleString()}구좌</span>
                           </div>
                         )) : <div className="text-slate-400 text-xs">데이터 없음</div>}
@@ -3761,172 +3943,245 @@ export default function AdminDashboard() {
                 );
               })()}
 
-              {/* 우측 고정 세로 미니바 (본인섭외-본부명 퀵 복사) */}
-              <div className="fixed right-5 top-28 z-50 flex flex-col items-end font-sans">
-                {isQuickBarOpen ? (
-                  <div className="w-64 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-2xl p-4 flex flex-col max-h-[calc(100vh-9rem)] transition-all">
-                    {/* 헤더 */}
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
-                          <Copy size={14} />
+              {/* 우측 고정 세로 미니바 (모바일 모드에서는 숨김) */}
+              {userRole !== 'mobile' && (
+                <div className="fixed right-5 top-28 z-50 flex flex-col items-end font-sans">
+                  {isQuickBarOpen ? (
+                    <div className="w-64 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-3xl shadow-2xl p-4 flex flex-col max-h-[calc(100vh-9rem)] transition-all">
+                      {/* 헤더 */}
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black">
+                            <Copy size={14} />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-black text-slate-800">본인섭외 복사</h3>
+                            <p className="text-[9px] text-slate-400 font-medium">클릭시 자동 복사</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-xs font-black text-slate-800">본인섭외 복사</h3>
-                          <p className="text-[9px] text-slate-400 font-medium">클릭시 자동 복사</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setIsQuickBarOpen(false)}
-                        className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-                        title="미니바 접기"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-
-                    {/* 본부명 세로 리스트 */}
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-[80px]">
-                      {affiliationList.length === 0 ? (
-                        <div className="text-center py-6 text-[11px] text-slate-400 font-medium">
-                          저장된 본부명이 없습니다.<br />아래에서 추가해 주세요.
-                        </div>
-                      ) : (
-                        affiliationList.map(aff => {
-                          const code = `본인섭외-${aff}`;
-                          const isCopied = copiedAffiliation === code;
-                          return (
-                            <div key={aff} className="group flex items-center gap-1">
-                              <button
-                                onClick={() => handleCopyAffiliationCode(aff)}
-                                className={`flex-1 flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-bold transition-all border shadow-xs text-left ${
-                                  isCopied 
-                                    ? 'bg-emerald-500 text-white border-emerald-500 scale-[1.02]' 
-                                    : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
-                                }`}
-                                title={`클릭시 "${code}" 복사`}
-                              >
-                                <span className="truncate">{code}</span>
-                                {isCopied ? (
-                                  <Check size={14} className="shrink-0 text-white" />
-                                ) : (
-                                  <Copy size={13} className="shrink-0 opacity-40 group-hover:opacity-100" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleRemoveAffiliation(aff)}
-                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-40 group-hover:opacity-100 shrink-0"
-                                title="삭제"
-                              >
-                                <X size={13} />
-                              </button>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {/* 본부명 입력/추가 하단 폼 */}
-                    <div className="pt-3 mt-3 border-t border-slate-100 shrink-0">
-                      <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-2xl px-2.5 py-1.5 focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-xs">
-                        <span className="text-[10px] font-black text-indigo-600 shrink-0">본인섭외-</span>
-                        <input
-                          type="text"
-                          placeholder="본부명 입력"
-                          value={newAffiliationInput}
-                          onChange={(e) => setNewAffiliationInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleAddAffiliation()}
-                          className="w-full bg-transparent outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
-                        />
                         <button
-                          onClick={handleAddAffiliation}
-                          className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shrink-0"
-                          title="본부명 저장"
+                          onClick={() => setIsQuickBarOpen(false)}
+                          className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                          title="미니바 접기"
                         >
-                          <Plus size={14} />
+                          <ChevronRight size={16} />
                         </button>
                       </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* 접혔을 때 컴팩트 버튼 */
-                  <button
-                    onClick={() => setIsQuickBarOpen(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all hover:scale-105 group"
-                    title="본인섭외 퀵 복사 미니바 열기"
-                  >
-                    <Copy size={18} />
-                    <span className="text-xs font-black pr-1 hidden group-hover:inline">본인섭외 퀵복사</span>
-                    <ChevronLeft size={16} />
-                  </button>
-                )}
-              </div>
 
-              {/* 필터 및 검색 바 */}
-              <div className="bg-white border border-slate-200 p-6 rounded-[2rem] flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm">
-                <div className="flex gap-2 w-full lg:max-w-xl">
-                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-1 shadow-sm h-[42px] min-w-max">
+                      {/* 본부명 세로 리스트 */}
+                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-[80px]">
+                        {affiliationList.length === 0 ? (
+                          <div className="text-center py-6 text-[11px] text-slate-400 font-medium">
+                            저장된 본부명이 없습니다.<br />아래에서 추가해 주세요.
+                          </div>
+                        ) : (
+                          affiliationList.map(aff => {
+                            const code = `본인섭외-${aff}`;
+                            const isCopied = copiedAffiliation === code;
+                            return (
+                              <div key={aff} className="group flex items-center gap-1">
+                                <button
+                                  onClick={() => handleCopyAffiliationCode(aff)}
+                                  className={`flex-1 flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-bold transition-all border shadow-xs text-left ${
+                                    isCopied 
+                                      ? 'bg-emerald-500 text-white border-emerald-500 scale-[1.02]' 
+                                      : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200 hover:border-indigo-200'
+                                  }`}
+                                  title={`클릭시 "${code}" 복사`}
+                                >
+                                  <span className="truncate">{code}</span>
+                                  {isCopied ? (
+                                    <Check size={14} className="shrink-0 text-white" />
+                                  ) : (
+                                    <Copy size={13} className="shrink-0 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveAffiliation(aff)}
+                                  className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-40 group-hover:opacity-100 shrink-0"
+                                  title="삭제"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* 본부명 입력/추가 하단 폼 */}
+                      <div className="pt-3 mt-3 border-t border-slate-100 shrink-0">
+                        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-2xl px-2.5 py-1.5 focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-xs">
+                          <span className="text-[10px] font-black text-indigo-600 shrink-0">본인섭외-</span>
+                          <input
+                            type="text"
+                            placeholder="본부명 입력"
+                            value={newAffiliationInput}
+                            onChange={(e) => setNewAffiliationInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddAffiliation()}
+                            className="w-full bg-transparent outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
+                          />
+                          <button
+                            onClick={handleAddAffiliation}
+                            className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shrink-0"
+                            title="본부명 저장"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 접혔을 때 컴팩트 버튼 */
                     <button
-                      onClick={() => {
-                        const d = new Date(startDate);
-                        d.setDate(d.getDate() - 1);
-                        const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        setStartDate(str);
-                        setEndDate(str);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-                      title="이전 날짜로 이동"
+                      onClick={() => setIsQuickBarOpen(true)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all hover:scale-105 group"
+                      title="본인섭외 퀵 복사 미니바 열기"
                     >
+                      <Copy size={18} />
+                      <span className="text-xs font-black pr-1 hidden group-hover:inline">본인섭외 퀵복사</span>
                       <ChevronLeft size={16} />
                     </button>
-                    <div className="flex items-center px-1 border-x border-slate-200 mx-1">
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => {
-                          setStartDate(e.target.value);
-                          if (e.target.value > endDate) setEndDate(e.target.value);
-                        }}
-                        className="bg-transparent outline-none text-xs font-bold text-slate-800 w-[105px] cursor-pointer"
-                      />
-                      <span className="text-slate-300 mx-1.5 text-xs font-bold">~</span>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => {
-                          setEndDate(e.target.value);
-                          if (e.target.value < startDate) setStartDate(e.target.value);
-                        }}
-                        className="bg-transparent outline-none text-xs font-bold text-slate-800 w-[105px] cursor-pointer"
-                      />
-                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 필터 및 검색 바 */}
+              <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex flex-col gap-3 md:gap-4 shadow-sm">
+                <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                  {/* 날짜 필터 (월단위 기본 지원) */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {dateFilterMode === 'month' ? (
+                      <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-1 shadow-sm h-[42px]">
+                        <button
+                          onClick={handlePrevMonth}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                          title="이전 달로 이동"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        <div className="flex items-center px-2 border-x border-slate-200 mx-1">
+                          <input
+                            type="month"
+                            value={selectedMonth}
+                            onChange={(e) => e.target.value && handleMonthChange(e.target.value)}
+                            className="bg-transparent outline-none text-xs md:text-sm font-black text-slate-800 cursor-pointer text-center"
+                          />
+                        </div>
+                        <button
+                          onClick={handleNextMonth}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                          title="다음 달로 이동"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      /* 일자 직접 범위 지정 */
+                      <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-1 shadow-sm h-[42px]">
+                        <button
+                          onClick={() => {
+                            const d = new Date(startDate);
+                            d.setDate(d.getDate() - 1);
+                            const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            setStartDate(str);
+                            setEndDate(str);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0"
+                          title="이전 날짜로 이동"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div className="flex items-center px-1 border-x border-slate-200 mx-1">
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => {
+                              setStartDate(e.target.value);
+                              if (e.target.value > endDate) setEndDate(e.target.value);
+                            }}
+                            className="bg-transparent outline-none text-xs font-bold text-slate-800 w-[105px] cursor-pointer"
+                          />
+                          <span className="text-slate-300 mx-1.5 text-xs font-bold">~</span>
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => {
+                              setEndDate(e.target.value);
+                              if (e.target.value < startDate) setStartDate(e.target.value);
+                            }}
+                            className="bg-transparent outline-none text-xs font-bold text-slate-800 w-[105px] cursor-pointer"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const d = new Date(endDate);
+                            d.setDate(d.getDate() + 1);
+                            const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            setStartDate(str);
+                            setEndDate(str);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0"
+                          title="다음 날짜로 이동"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => {
-                        const d = new Date(endDate);
-                        d.setDate(d.getDate() + 1);
-                        const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        setStartDate(str);
-                        setEndDate(str);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-                      title="다음 날짜로 이동"
+                      onClick={handleCurrentMonth}
+                      className="px-2.5 py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      title="이번 달로 바로가기"
                     >
-                      <ChevronRight size={16} />
+                      이번달
+                    </button>
+
+                    <button
+                      onClick={() => setDateFilterMode(prev => prev === 'month' ? 'custom' : 'month')}
+                      className="px-2 py-2 text-[11px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                      title={dateFilterMode === 'month' ? '일자 직접 지정하기' : '월단위 조회로 돌아가기'}
+                    >
+                      {dateFilterMode === 'month' ? '일자 직접지정' : '월단위 조회'}
                     </button>
                   </div>
-                  <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
+
+                  {/* 검색창 */}
+                  <div className="relative flex-1 group min-w-[200px]">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
                     <input 
                       type="text" 
-                      placeholder="계약자명, 연락처 등 검색" 
+                      placeholder="계약자명, 연락처, 영업자 등 검색" 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-400 transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-800 placeholder:text-slate-400 transition-all"
                     />
+                  </div>
+
+                  {/* 뷰 모드 토글 (카드 뷰 vs 표 뷰) */}
+                  <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/60 shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        viewMode === 'cards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title="모바일 최적화 카드 뷰"
+                    >
+                      카드 뷰
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        viewMode === 'table' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title="PC 상세 테이블 뷰"
+                    >
+                      표 뷰
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
+                <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center pt-1 border-t border-slate-100">
                   <div className="relative font-sans text-xs">
                     <button
                       onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
@@ -4056,7 +4311,198 @@ export default function AdminDashboard() {
                   <p className="text-slate-400 font-bold text-sm">신청 현황 기록이 존재하지 않습니다.</p>
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm">
+                <>
+                  {viewMode === 'cards' ? (
+                    /* 모바일 최적화 카드 뷰 */
+                    <div className="space-y-3">
+                      {paginatedLogs.map((log, idx) => {
+                        const birth = extractContractorBirth(log);
+                        const contractorName = log['계약자'] || log['성명'] || '-';
+                        const phone = log['연락처'] || '-';
+                        const account = log['구좌수'] || log['수량'] || '1';
+                        const productName = log['상품명'] || '-';
+                        const optionName = log['제품명'] || '';
+                        const salesName = log['영업자'] || log['영업담당'] || '-';
+                        const salesAff = String(log['영업자소속'] || log['영업소속'] || '').replace(/^본인섭외-?/, '').trim();
+                        const paymentMethod = log['결제정보(카드/cms)'] || log['결제수단'] || log['2~101회차 납부방법'] || log['1회차 납부방법'] || '-';
+                        const bankName = String(log['카드사/은행명'] || log['결제기관'] || log['은행명'] || log['2~101회차 카드사/은행명'] || log['1회차 카드사/은행명'] || '').trim();
+                        const rawAccountNo = String(log['카드번호/계좌번호'] || log['계좌번호'] || log['2~101회차 계좌/카드번호'] || log['1회차 계좌/카드번호'] || log['결제계좌'] || '-').trim();
+                        const accountNo = normalizeAccountNumber(bankName, rawAccountNo);
+                        const bankCode = getBankCode(bankName, accountNo);
+                        const rawMethodUpper = String(paymentMethod).toUpperCase();
+                        const isCMS = rawMethodUpper.includes('CMS') || rawMethodUpper.includes('계좌') || rawMethodUpper.includes('이체');
+                        const keyPrefix = `m-pay-${idx}`;
+
+                        return (
+                          <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-indigo-300 transition-all space-y-3">
+                            {/* 카드 상단 헤더: 선택 체크박스, 신청일시, 구좌수, 수령방법 */}
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                              <div className="flex items-center gap-2">
+                                {log['document_id'] ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedLogKeys.includes(log['document_id'])}
+                                    onChange={() => toggleSelectLog(log['document_id'])}
+                                    className="accent-indigo-600 w-4 h-4 rounded cursor-pointer"
+                                  />
+                                ) : (
+                                  <input
+                                    type="checkbox"
+                                    disabled
+                                    className="opacity-20 w-4 h-4 rounded cursor-not-allowed"
+                                  />
+                                )}
+                                <span className="text-xs font-bold text-slate-500 font-mono">
+                                  {(() => {
+                                    const dt = log['신청일시'];
+                                    if (!dt || dt === '-') return '-';
+                                    const date = parseLogDate(dt);
+                                    if (date) {
+                                      const y = date.getFullYear();
+                                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                                      const d = String(date.getDate()).padStart(2, '0');
+                                      let h = date.getHours();
+                                      const min = String(date.getMinutes()).padStart(2, '0');
+                                      const ampm = h >= 12 ? 'PM' : 'AM';
+                                      if (h > 12) h -= 12;
+                                      if (h === 0) h = 12;
+                                      return `${y}.${m}.${d} ${ampm} ${h}:${min}`;
+                                    }
+                                    return dt;
+                                  })()}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                                  {account}구좌
+                                </span>
+                                {log['회원증서수령방법'] && (
+                                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {log['회원증서수령방법']}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 2열 정보: 계약자 정보 & 영업 담당 */}
+                            <div className="grid grid-cols-2 gap-3 pt-0.5">
+                              {/* 계약자 정보 */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">계약자 정보</span>
+                                <div className="text-base font-black text-slate-900 leading-tight">
+                                  {contractorName}
+                                </div>
+                                <div className="text-xs font-bold text-slate-600">
+                                  {phone !== '-' ? (
+                                    <a href={`tel:${phone.replace(/[^0-9]/g, '')}`} className="text-indigo-600 hover:underline">
+                                      {phone}
+                                    </a>
+                                  ) : '-'}
+                                </div>
+                                {birth !== '-' && (
+                                  <div className="text-[11px] font-mono text-slate-400">
+                                    생년월일: {birth}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 영업 담당 & 상품 정보 */}
+                              <div className="space-y-1 text-right">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">영업 담당</span>
+                                <div className="text-sm font-black text-slate-800">
+                                  {salesName}
+                                </div>
+                                {salesAff && (
+                                  <div className="text-[11px] font-bold text-slate-500">
+                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                      {salesAff}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="text-[11px] font-bold text-slate-700 truncate mt-1">
+                                  {productName}
+                                  {optionName && <span className="text-[10px] text-slate-400 block font-normal">({optionName})</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 결제 정보 및 CMS 복사 칩 */}
+                            <div className="bg-slate-50 rounded-xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-1.5 border border-slate-100">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${isCMS ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {isCMS ? 'CMS' : '카드'}
+                                </span>
+                                <span className="font-bold text-slate-700">{bankName || paymentMethod}</span>
+                                {log['결제일'] && <span className="text-slate-400 text-[11px]">({log['결제일']}일)</span>}
+                              </div>
+
+                              {isCMS && (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {birth && birth !== '-' && (
+                                    <button
+                                      onClick={() => handleCopyPaymentItem(birth, `${keyPrefix}-birth`)}
+                                      className="px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                      title="생년월일 6자리 복사"
+                                    >
+                                      {copiedPaymentItem === `${keyPrefix}-birth` ? '✓ 복사됨' : birth}
+                                    </button>
+                                  )}
+                                  {bankCode && bankCode !== '-' && (
+                                    <button
+                                      onClick={() => handleCopyPaymentItem(bankCode, `${keyPrefix}-code`)}
+                                      className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                                      title="은행코드 복사"
+                                    >
+                                      {copiedPaymentItem === `${keyPrefix}-code` ? '✓ 복사됨' : `코드:${bankCode}`}
+                                    </button>
+                                  )}
+                                  {accountNo && accountNo !== '-' && (
+                                    <button
+                                      onClick={() => handleCopyPaymentItem(accountNo, `${keyPrefix}-account`)}
+                                      className="px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                      title="계좌번호 복사"
+                                    >
+                                      {copiedPaymentItem === `${keyPrefix}-account` ? '✓ 복사됨' : accountNo}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 카드 하단 액션 버튼 */}
+                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                              {log['document_id'] ? (
+                                <>
+                                  <button
+                                    onClick={() => { setSelectedPdfId(log['document_id']); setPdfModalOpen(true); }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                                  >
+                                    <FileText size={13} /> 계약서 보기
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log))}
+                                    disabled={isDownloadingImage}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                                  >
+                                    {isDownloadingImage ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} 이미지 다운
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 font-bold">서명 미완료</span>
+                              )}
+                              <button
+                                onClick={() => handleOpenOrderModal(log)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                              >
+                                <Plus size={13} /> 수기 발주
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm">
                   <div className="w-full overflow-x-hidden">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -4086,7 +4532,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {filteredLogs.map((log, idx) => (
+                        {paginatedLogs.map((log, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
                             <td className="px-2 py-3 text-center w-8">
                               {log['document_id'] ? (
@@ -4395,8 +4841,84 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
-                            )}
-            </motion.div>
+              )}
+
+              {/* 20개씩 다음 페이지로 넘어가도록 페이지네이션 컨트롤 */}
+              {filteredLogs.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+                  <div className="text-xs font-bold text-slate-500 text-center sm:text-left">
+                    전체 <span className="text-indigo-600 font-black">{filteredLogs.length.toLocaleString()}</span>건 중{' '}
+                    <span className="text-slate-800 font-black">
+                      {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredLogs.length)}
+                    </span>건 (페이지 <span className="text-indigo-600 font-black">{currentPage}</span> / {totalPages})
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="첫 페이지로"
+                    >
+                      &laquo;
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft size={14} /> 이전
+                    </button>
+
+                    <div className="flex items-center gap-1 mx-1">
+                      {(() => {
+                        const maxButtons = 5;
+                        let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                        let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                        if (endPage - startPage + 1 < maxButtons) {
+                          startPage = Math.max(1, endPage - maxButtons + 1);
+                        }
+                        const pages = [];
+                        for (let p = startPage; p <= endPage; p++) {
+                          pages.push(p);
+                        }
+                        return pages.map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                              currentPage === p
+                                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                                : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      다음 <ChevronRight size={14} />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title="마지막 페이지로"
+                    >
+                      &raquo;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
           )}
 
           {activeTab === 'orders' && (
