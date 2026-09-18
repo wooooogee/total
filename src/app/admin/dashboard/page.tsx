@@ -767,7 +767,7 @@ export default function AdminDashboard() {
       return;
     }
 
-    // A열: 수신자 번호(연락처), B열: #{계약자}(이름), C열: #{상품명}, D열: #{계약자}(이름), E열: #{상품명}, F열: #{링크}(토큰ID), G열: #{링크}(토큰ID)
+    // A열: 수신자 번호(숫자만), B열: #{계약자}, C열: #{상품명}, D열: #{계약자}, E열: #{상품명}, F열: #{링크}(토큰ID), G열: #{링크}(빈칸)
     const headers = [
       '수신자 번호(숫자, 공백, 하이픈(-)만)',
       '#{계약자}',
@@ -779,15 +779,18 @@ export default function AdminDashboard() {
     ];
 
     const rows = listToExport.map((item: any) => {
+      const phoneVal = item.phone ? String(item.phone).replace(/[^0-9]/g, '') : '';
+      const nameVal = item.name || '';
+      const productVal = item.product || '';
       const tokenVal = item.token || '';
       return [
-        item.phone || '',
-        item.name || '',
-        item.product || '',
-        item.name || '',
-        item.product || '',
+        phoneVal,
+        nameVal,
+        productVal,
+        nameVal,
+        productVal,
         tokenVal,
-        tokenVal
+        ''
       ];
     });
 
