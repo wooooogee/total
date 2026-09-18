@@ -806,7 +806,7 @@ export default function AdminDashboard() {
       return [
         phoneVal,
         nameVal,
-        formattedProduct,
+        productBase || item.productName || '',
         nameVal,
         formattedProduct,
         tokenVal,
