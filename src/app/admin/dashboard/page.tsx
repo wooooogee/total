@@ -781,14 +781,34 @@ export default function AdminDashboard() {
     const rows = listToExport.map((item: any) => {
       const phoneVal = item.phone ? String(item.phone).replace(/[^0-9]/g, '') : '';
       const nameVal = item.name || '';
-      const productVal = item.product || '';
+      
+      // 엑셀다운로드 전용: 상품명(구좌수)_제품명
+      const productBase = item.product || '';
+      const rawCount = item.productCount || 1;
+      const countNum = String(rawCount).replace(/[^0-9]/g, '') || '1';
+      const countStr = `${countNum}구좌`;
+      
+      const rawProductName = String(item.productName || item.productName2 || '').trim();
+      const cleanProductName = rawProductName.replace(/^\d+구좌_?/, '').trim();
+
+      let formattedProduct = productBase;
+      if (productBase) {
+        if (cleanProductName) {
+          formattedProduct = `${productBase}(${countStr})_${cleanProductName}`;
+        } else {
+          formattedProduct = `${productBase}(${countStr})`;
+        }
+      } else if (cleanProductName) {
+        formattedProduct = cleanProductName;
+      }
+
       const tokenVal = item.token || '';
       return [
         phoneVal,
         nameVal,
-        productVal,
+        formattedProduct,
         nameVal,
-        productVal,
+        formattedProduct,
         tokenVal,
         ''
       ];
