@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getRegistrationsFromSheet, getPrefillDataFromSheet } from '@/lib/googleSheets';
 import { getPrefillConfigs } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+// 인메모리 캐시 (단기간 중복 구글 시트 호출 방지)
+let cachedLogs: any[] | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60초
 
 function parseKoreanDate(dateStr: string) {
   if (!dateStr) return 0;
@@ -84,17 +89,51 @@ function cleanBirth6(raw: any): string {
   return str;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const rawLogs = await getRegistrationsFromSheet('통합신청내역');
-    let prefillList: any[] = [];
-    try {
-      prefillList = await getPrefillDataFromSheet();
-      if (!prefillList || prefillList.length === 0) {
-        prefillList = getPrefillConfigs();
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get('refresh') === 'true';
+    const now = Date.now();
+
+    // 60초 캐시 유효 시 구글 시트 네트워크 호출 없이 즉시 반환
+    if (!forceRefresh && cachedLogs && (now - lastCacheTime < CACHE_TTL_MS)) {
+      return NextResponse.json(cachedLogs, {
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    // 구글 시트 '통합신청내역'과 '사전등록' 정보를 병렬(Promise.allSettled)로 동시 호출하여 레이턴시 50% 단축
+    const [rawLogsResult, prefillResult] = await Promise.allSettled([
+      getRegistrationsFromSheet('통합신청내역'),
+      getPrefillDataFromSheet().catch(() => getPrefillConfigs()),
+    ]);
+
+    let rawLogs: any[] = [];
+    if (rawLogsResult.status === 'fulfilled') {
+      rawLogs = rawLogsResult.value || [];
+    } else {
+      console.error('Failed to get registrations from sheet:', rawLogsResult.reason);
+      if (cachedLogs) {
+        return NextResponse.json(cachedLogs, {
+          headers: { 'X-Cache': 'FALLBACK', 'Cache-Control': 'no-store' },
+        });
       }
-    } catch (e) {
-      prefillList = getPrefillConfigs();
+      throw rawLogsResult.reason;
+    }
+
+    let prefillList: any[] = [];
+    if (prefillResult.status === 'fulfilled') {
+      prefillList = prefillResult.value || [];
+    }
+    if (!prefillList || prefillList.length === 0) {
+      try {
+        prefillList = getPrefillConfigs();
+      } catch (e) {
+        prefillList = [];
+      }
     }
 
     const prefillMap = new Map<string, any>();
@@ -135,8 +174,22 @@ export async function GET() {
       return dateB - dateA;
     });
 
-    return NextResponse.json(flatLogs);
+    // 캐시 저장
+    cachedLogs = flatLogs;
+    lastCacheTime = now;
+
+    return NextResponse.json(flatLogs, {
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch (error: any) {
+    if (cachedLogs) {
+      return NextResponse.json(cachedLogs, {
+        headers: { 'X-Cache': 'ERROR_FALLBACK', 'Cache-Control': 'no-store' },
+      });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

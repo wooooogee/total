@@ -1039,9 +1039,29 @@ export default function AdminDashboard() {
     }
   };
 
-  // 신청 로그 상태
-  const [logs, setLogs] = useState<any[]>([]);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(true);
+  // 신청 로그 상태 (세션 스토리지 캐시로 새로고침 시 0초 즉시 렌더링)
+  const [logs, setLogs] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('cached_apply_logs');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [];
+  });
+  const [isLoadingLogs, setIsLoadingLogs] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('cached_apply_logs');
+        if (saved && JSON.parse(saved).length > 0) return false;
+      } catch (e) {
+        // ignore
+      }
+    }
+    return true;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
@@ -1319,14 +1339,23 @@ export default function AdminDashboard() {
     }
   };
 
-  // 신청 내역 가져오기
-  const fetchLogs = async () => {
-    setIsLoadingLogs(true);
+  // 신청 내역 가져오기 (forceRefresh=true일 경우 서버 캐시 무효화 및 강제 갱신)
+  const fetchLogs = async (forceRefresh = false) => {
+    // 이미 캐시된 데이터가 있는 경우 전체 로딩 스켈레톤을 띄우지 않고 백그라운드에서 조용히 갱신
+    if (forceRefresh || logs.length === 0) {
+      setIsLoadingLogs(true);
+    }
     try {
-      const res = await fetch('/api/apply-logs');
+      const url = forceRefresh ? '/api/apply-logs?refresh=true' : '/api/apply-logs';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setLogs(data);
+        try {
+          sessionStorage.setItem('cached_apply_logs', JSON.stringify(data));
+        } catch (e) {
+          // 용량 한도 예외 무시
+        }
       }
     } catch (err) {
       console.error('Failed to fetch logs:', err);
@@ -2639,7 +2668,7 @@ export default function AdminDashboard() {
           {/* 모바일 화면 우측 새로고침 & 로그아웃 버튼 */}
           <div className="flex items-center gap-1.5 md:hidden">
             <button
-              onClick={fetchLogs}
+              onClick={() => fetchLogs(true)}
               disabled={isLoadingLogs}
               className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               title="새로고침"
@@ -2707,7 +2736,7 @@ export default function AdminDashboard() {
         ) : (
           <div className="hidden md:flex items-center gap-2">
             <button
-              onClick={fetchLogs}
+              onClick={() => fetchLogs(true)}
               disabled={isLoadingLogs}
               className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
@@ -4297,8 +4326,13 @@ export default function AdminDashboard() {
                       </>
                     )}
                   </div>
-                  <button onClick={fetchLogs} title="새로고침" className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm">
-                    <RefreshCw size={14} />
+                  <button 
+                    onClick={() => fetchLogs(true)} 
+                    disabled={isLoadingLogs}
+                    title="새로고침" 
+                    className="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white text-slate-400 hover:text-slate-650 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={isLoadingLogs ? 'animate-spin' : ''} />
                   </button>
                   <button 
                     onClick={handleSelectedDownloadImages}
