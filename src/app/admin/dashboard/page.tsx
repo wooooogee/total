@@ -2565,14 +2565,14 @@ export default function AdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-        <form onSubmit={handleLogin} className="bg-white p-7 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-200 w-full max-w-sm space-y-7">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 w-full max-w-sm space-y-8">
           <div className="text-center space-y-3">
             <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
               <Lock size={24} />
             </div>
             <div>
               <h1 className="text-lg font-black text-slate-800">통합 신청 시스템</h1>
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1">접속 모드에 맞는 비밀번호를 입력해주세요</p>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1">관리자 접근을 위해 비밀번호를 입력해주세요</p>
             </div>
           </div>
           <div className="space-y-4">
@@ -2587,10 +2587,6 @@ export default function AdminDashboard() {
             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3.5 font-black text-sm transition-colors shadow-sm cursor-pointer">
               시스템 접속하기
             </button>
-          </div>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
-            <span className="flex items-center gap-1">모바일 모드 <span className="font-mono text-indigo-600 font-black bg-indigo-50 px-1.5 py-0.5 rounded">0805</span></span>
-            <span className="flex items-center gap-1">PC 관리자 <span className="font-mono text-slate-700 font-black bg-slate-100 px-1.5 py-0.5 rounded">880805</span></span>
           </div>
         </form>
       </div>
