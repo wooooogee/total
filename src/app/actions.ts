@@ -257,31 +257,35 @@ export async function registerAction(data: any) {
         '회원증서수령방법': !data.certificateDeliveryMethod || data.certificateDeliveryMethod === 'alimtalk' ? '알림톡' : data.certificateDeliveryMethod === 'email' ? `이메일 (${data.certificateEmail || ''})` : '우편'
       };
 
-      if (data.product === '좋은건강크루즈') {
-        sheetData['결제정보(카드/cms)'] = '';
-        sheetData['카드사/은행명'] = '';
-        sheetData['카드번호/계좌번호'] = '';
-        sheetData['유효기간'] = '';
+      const isSplitPayment = data.product === '좋은건강크루즈' || data.product === '굿라이프헬스케어 올인원(일시납)' || (data.product?.includes('올인원') && data.product?.includes('일시납'));
+
+      if (isSplitPayment) {
+        sheetData['결제정보(카드/cms)'] = data.paymentMethod2 === 'card' ? '카드' : 'CMS';
+        sheetData['카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2?.cardCompany : data.paymentInfo2?.bankName;
+        sheetData['카드번호/계좌번호'] = data.paymentMethod2 === 'card' 
+          ? data.paymentInfo2?.cardNumber 
+          : normalizeAccountNumber(data.paymentInfo2?.bankName, data.paymentInfo2?.accountNumber);
+        sheetData['유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2?.cardExpiry : '';
         sheetData['결제일'] = data.paymentDate;
 
         sheetData['1회차 납부방법'] = data.paymentMethod1 === 'card' ? '카드결제' : '계좌이체';
-        sheetData['1회차 카드사/은행명'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardCompany : '국민은행';
-        sheetData['1회차 계좌/카드번호'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardNumber : '476101-01-413681';
-        sheetData['1회차 유효기간'] = data.paymentMethod1 === 'card' ? data.paymentInfo1.cardExpiry : '';
+        sheetData['1회차 카드사/은행명'] = data.paymentMethod1 === 'card' ? data.paymentInfo1?.cardCompany : '국민은행';
+        sheetData['1회차 계좌/카드번호'] = data.paymentMethod1 === 'card' ? data.paymentInfo1?.cardNumber : '476101-01-413681';
+        sheetData['1회차 유효기간'] = data.paymentMethod1 === 'card' ? data.paymentInfo1?.cardExpiry : '';
 
         sheetData['2~101회차 납부방법'] = data.paymentMethod2 === 'card' ? '카드결제' : 'CMS';
-        sheetData['2~101회차 카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardCompany : data.paymentInfo2.bankName;
+        sheetData['2~101회차 카드사/은행명'] = data.paymentMethod2 === 'card' ? data.paymentInfo2?.cardCompany : data.paymentInfo2?.bankName;
         sheetData['2~101회차 계좌/카드번호'] = data.paymentMethod2 === 'card' 
-          ? data.paymentInfo2.cardNumber 
-          : normalizeAccountNumber(data.paymentInfo2.bankName, data.paymentInfo2.accountNumber);
-        sheetData['2~101회차 유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2.cardExpiry : '';
+          ? data.paymentInfo2?.cardNumber 
+          : normalizeAccountNumber(data.paymentInfo2?.bankName, data.paymentInfo2?.accountNumber);
+        sheetData['2~101회차 유효기간'] = data.paymentMethod2 === 'card' ? data.paymentInfo2?.cardExpiry : '';
       } else {
         sheetData['결제정보(카드/cms)'] = data.paymentMethod === 'card' ? '카드' : 'CMS';
-        sheetData['카드사/은행명'] = data.paymentMethod === 'card' ? data.paymentInfo.cardCompany : data.paymentInfo.bankName;
+        sheetData['카드사/은행명'] = data.paymentMethod === 'card' ? data.paymentInfo?.cardCompany : data.paymentInfo?.bankName;
         sheetData['카드번호/계좌번호'] = data.paymentMethod === 'card' 
-          ? data.paymentInfo.cardNumber 
-          : normalizeAccountNumber(data.paymentInfo.bankName, data.paymentInfo.accountNumber);
-        sheetData['유효기간'] = data.paymentMethod === 'card' ? data.paymentInfo.cardExpiry : '';
+          ? data.paymentInfo?.cardNumber 
+          : normalizeAccountNumber(data.paymentInfo?.bankName, data.paymentInfo?.accountNumber);
+        sheetData['유효기간'] = data.paymentMethod === 'card' ? data.paymentInfo?.cardExpiry : '';
         sheetData['결제일'] = data.paymentDate;
       }
 

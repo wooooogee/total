@@ -301,7 +301,7 @@ import { useToast } from '@/components/ToastContext';
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, linkId, initialProduct, initialSkipHealthcare, initialPrefillData }) => {
   const { toast } = useToast();
-  const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드'];
+  const allProducts = ['더좋은하이브리드698', '더좋은프리미엄540', '더좋은헬스케어580', '더좋은통신결합', '더좋은라이즈498', '좋은건강크루즈', '굿라이프헬스케어', '굿라이프헬스케어골드', '굿라이프헬스케어 올인원(일시납)'];
   const productsToDisplay = allowedProducts && allowedProducts.length > 0 ? allowedProducts : allProducts;
 
   const isValidInitialProduct = initialProduct && productsToDisplay.includes(initialProduct);
@@ -333,6 +333,26 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const getProductDisplayName = (targetName: string) => {
     const matched = getProductConfig(targetName);
     return matched?.name || targetName;
+  };
+
+  const multiplyAmounts = (text: string, multiplier: number) => {
+    if (!text) return text;
+    const trimmed = text.trim();
+    // 1) 순수 숫자 형태 (쉼표 포함) 예: "2,280,000", "2280000"
+    if (/^[\d,]+$/.test(trimmed)) {
+      const num = parseInt(trimmed.replace(/,/g, ''), 10);
+      if (!isNaN(num)) {
+        return (num * multiplier).toLocaleString();
+      }
+    }
+    // 2) 단위 포함 형태
+    return text.replace(/(\d{1,3}(?:,\d{3})*|\d+)\s*(원|만원|만)/g, (match, p1, p2) => {
+      const num = parseInt(p1.replace(/,/g, ''), 10);
+      if (!isNaN(num)) {
+        return (num * multiplier).toLocaleString() + p2;
+      }
+      return match;
+    });
   };
 
   const renderInstallmentGuide = () => (
@@ -950,25 +970,30 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       }
     }
     if (currentStep === 4) { // Payment Details step
-      if (formData.product === '좋은건강크루즈') {
-        // 1회차 검증
+      const isGoodlifeAllinone = formData.product === '굿라이프헬스케어 올인원(일시납)' || (formData.product?.includes('올인원') && formData.product?.includes('일시납'));
+      const isSplitPayment = formData.product === '좋은건강크루즈' || isGoodlifeAllinone;
+
+      if (isSplitPayment) {
+        const firstLabel = isGoodlifeAllinone ? '가전제품' : '1회차';
+        const secondLabel = isGoodlifeAllinone ? '라이프서비스' : '2~101회차';
+        // 1회차 / 가전제품 검증
         if (formData.paymentMethod1 === 'card') {
           const pureCard = formData.paymentInfo1.cardNumber.replace(/[^0-9]/g, '');
           if (pureCard.length < 11 || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
-            toast('1회차 카드 정보를 모두 정확히 입력해 주세요.', 'warning');
+            toast(`${firstLabel} 카드 정보를 모두 정확히 입력해 주세요.`, 'warning');
             return;
           }
         }
-        // 2~101회차 검증
+        // 2~101회차 / 라이프서비스 검증
         if (formData.paymentMethod2 === 'card') {
           const pureCard = formData.paymentInfo2.cardNumber.replace(/[^0-9]/g, '');
           if (pureCard.length < 11 || !formData.paymentInfo2.cardCompany || !formData.paymentInfo2.cardExpiry) {
-            toast('2~101회차 카드 정보를 모두 정확히 입력해 주세요.', 'warning');
+            toast(`${secondLabel} 카드 정보를 모두 정확히 입력해 주세요.`, 'warning');
             return;
           }
         } else if (formData.paymentMethod2 === 'cms') {
           if (!formData.paymentInfo2.accountNumber || !formData.paymentInfo2.bankName) {
-            toast('2~101회차 계좌 정보를 모두 입력해 주세요.', 'warning');
+            toast(`${secondLabel} 계좌 정보를 모두 입력해 주세요.`, 'warning');
             return;
           }
         }
@@ -1656,17 +1681,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     const hasCustomConfig = currentConfig && (currentConfig.monthlyPayment1 || currentConfig.monthlyPayment2 || currentConfig.refundNotice);
                     
                     if (hasCustomConfig) {
-                      const multiplyAmounts = (text: string, multiplier: number) => {
-                        if (!text) return text;
-                        return text.replace(/(\d{1,3}(?:,\d{3})*|\d+)\s*(원|만원|만)/g, (match, p1, p2) => {
-                          const num = parseInt(p1.replace(/,/g, ''), 10);
-                          if (!isNaN(num)) {
-                            return (num * multiplier).toLocaleString() + p2;
-                          }
-                          return match;
-                        });
-                      };
-
                       return (
                         <>
                           {currentConfig.monthlyPayment1 && (
@@ -1861,326 +1875,367 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
               </div>
 
-              {formData.product === '좋은건강크루즈' ? (
-                // --- 좋은건강크루즈 전용 결제수단 UI (1회차 & 2~101회차 분리) ---
-                <div className="space-y-6">
-                  {/* --- 1회차 건강보조식품 --- */}
-                  <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
-                    <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      1회차 납부방법 ({(600000 * (Number(formData.productCount) || 1)).toLocaleString()}원)
-                    </h3>
-                    <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                      <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
-                      <button type="button" onClick={() => updateFormData('paymentMethod1', 'bank')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
-                    </div>
+              {(() => {
+                const isGoodlifeAllinone = formData.product === '굿라이프헬스케어 올인원(일시납)' || (formData.product?.includes('올인원') && formData.product?.includes('일시납'));
+                const isSplitPayment = formData.product === '좋은건강크루즈' || isGoodlifeAllinone;
 
-                    {formData.paymentMethod1 === 'card' ? (
-                      <div className="space-y-4 mt-3">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
-                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo1.cardCompany} onChange={(e) => updatePaymentInfo1('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
-                            <input
-                              type="text"
-                              placeholder="MM/YY"
-                              maxLength={5}
-                              value={formData.paymentInfo1.cardExpiry}
-                              onChange={(e) => {
-                                let val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
-                                updatePaymentInfo1('cardExpiry', val);
-                              }}
-                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
-                          <input
-                            type="text"
-                            placeholder="0000-0000-0000-0000"
-                            value={formData.paymentInfo1.cardNumber}
-                            onChange={(e) => {
-                              let val = e.target.value.replace(/[^0-9]/g, '');
-                              if (val.length > 16) val = val.substring(0, 16);
-                              let formatted = '';
-                              for (let i = 0; i < val.length; i++) {
-                                if (i > 0 && i % 4 === 0) formatted += '-';
-                                formatted += val[i];
-                              }
-                              updatePaymentInfo1('cardNumber', formatted);
-                            }}
-                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[12px] font-bold text-sub ml-1">할부 기간</label>
-                          <select 
-                            value={formData.paymentInfo1.installmentPeriod || '일시불'} 
-                            onChange={(e) => updatePaymentInfo1('installmentPeriod', e.target.value)} 
-                            className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center] bg-[length:1em]"
-                            style={{
-                              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`
-                            }}
-                          >
-                            <option value="일시불">일시불</option>
-                            <option value="2개월">2개월</option>
-                            <option value="3개월">3개월</option>
-                            <option value="4개월">4개월</option>
-                            <option value="5개월">5개월</option>
-                            <option value="6개월">6개월</option>
-                            <option value="7개월">7개월</option>
-                            <option value="8개월">8개월</option>
-                            <option value="9개월">9개월</option>
-                            <option value="10개월">10개월</option>
-                            <option value="11개월">11개월</option>
-                            <option value="12개월">12개월</option>
-                          </select>
-                        </div>
-                        {renderInstallmentGuide()}
+                if (!isSplitPayment) {
+                  return (
+                    // --- 일반 상품 결제수단 UI (기존 코드) ---
+                    <div className="space-y-4">
+                      <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                        <button type="button" onClick={() => updateFormData('paymentMethod', 'card')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                        <button type="button" onClick={() => updateFormData('paymentMethod', 'bank')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
                       </div>
-                    ) : (
-                      <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl text-center space-y-4 mt-3 shadow-inner">
-                        <div className="inline-flex w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 rounded-full items-center justify-center text-indigo-600 dark:text-indigo-400">
-                          <Landmark size={20} />
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-[11px] font-bold text-sub uppercase tracking-wider">입금 계좌번호</p>
-                          <div className="flex items-center justify-center gap-2 bg-theme/50 px-4 py-2.5 rounded-2xl border border-theme/60 max-w-[280px] mx-auto">
-                            <span className="text-sm font-black tracking-tight text-indigo-600 dark:text-indigo-400 font-mono">국민 476101-01-413681</span>
-                            <button
-                              type="button"
-                              onClick={handleCopyAccount}
-                              className={`p-1.5 rounded-lg transition-all ${copied ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-theme-hover text-sub hover:text-indigo-600'}`}
-                              title="계좌번호 복사"
-                            >
-                              {copied ? <Check size={14} /> : <Copy size={14} />}
-                            </button>
+
+                      <div className="space-y-4">
+                        {formData.paymentMethod === 'card' ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><CreditCard size={14} /> 카드사</label>
+                                <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo.cardCompany} onChange={(e) => updatePaymentInfo('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 유효기간</label>
+                                <input
+                                  type="text"
+                                  placeholder="MM/YY"
+                                  maxLength={5}
+                                  value={formData.paymentInfo.cardExpiry}
+                                  onChange={(e) => {
+                                    let val = e.target.value.replace(/[^0-9]/g, '');
+                                    if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                    updatePaymentInfo('cardExpiry', val);
+                                  }}
+                                  className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-sub ml-1">카드번호</label>
+                              <input
+                                type="text"
+                                placeholder="0000-0000-0000-0000"
+                                value={formData.paymentInfo.cardNumber}
+                                onChange={(e) => {
+                                  let val = e.target.value.replace(/[^0-9]/g, '');
+                                  if (val.length > 16) val = val.substring(0, 16);
+                                  let formatted = '';
+                                  for (let i = 0; i < val.length; i++) {
+                                    if (i > 0 && i % 4 === 0) formatted += '-';
+                                    formatted += val[i];
+                                  }
+                                  updatePaymentInfo('cardNumber', formatted);
+                                }}
+                                className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold"
+                              />
+                            </div>
                           </div>
-                          <p className="text-xs font-black text-gray-800 dark:text-zinc-200">예금주: 더좋은라이프앤바이오</p>
-                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                            납입금액: <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{(600000 * (Number(formData.productCount) || 1)).toLocaleString()}원</span> ({formData.productCount || 1}구좌 기준)
-                          </p>
-                        </div>
-
-                        {/* 토스 앱 바로 송금 버튼 */}
-                        <div className="pt-1">
-                          <a
-                            href={`supertoss://send?bank=국민&accountNo=47610101413681&amount=${600000 * (Number(formData.productCount) || 1)}`}
-                            className="inline-flex w-full items-center justify-center gap-2 py-3.5 px-6 bg-[#0050ff] hover:bg-[#0040cc] text-white rounded-2xl font-black text-sm tracking-tight shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
-                          >
-                            <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                            </svg>
-                            토스 앱으로 바로 송금하기
-                          </a>
-                          <p className="text-[10px] text-sub mt-1.5 opacity-80">
-                            * 모바일 기기에 토스 앱이 설치된 경우에만 자동으로 연동됩니다.
-                          </p>
-                        </div>
-
-                        <p className="text-[11px] text-sub font-bold bg-gray-50 dark:bg-zinc-850 p-3 rounded-2xl leading-relaxed text-indigo-500">
-                          ※ 1회차 상품대금은 위 계좌로 직접 입금해 주셔야 최종 접수가 완료됩니다.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* --- 2~101회차 --- */}
-                  <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
-                    <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                      2~101회차 납부방법 ({(27000 * (Number(formData.productCount) || 1)).toLocaleString()}원)
-                    </h3>
-                    <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                      <button type="button" onClick={() => updateFormData('paymentMethod2', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
-                      <button type="button" onClick={() => updateFormData('paymentMethod2', 'cms')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'cms' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>CMS (계좌)</button>
-                    </div>
-
-                    {formData.paymentMethod2 === 'card' ? (
-                      <div className="space-y-4 mt-3">
-                        {formData.paymentMethod1 === 'card' && (
-                          <div className="flex items-center gap-2 mb-1 pl-1">
-                            <input 
-                              type="checkbox" 
-                              id="sameCardCheckbox"
-                              checked={isSameCard}
-                              onChange={(e) => handleSameCardToggle(e.target.checked)}
-                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                            />
-                            <label htmlFor="sameCardCheckbox" className="text-xs font-bold text-sub cursor-pointer select-none flex items-center gap-1.5">
-                              1회차 카드 정보와 동일
-                            </label>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Landmark size={14} /> 은행명</label>
+                              <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                              <datalist id="bank-list">
+                                <option value="NH농협은행" />
+                                <option value="농축협(단위농협)" />
+                                <option value="KB국민은행" />
+                                <option value="신한은행" />
+                                <option value="우리은행" />
+                                <option value="하나은행" />
+                                <option value="IBK기업은행" />
+                                <option value="SC제일은행" />
+                                <option value="씨티은행" />
+                                <option value="카카오뱅크" />
+                                <option value="케이뱅크" />
+                                <option value="토스뱅크" />
+                                <option value="우체국" />
+                                <option value="새마을금고" />
+                                <option value="신협" />
+                                <option value="수협은행" />
+                                <option value="대구은행(iM뱅크)" />
+                                <option value="부산은행" />
+                                <option value="경남은행" />
+                                <option value="광주은행" />
+                                <option value="전북은행" />
+                                <option value="제주은행" />
+                                <option value="산림조합" />
+                              </datalist>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-sub ml-1">계좌번호</label>
+                              <input type="text" placeholder="'-' 없이 숫자만 입력" value={formData.paymentInfo.accountNumber} onChange={(e) => updatePaymentInfo('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold" />
+                            </div>
                           </div>
                         )}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
-                            <input 
-                              type="text" 
-                              placeholder="예: 현대카드" 
-                              value={formData.paymentInfo2.cardCompany} 
-                              onChange={(e) => updatePaymentInfo2('cardCompany', e.target.value)} 
-                              disabled={isSameCard}
-                              className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
-                            />
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-sub ml-1">매월 이체일</label>
+                          <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
+                            <option value="5">매월 5일</option>
+                            <option value="10">매월 10일</option>
+                            <option value="15">매월 15일</option>
+                            <option value="20">매월 20일</option>
+                            <option value="25">매월 25일</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const countNum = Number(formData.productCount) || 1;
+                const prodConfig = getProductConfig(formData.product);
+
+                // 1차 금액 (가전제품 일시납 또는 크루즈 1회차 선결제)
+                const firstAmountPerCount = (() => {
+                  if (isGoodlifeAllinone) {
+                    const parsed = parseInt((prodConfig?.monthlyPayment1 || '2,280,000').replace(/[^0-9]/g, ''), 10);
+                    return !isNaN(parsed) && parsed > 0 ? parsed : 2280000;
+                  }
+                  return 600000;
+                })();
+                const firstTotalAmount = firstAmountPerCount * countNum;
+
+                // 1차 타이틀 및 문구
+                const firstSectionTitle = isGoodlifeAllinone 
+                  ? `가전제품 일시납 결제정보 (${firstTotalAmount.toLocaleString()}원)` 
+                  : `1회차 납부방법 (${firstTotalAmount.toLocaleString()}원)`;
+                const firstNoticeText = isGoodlifeAllinone
+                  ? '※ 가전제품 상품대금은 위 계좌로 직접 입금해 주셔야 최종 접수가 완료됩니다.'
+                  : '※ 1회차 상품대금은 위 계좌로 직접 입금해 주셔야 최종 접수가 완료됩니다.';
+
+                // 2차 타이틀 (라이프서비스 또는 크루즈 2~101회차)
+                const secondSectionTitle = isGoodlifeAllinone
+                  ? `라이프서비스 결제정보 (${multiplyAmounts(prodConfig?.monthlyPayment2 || '1,000원(1~60회) 25,500원(61~180회)', countNum)})`
+                  : `2~101회차 납부방법 (${(27000 * countNum).toLocaleString()}원)`;
+                const sameCardCheckboxLabel = isGoodlifeAllinone
+                  ? '가전제품 카드 정보와 동일'
+                  : '1회차 카드 정보와 동일';
+
+                return (
+                  <div className="space-y-6">
+                    {/* --- 1회차 / 가전제품 결제정보 --- */}
+                    <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
+                      <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                        {firstSectionTitle}
+                      </h3>
+                      <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                        <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                        <button type="button" onClick={() => updateFormData('paymentMethod1', 'bank')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
+                      </div>
+
+                      {formData.paymentMethod1 === 'card' ? (
+                        <div className="space-y-4 mt-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
+                              <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo1.cardCompany} onChange={(e) => updatePaymentInfo1('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
+                              <input
+                                type="text"
+                                placeholder="MM/YY"
+                                maxLength={5}
+                                value={formData.paymentInfo1.cardExpiry}
+                                onChange={(e) => {
+                                  let val = e.target.value.replace(/[^0-9]/g, '');
+                                  if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                  updatePaymentInfo1('cardExpiry', val);
+                                }}
+                                className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold"
+                              />
+                            </div>
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
+                            <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
                             <input
                               type="text"
-                              placeholder="MM/YY"
-                              maxLength={5}
-                              value={formData.paymentInfo2.cardExpiry}
+                              placeholder="0000-0000-0000-0000"
+                              value={formData.paymentInfo1.cardNumber}
                               onChange={(e) => {
                                 let val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
-                                updatePaymentInfo2('cardExpiry', val);
+                                if (val.length > 16) val = val.substring(0, 16);
+                                let formatted = '';
+                                for (let i = 0; i < val.length; i++) {
+                                  if (i > 0 && i % 4 === 0) formatted += '-';
+                                  formatted += val[i];
+                                }
+                                updatePaymentInfo1('cardNumber', formatted);
                               }}
-                              disabled={isSameCard}
-                              className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
+                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold"
                             />
                           </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
-                          <input
-                            type="text"
-                            placeholder="0000-0000-0000-0000"
-                            value={formData.paymentInfo2.cardNumber}
-                            onChange={(e) => {
-                              let val = e.target.value.replace(/[^0-9]/g, '');
-                              if (val.length > 16) val = val.substring(0, 16);
-                              let formatted = '';
-                              for (let i = 0; i < val.length; i++) {
-                                if (i > 0 && i % 4 === 0) formatted += '-';
-                                formatted += val[i];
-                              }
-                              updatePaymentInfo2('cardNumber', formatted);
-                            }}
-                            disabled={isSameCard}
-                            className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 mt-3">
-                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Landmark size={14} /> 은행명</label>
-                            <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo2.bankName} onChange={(e) => updatePaymentInfo2('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            <label className="text-[12px] font-bold text-sub ml-1">할부 기간</label>
+                            <select 
+                              value={formData.paymentInfo1.installmentPeriod || '일시불'} 
+                              onChange={(e) => updatePaymentInfo1('installmentPeriod', e.target.value)} 
+                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center] bg-[length:1em]"
+                              style={{
+                                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`
+                              }}
+                            >
+                              <option value="일시불">일시불</option>
+                              <option value="2개월">2개월</option>
+                              <option value="3개월">3개월</option>
+                              <option value="4개월">4개월</option>
+                              <option value="5개월">5개월</option>
+                              <option value="6개월">6개월</option>
+                              <option value="7개월">7개월</option>
+                              <option value="8개월">8개월</option>
+                              <option value="9개월">9개월</option>
+                              <option value="10개월">10개월</option>
+                              <option value="11개월">11개월</option>
+                              <option value="12개월">12개월</option>
+                            </select>
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1">계좌번호</label>
-                            <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo2.accountNumber} onChange={(e) => updatePaymentInfo2('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
-                          </div>
+                          {renderInstallmentGuide()}
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 결제일 */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-sub ml-1">매월 결제일</label>
-                    <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
-                      <option value="5">매월 5일</option>
-                      <option value="10">매월 10일</option>
-                      <option value="15">매월 15일</option>
-                      <option value="20">매월 20일</option>
-                      <option value="25">매월 25일</option>
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                // --- 일반 상품 결제수단 UI (기존 코드) ---
-                <div className="space-y-4">
-                  <div className="flex bg-theme p-1 rounded-2xl border border-theme">
-                    <button type="button" onClick={() => updateFormData('paymentMethod', 'card')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
-                    <button type="button" onClick={() => updateFormData('paymentMethod', 'bank')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${formData.paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {formData.paymentMethod === 'card' ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><CreditCard size={14} /> 카드사</label>
-                            <input type="text" placeholder="예: 현대카드" value={formData.paymentInfo.cardCompany} onChange={(e) => updatePaymentInfo('cardCompany', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
+                      ) : (
+                        <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl text-center space-y-4 mt-3 shadow-inner">
+                          <div className="inline-flex w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 rounded-full items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Landmark size={20} />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 유효기간</label>
+                            <p className="text-[11px] font-bold text-sub uppercase tracking-wider">입금 계좌번호</p>
+                            <div className="flex items-center justify-center gap-2 bg-theme/50 px-4 py-2.5 rounded-2xl border border-theme/60 max-w-[280px] mx-auto">
+                              <span className="text-sm font-black tracking-tight text-indigo-600 dark:text-indigo-400 font-mono">국민 476101-01-413681</span>
+                              <button
+                                type="button"
+                                onClick={handleCopyAccount}
+                                className={`p-1.5 rounded-lg transition-all ${copied ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-theme-hover text-sub hover:text-indigo-600'}`}
+                                title="계좌번호 복사"
+                              >
+                                {copied ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                            </div>
+                            <p className="text-xs font-black text-gray-800 dark:text-zinc-200">예금주: 더좋은라이프앤바이오</p>
+                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                              납입금액: <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{firstTotalAmount.toLocaleString()}원</span> ({formData.productCount || 1}구좌 기준)
+                            </p>
+                          </div>
+
+                          {/* 토스 앱 바로 송금 버튼 */}
+                          <div className="pt-1">
+                            <a
+                              href={`supertoss://send?bank=국민&accountNo=47610101413681&amount=${firstTotalAmount}`}
+                              className="inline-flex w-full items-center justify-center gap-2 py-3.5 px-6 bg-[#0050ff] hover:bg-[#0040cc] text-white rounded-2xl font-black text-sm tracking-tight shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+                            >
+                              <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                              </svg>
+                              토스 앱으로 바로 송금하기
+                            </a>
+                            <p className="text-[10px] text-sub mt-1.5 opacity-80">
+                              * 모바일 기기에 토스 앱이 설치된 경우에만 자동으로 연동됩니다.
+                            </p>
+                          </div>
+
+                          <p className="text-[11px] text-sub font-bold bg-gray-50 dark:bg-zinc-850 p-3 rounded-2xl leading-relaxed text-indigo-500">
+                            {firstNoticeText}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* --- 2회차 / 라이프서비스 결제정보 --- */}
+                    <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
+                      <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                        {secondSectionTitle}
+                      </h3>
+                      <div className="flex bg-theme p-1 rounded-2xl border border-theme">
+                        <button type="button" onClick={() => updateFormData('paymentMethod2', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
+                        <button type="button" onClick={() => updateFormData('paymentMethod2', 'cms')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod2 === 'cms' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>CMS (계좌)</button>
+                      </div>
+
+                      {formData.paymentMethod2 === 'card' ? (
+                        <div className="space-y-4 mt-3">
+                          {formData.paymentMethod1 === 'card' && (
+                            <div className="flex items-center gap-2 mb-1 pl-1">
+                              <input 
+                                type="checkbox" 
+                                id="sameCardCheckbox"
+                                checked={isSameCard}
+                                onChange={(e) => handleSameCardToggle(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                              />
+                              <label htmlFor="sameCardCheckbox" className="text-xs font-bold text-sub cursor-pointer select-none flex items-center gap-1.5">
+                                {sameCardCheckboxLabel}
+                              </label>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><CreditCard size={14} /> 카드사</label>
+                              <input 
+                                type="text" 
+                                placeholder="예: 현대카드" 
+                                value={formData.paymentInfo2.cardCompany} 
+                                onChange={(e) => updatePaymentInfo2('cardCompany', e.target.value)} 
+                                disabled={isSameCard}
+                                className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={14} /> 유효기간</label>
+                              <input
+                                type="text"
+                                placeholder="MM/YY"
+                                maxLength={5}
+                                value={formData.paymentInfo2.cardExpiry}
+                                onChange={(e) => {
+                                  let val = e.target.value.replace(/[^0-9]/g, '');
+                                  if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
+                                  updatePaymentInfo2('cardExpiry', val);
+                                }}
+                                disabled={isSameCard}
+                                className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[12px] font-bold text-sub ml-1">카드번호</label>
                             <input
                               type="text"
-                              placeholder="MM/YY"
-                              maxLength={5}
-                              value={formData.paymentInfo.cardExpiry}
+                              placeholder="0000-0000-0000-0000"
+                              value={formData.paymentInfo2.cardNumber}
                               onChange={(e) => {
                                 let val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2, 4);
-                                updatePaymentInfo('cardExpiry', val);
+                                if (val.length > 16) val = val.substring(0, 16);
+                                let formatted = '';
+                                for (let i = 0; i < val.length; i++) {
+                                  if (i > 0 && i % 4 === 0) formatted += '-';
+                                  formatted += val[i];
+                                }
+                                updatePaymentInfo2('cardNumber', formatted);
                               }}
-                              className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                              disabled={isSameCard}
+                              className={`w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none font-mono text-sm font-bold ${isSameCard ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-zinc-800/55' : ''}`} 
                             />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-sub ml-1">카드번호</label>
-                          <input
-                            type="text"
-                            placeholder="0000-0000-0000-0000"
-                            value={formData.paymentInfo.cardNumber}
-                            onChange={(e) => {
-                              let val = e.target.value.replace(/[^0-9]/g, '');
-                              if (val.length > 16) val = val.substring(0, 16);
-                              let formatted = '';
-                              for (let i = 0; i < val.length; i++) {
-                                if (i > 0 && i % 4 === 0) formatted += '-';
-                                formatted += val[i];
-                              }
-                              updatePaymentInfo('cardNumber', formatted);
-                            }}
-                            className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-mono text-base font-bold"
-                          />
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Landmark size={14} /> 은행명</label>
+                              <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo2.bankName} onChange={(e) => updatePaymentInfo2('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[12px] font-bold text-sub ml-1">계좌번호</label>
+                              <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo2.accountNumber} onChange={(e) => updatePaymentInfo2('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold" />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Landmark size={14} /> 은행명</label>
-                          <input type="text" list="bank-list" placeholder="예: NH농협은행, 농축협, 부산은행" value={formData.paymentInfo.bankName} onChange={(e) => updatePaymentInfo('bankName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
-                          <datalist id="bank-list">
-                            <option value="NH농협은행" />
-                            <option value="농축협(단위농협)" />
-                            <option value="KB국민은행" />
-                            <option value="신한은행" />
-                            <option value="우리은행" />
-                            <option value="하나은행" />
-                            <option value="IBK기업은행" />
-                            <option value="부산은행" />
-                            <option value="대구은행(iM뱅크)" />
-                            <option value="경남은행" />
-                            <option value="광주은행" />
-                            <option value="전북은행" />
-                            <option value="제주은행" />
-                            <option value="카카오뱅크" />
-                            <option value="케이뱅크" />
-                            <option value="토스뱅크" />
-                            <option value="새마을금고" />
-                            <option value="신협" />
-                            <option value="우체국" />
-                            <option value="수협" />
-                          </datalist>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-sub ml-1">계좌번호</label>
-                          <input type="text" placeholder="'-' 없이 숫자만" value={formData.paymentInfo.accountNumber} onChange={(e) => updatePaymentInfo('accountNumber', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold" />
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* 결제일 */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-sub ml-1">매월 결제일</label>
                       <select value={formData.paymentDate} onChange={(e) => updateFormData('paymentDate', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none appearance-none font-bold">
@@ -2192,8 +2247,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       </select>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="flex gap-3 pt-4">
                 <button onClick={handleBack} className="flex-1 py-5 bg-card text-sub rounded-2xl font-bold border border-theme">이전</button>

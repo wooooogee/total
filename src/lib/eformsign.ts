@@ -114,8 +114,10 @@ export async function createEformsignDocument(data: any) {
         const config = allConfigs.find(c => c.id === data.product);
         let templateId = config?.eformTemplateId;
 
+        const isGoodlifeAllinoneLumpSum = data.product === '굿라이프헬스케어 올인원(일시납)' || (data.product?.includes('올인원') && data.product?.includes('일시납'));
+
         // 2. 설정된 템플릿 ID가 없는 경우 하드코딩된 Fallback 사용
-        if (!templateId) {
+        if (!templateId || isGoodlifeAllinoneLumpSum) {
             const EFORMSIGN_TEMPLATE_ID_Hybrid698 = '4e2f0d0f49a24b7caa89fc9c5baf8506';
             const EFORMSIGN_TEMPLATE_ID_Premium540 = 'b9ecf11e1ed14beba8f6d925af8d26e6';
             const EFORMSIGN_TEMPLATE_ID_Tongsin = '009b8bca4f1c417a8774b22afccf8ccf';
@@ -123,8 +125,10 @@ export async function createEformsignDocument(data: any) {
             const EFORMSIGN_TEMPLATE_ID_Cruise = '9c8457e6d8b9433d8e87384d5accdc7b';
             const EFORMSIGN_TEMPLATE_ID_Goodlife = 'd32af2e31ab34cf3932442f278e69ea4';
             const EFORMSIGN_TEMPLATE_ID_GoodlifeGold = '3c5e55411952432ca2f527659a301468';
+            const EFORMSIGN_TEMPLATE_ID_GoodlifeAllinoneLumpSum = '713c58a2a1c442e1b5d67b65653aded9';
             
-            if (data.product === '더좋은하이브리드698') templateId = EFORMSIGN_TEMPLATE_ID_Hybrid698;
+            if (isGoodlifeAllinoneLumpSum) templateId = EFORMSIGN_TEMPLATE_ID_GoodlifeAllinoneLumpSum;
+            else if (data.product === '더좋은하이브리드698') templateId = EFORMSIGN_TEMPLATE_ID_Hybrid698;
             else if (data.product === '더좋은프리미엄540') templateId = EFORMSIGN_TEMPLATE_ID_Premium540;
             else if (data.product === '더좋은통신결합') templateId = EFORMSIGN_TEMPLATE_ID_Tongsin;
             else if (data.product === '더좋은라이즈498') templateId = EFORMSIGN_TEMPLATE_ID_Rise498;
@@ -143,7 +147,103 @@ export async function createEformsignDocument(data: any) {
 
         let fields: any[] = [];
 
-        if (!isTongsin && !isRise && !isCruise && !isHealth580) {
+        if (isGoodlifeAllinoneLumpSum) {
+            console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
+
+            const hasSplit = !!data.paymentMethod1;
+            const paymentMethod1 = hasSplit 
+                ? (data.paymentMethod1 === 'card' ? '카드' : '계좌이체') 
+                : (data.paymentMethod === 'card' ? '카드' : '계좌이체');
+            const cardCompany1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardCompany || '') 
+                : (data.paymentMethod1 === 'bank' ? (data.paymentInfo1?.bankName || '국민은행') : (data.paymentInfo?.cardCompany || ''));
+            const cardNumber1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardNumber || '') 
+                : (data.paymentMethod1 === 'bank' ? (data.paymentInfo1?.accountNumber || '476101-01-413681') : (data.paymentInfo?.cardNumber || ''));
+            const cardExpiry1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.cardExpiry || '') 
+                : (data.paymentInfo?.cardExpiry || '-');
+            const installmentPeriod1 = hasSplit && data.paymentMethod1 === 'card' 
+                ? (data.paymentInfo1?.installmentPeriod || '일시불') 
+                : (data.paymentInfo?.installmentPeriod || '-');
+
+            const isCard2 = hasSplit 
+                ? data.paymentMethod2 === 'card' 
+                : data.paymentMethod === 'card';
+            
+            const paymentMethod2 = isCard2 ? '카드' : 'CMS(계좌)';
+            const paymentInfo2 = hasSplit ? data.paymentInfo2 : data.paymentInfo;
+            
+            const cardOrBank2 = isCard2 
+                ? (paymentInfo2?.cardCompany || '') 
+                : (paymentInfo2?.bankName || '');
+            const cardOrAccount2 = isCard2 
+                ? (paymentInfo2?.cardNumber || '') 
+                : normalizeAccountNumber(paymentInfo2?.bankName, paymentInfo2?.accountNumber || '');
+            const cardExpiry2 = isCard2 
+                ? (paymentInfo2?.cardExpiry || '') 
+                : '-';
+            const paymentDay = `${(data.paymentDate || '05').toString().padStart(2, '0')}일`;
+
+            fields = [
+                { id: '상품명', value: `${productNameDisplay}(${data.productCount}구좌) ${data.productName || ''}`.trim() },
+                { id: '제품명', value: data.productName || '' },
+                { id: '구좌수', value: `${data.productCount}구좌` },
+                { id: '계약자이름', value: data.name },
+                { id: '계약자', value: data.name },
+                { id: '주민번호', value: data.residentId },
+                { id: '성별', value: data.gender || '남' },
+                { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
+                { id: '휴대폰', value: data.phone },
+                
+                // 가전제품 일시납 결제 정보
+                { id: '일시납 결제방법', value: paymentMethod1 },
+                { id: '일시납 카드/은행명', value: cardCompany1 },
+                { id: '일시납 카드번호', value: cardNumber1 },
+                { id: '일시납 유효기간', value: cardExpiry1 },
+                { id: '일시납 할부개월', value: installmentPeriod1 },
+                
+                // 라이프서비스 결제 정보
+                { id: '결제방법', value: paymentMethod2 },
+                { id: '카드/은행명', value: cardOrBank2 },
+                { id: '카드번호/계좌번호', value: cardOrAccount2 },
+                { id: '유효기간', value: cardExpiry2 },
+                { id: '카드할부', value: '' },
+                { id: '이체일', value: paymentDay },
+                
+                // 헬스케어 대상자 1
+                { id: '대상자1_관계', value: data.healthcareTargets?.[0]?.relation || '' },
+                { id: '대상자1_성명', value: data.healthcareTargets?.[0]?.name || '' },
+                { id: '대상자1_생년월일', value: data.healthcareTargets?.[0]?.birth || '' },
+                { id: '대상자1_성별', value: data.healthcareTargets?.[0]?.gender || '' },
+                { id: '대상자1_연락처', value: data.healthcareTargets?.[0]?.phone || '' },
+                
+                // 헬스케어 대상자 2
+                { id: '대상자2_관계', value: data.healthcareTargets?.[1]?.relation || '' },
+                { id: '대상자2_성명', value: data.healthcareTargets?.[1]?.name || '' },
+                { id: '대상자2_생년월일', value: data.healthcareTargets?.[1]?.birth || '' },
+                { id: '대상자2_성별', value: data.healthcareTargets?.[1]?.gender || '' },
+                { id: '대상자2_연락처', value: data.healthcareTargets?.[1]?.phone || '' },
+                
+                // 헬스케어 대상자 3
+                { id: '대상자3_관계', value: data.healthcareTargets?.[2]?.relation || '' },
+                { id: '대상자3_성명', value: data.healthcareTargets?.[2]?.name || '' },
+                { id: '대상자3_생년월일', value: data.healthcareTargets?.[2]?.birth || '' },
+                { id: '대상자3_성별', value: data.healthcareTargets?.[2]?.gender || '' },
+                { id: '대상자3_연락처', value: data.healthcareTargets?.[2]?.phone || '' },
+                
+                // 약관 동의 및 서명
+                { id: '상품내용고지', value: data.agreement?.product_notice ? '1' : '' },
+                { id: '개인정보수집', value: data.agreement?.privacy ? '1' : '' },
+                { id: '제3자제공', value: data.agreement?.third_party ? '1' : '' },
+                { id: '마케팅정보제공', value: data.agreement?.marketing ? '1' : '' },
+                { id: '서명', value: data.signature || '' },
+                { id: '계약일', value: today },
+                { id: '영업자소속', value: data.salesAffiliation || '' },
+                { id: '영업자성명', value: data.salesName || '' },
+                { id: '영업자연락처', value: data.salesPhone || '' }
+            ];
+        } else if (!isTongsin && !isRise && !isCruise && !isHealth580) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
 
             fields = [
