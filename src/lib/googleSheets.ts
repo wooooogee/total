@@ -1130,7 +1130,7 @@ export async function getPrefillDataFromSheet(token?: string): Promise<any> {
     if (!sheet) {
       sheet = await doc.addSheet({
         title: '사전신청목록',
-        headerValues: ['토큰ID', '계약자', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
+        headerValues: ['토큰ID', '계약자', '성별', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
       });
       return token ? null : [];
     }
@@ -1139,6 +1139,7 @@ export async function getPrefillDataFromSheet(token?: string): Promise<any> {
     const list = rows.map(r => ({
       token: r.get('토큰ID'),
       name: r.get('계약자'),
+      gender: r.get('성별') || '',
       birth: r.get('생년월일'),
       phone: r.get('연락처'),
       address: r.get('주소'),
@@ -1186,13 +1187,14 @@ export async function savePrefillBatchToSheet(configs: any[]): Promise<boolean> 
     if (!sheet) {
       sheet = await doc.addSheet({
         title: '사전신청목록',
-        headerValues: ['토큰ID', '계약자', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
+        headerValues: ['토큰ID', '계약자', '성별', '생년월일', '연락처', '주소', '상세주소', '상품ID', '구좌수', '영업자소속', '영업자명', '영업자연락처', '기업명', '사업자등록번호', '제품명1', '제품명2', '상태', '문서ID', '생성일시']
       });
     }
 
     const rowsData = configs.map(config => ({
       '토큰ID': config.token,
       '계약자': config.name || '',
+      '성별': config.gender || '',
       '생년월일': config.birth || '',
       '연락처': config.phone || '',
       '주소': config.address || '',

@@ -285,7 +285,7 @@ const STEPS = [
   { id: 'payment', title: '결제 정보' },
   { id: 'terms', title: '약관 동의' },
   { id: 'signature', title: '전자 서명' },
-  { id: 'sales', title: '영업 정보' },
+  { id: 'sales', title: '영업자 정보' },
   { id: 'complete', title: '가입 완료' },
 ];
 
@@ -677,6 +677,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       setFormData(prev => ({
         ...prev,
         name: initialPrefillData.name || prev.name,
+        gender: (initialPrefillData.gender === '여' ? '여' : (initialPrefillData.gender === '남' ? '남' : prev.gender)),
         phone: initialPrefillData.phone || prev.phone,
         residentId: formattedBirth || prev.residentId,
         address: initialPrefillData.address || prev.address,
@@ -863,10 +864,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     updateHealthcareTarget(index, 'isSameAsContractor', isSame);
 
     if (isSame) {
+      let birth8 = (formData.residentId || '').replace(/[^0-9]/g, '');
+      if (birth8.length === 6) {
+        const yy = parseInt(birth8.substring(0, 2), 10);
+        const currentYY = new Date().getFullYear() % 100;
+        const prefix = yy <= currentYY ? '20' : '19';
+        birth8 = prefix + birth8;
+      }
       updateHealthcareTarget(index, 'relation', '본인');
       updateHealthcareTarget(index, 'name', formData.name);
-      updateHealthcareTarget(index, 'birth', formData.residentId);
-      updateHealthcareTarget(index, 'gender', formData.gender === '남' ? '남' : '여');
+      updateHealthcareTarget(index, 'birth', birth8);
+      updateHealthcareTarget(index, 'gender', formData.gender === '여' ? '여' : '남');
       updateHealthcareTarget(index, 'phone', formData.phone);
     } else {
       updateHealthcareTarget(index, 'relation', '');
@@ -910,12 +918,137 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     updateFormData('signature', '');
   };
 
+  // 유효성 검사 헬퍼 함수들
+  const isValidFullName = (name: string) => {
+    const clean = (name || '').trim();
+    if (clean.length < 2) return false;
+    if (/[ㄱ-ㅎㅏ-ㅣ0-9!@#$%^&*()_+=\[\]{};':"\\|,.<>/?~`-]/g.test(clean)) return false;
+    return /^[가-힣a-zA-Z\s]{2,}$/.test(clean);
+  };
+
+  const isValidBirth6 = (birth: string) => {
+    const clean = (birth || '').replace(/[^0-9]/g, '');
+    if (clean.length !== 6) return false;
+    const mm = parseInt(clean.substring(2, 4), 10);
+    const dd = parseInt(clean.substring(4, 6), 10);
+    if (isNaN(mm) || mm < 1 || mm > 12) return false;
+    if (isNaN(dd) || dd < 1 || dd > 31) return false;
+    return true;
+  };
+
+  const isValidBirth8 = (birth: string) => {
+    const clean = (birth || '').replace(/[^0-9]/g, '');
+    if (clean.length !== 8) return false;
+    const yyyy = parseInt(clean.substring(0, 4), 10);
+    const mm = parseInt(clean.substring(4, 6), 10);
+    const dd = parseInt(clean.substring(6, 8), 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(yyyy) || yyyy < 1900 || yyyy > currentYear) return false;
+    if (isNaN(mm) || mm < 1 || mm > 12) return false;
+    if (isNaN(dd) || dd < 1 || dd > 31) return false;
+    return true;
+  };
+
+  const isValidPhoneNumber = (phone: string) => {
+    const clean = (phone || '').replace(/[^0-9]/g, '');
+    return /^(01[016789])\d{7,8}$/.test(clean);
+  };
+
+  // 대상자 연락처 (휴대폰 및 유선전화 허용)
+  const isValidContactNumber = (phone: string) => {
+    const clean = (phone || '').replace(/[^0-9]/g, '');
+    return /^(01[016789]|02|0[3-6][1-5]|070)\d{6,8}$/.test(clean);
+  };
+
+  const isValidCardNumber = (cardNum: string) => {
+    const clean = (cardNum || '').replace(/[^0-9]/g, '');
+    return clean.length >= 11 && clean.length <= 16;
+  };
+
+  const validateBankAndAccount = (bankName: string, accountNum: string): { valid: boolean; message?: string } => {
+    const clean = (accountNum || '').replace(/[^0-9]/g, '');
+    if (!clean) {
+      return { valid: false, message: '계좌번호를 입력해 주세요.' };
+    }
+    // 전 은행 공통 10~16자리 안전 범위
+    if (clean.length < 10 || clean.length > 16) {
+      return { valid: false, message: '계좌번호 자릿수를 확인해 주세요 (일반적으로 10~16자리).' };
+    }
+
+    const bank = (bankName || '').trim();
+    if (bank.includes('카카오뱅크')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '카카오뱅크 계좌번호 자릿수를 확인해 주세요 (13자리 또는 평생계좌).' };
+      }
+    } else if (bank.includes('토스') || bank.includes('케이뱅크')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: `${bank} 계좌번호 자릿수를 확인해 주세요 (12자리 또는 평생계좌).` };
+      }
+    } else if (bank.includes('국민')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '국민은행 계좌번호 자릿수를 확인해 주세요 (12자리 또는 14자리).' };
+      }
+    } else if (bank.includes('신한')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '신한은행 계좌번호 자릿수를 확인해 주세요 (11, 12, 14자리).' };
+      }
+    } else if (bank.includes('우리')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '우리은행 계좌번호 자릿수를 확인해 주세요 (13자리 또는 구 계좌).' };
+      }
+    } else if (bank.includes('하나')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '하나은행 계좌번호 자릿수를 확인해 주세요 (14자리 또는 구 외환).' };
+      }
+    } else if (bank.includes('농협')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '농협 계좌번호 자릿수를 확인해 주세요 (11, 13, 14자리).' };
+      }
+    } else if (bank.includes('기업')) {
+      if (![10, 11, 12, 13, 14].includes(clean.length)) {
+        return { valid: false, message: '기업은행 계좌번호 자릿수를 확인해 주세요 (10~14자리).' };
+      }
+    }
+    return { valid: true };
+  };
+
   const saveSignature = () => {
     if (sigCanvas.current?.isEmpty()) {
       toast('서명을 먼저 진행해 주세요.', 'warning');
       return false;
     }
-    const dataURL = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png');
+
+    const data = sigCanvas.current?.toData();
+    if (!data || data.length === 0) {
+      toast('서명을 먼저 진행해 주세요.', 'warning');
+      return false;
+    }
+
+    let totalPoints = 0;
+    let totalLength = 0;
+    data.forEach((stroke: any) => {
+      const points = stroke.points || [];
+      totalPoints += points.length;
+      for (let i = 1; i < points.length; i++) {
+        totalLength += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      }
+    });
+
+    const trimmedCanvas = sigCanvas.current?.getTrimmedCanvas();
+    if (!trimmedCanvas) {
+      toast('서명을 먼저 진행해 주세요.', 'warning');
+      return false;
+    }
+    const boxWidth = trimmedCanvas.width;
+    const boxHeight = trimmedCanvas.height;
+
+    // 단순 점 찍기나 짧은 직선 1획 방지 (총 포인트 20개 미만 또는 궤적 60px 미만 또는 면적 협소)
+    if (totalPoints < 20 || totalLength < 60 || (boxWidth < 40 && boxHeight < 20)) {
+      toast('서명을 올바르게 작성해 주세요. (단순한 점이나 직선 한 줄은 서명으로 인정되지 않습니다)', 'warning');
+      return false;
+    }
+
+    const dataURL = trimmedCanvas.toDataURL('image/png');
     updateFormData('signature', dataURL);
     return true;
   };
@@ -945,6 +1078,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         toast('계약자 정보를 모두 정확히 입력해 주세요.', 'warning');
         return;
       }
+      if (!isValidFullName(formData.name)) {
+        toast('계약자 성명을 올바르게 입력해 주세요 (특수문자, 숫자, 자모음 단독 불가).', 'warning');
+        return;
+      }
+      if (!isValidBirth6(formData.residentId)) {
+        toast('계약자 생년월일 6자리를 올바르게 입력해 주세요 (예: 880805, 월: 01~12, 일: 01~31).', 'warning');
+        return;
+      }
+      if (!isValidPhoneNumber(formData.phone)) {
+        toast('계약자 휴대폰 번호를 올바르게 입력해 주세요 (10~11자리).', 'warning');
+        return;
+      }
       if (formData.product === '더좋은헬스케어580') {
         const countNum = Number(formData.productCount);
         if (!formData.productCount || isNaN(countNum) || countNum <= 0) {
@@ -962,11 +1107,26 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         count = Number(formData.productCount) || 1;
       }
 
-      
-      const isTargetValid = formData.healthcareTargets.slice(0, count).every(t => t.relation && t.name && t.birth && t.phone);
-      if (!isTargetValid) {
-        toast('대상자 정보를 모두 누락 없이 입력해 주세요.', 'warning');
-        return;
+      const targets = formData.healthcareTargets.slice(0, count);
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        const numLabel = targets.length > 1 ? `${i + 1}번째 대상자의 ` : '대상자의 ';
+        if (!t.relation || !t.name || !t.birth || !t.phone) {
+          toast(`${numLabel}정보를 모두 누락 없이 입력해 주세요.`, 'warning');
+          return;
+        }
+        if (!isValidFullName(t.name)) {
+          toast(`${numLabel}성명을 올바르게 입력해 주세요 (특수문자, 숫자, 자모음 단독 불가).`, 'warning');
+          return;
+        }
+        if (!isValidBirth8(t.birth)) {
+          toast(`${numLabel}생년월일 8자리를 올바르게 입력해 주세요 (예: 19880805).`, 'warning');
+          return;
+        }
+        if (!isValidContactNumber(t.phone)) {
+          toast(`${numLabel}연락처를 올바르게 입력해 주세요 (10~11자리).`, 'warning');
+          return;
+        }
       }
     }
     if (currentStep === 4) { // Payment Details step
@@ -979,34 +1139,36 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         // 1회차 / 가전제품 검증
         if (formData.paymentMethod1 === 'card') {
           const pureCard = formData.paymentInfo1.cardNumber.replace(/[^0-9]/g, '');
-          if (pureCard.length < 11 || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
-            toast(`${firstLabel} 카드 정보를 모두 정확히 입력해 주세요.`, 'warning');
+          if (!isValidCardNumber(pureCard) || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
+            toast(`${firstLabel} 카드 정보(11~16자리 번호, 유효기간, 카드사)를 모두 정확히 입력해 주세요.`, 'warning');
             return;
           }
         }
         // 2~101회차 / 라이프서비스 검증
         if (formData.paymentMethod2 === 'card') {
           const pureCard = formData.paymentInfo2.cardNumber.replace(/[^0-9]/g, '');
-          if (pureCard.length < 11 || !formData.paymentInfo2.cardCompany || !formData.paymentInfo2.cardExpiry) {
-            toast(`${secondLabel} 카드 정보를 모두 정확히 입력해 주세요.`, 'warning');
+          if (!isValidCardNumber(pureCard) || !formData.paymentInfo2.cardCompany || !formData.paymentInfo2.cardExpiry) {
+            toast(`${secondLabel} 카드 정보(11~16자리 번호, 유효기간, 카드사)를 모두 정확히 입력해 주세요.`, 'warning');
             return;
           }
         } else if (formData.paymentMethod2 === 'cms') {
-          if (!formData.paymentInfo2.accountNumber || !formData.paymentInfo2.bankName) {
-            toast(`${secondLabel} 계좌 정보를 모두 입력해 주세요.`, 'warning');
+          const check = validateBankAndAccount(formData.paymentInfo2.bankName, formData.paymentInfo2.accountNumber);
+          if (!check.valid) {
+            toast(`${secondLabel} ${check.message}`, 'warning');
             return;
           }
         }
       } else {
         if (formData.paymentMethod === 'card') {
           const pureCard = formData.paymentInfo.cardNumber.replace(/[^0-9]/g, '');
-          if (pureCard.length < 11 || !formData.paymentInfo.cardCompany || !formData.paymentInfo.cardExpiry) {
-            toast('카드 정보를 모두 정확히 입력해 주세요 (번호는 11~16자리 가능).', 'warning');
+          if (!isValidCardNumber(pureCard) || !formData.paymentInfo.cardCompany || !formData.paymentInfo.cardExpiry) {
+            toast('카드 정보(11~16자리 번호, 유효기간, 카드사)를 모두 정확히 입력해 주세요.', 'warning');
             return;
           }
         } else {
-          if (!formData.paymentInfo.accountNumber || !formData.paymentInfo.bankName) {
-            toast('계좌 정보를 모두 입력해 주세요.', 'warning');
+          const check = validateBankAndAccount(formData.paymentInfo.bankName, formData.paymentInfo.accountNumber);
+          if (!check.valid) {
+            toast(check.message || '계좌 정보를 올바르게 입력해 주세요.', 'warning');
             return;
           }
         }
@@ -1027,7 +1189,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
     if (currentStep === 7) { // Sales Info step
       if (!formData.salesName || !formData.salesAffiliation) {
-        toast('영업사원 정보(소속 포함)를 모두 정확히 입력해 주세요.', 'warning');
+        toast('영업자 정보(영업자 소속 및 영업자 성명)를 모두 정확히 입력해 주세요.', 'warning');
         return;
       }
       handleSubmit();
@@ -1365,7 +1527,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일</label>
-                    <input type="text" placeholder="880805 또는 19880805" maxLength={8} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    <input type="text" placeholder="생년월일 6자리 (예: 880805)" maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1">성별</label>
@@ -1619,7 +1781,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-sub ml-1 uppercase tracking-widest flex items-center gap-2"><Calendar size={12} /> 생년월일</label>
-                        <input type="text" placeholder="19900101" maxLength={8} value={target.birth} onChange={(e) => updateHealthcareTarget(idx, 'birth', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all font-mono font-bold text-base" />
+                        <input type="text" placeholder="생년월일 8자리 (예: 19880805)" maxLength={8} value={target.birth} onChange={(e) => updateHealthcareTarget(idx, 'birth', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all font-mono font-bold text-base" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-sub ml-1 uppercase tracking-widest">성별</label>
@@ -2331,18 +2493,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Briefcase size={14} /> 소속</label>
-                  <input type="text" placeholder="영업사원의 소속을 입력하세요" value={formData.salesAffiliation} onChange={(e) => updateFormData('salesAffiliation', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-8 outline-none focus:border-indigo-500 text-base font-bold" />
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Briefcase size={14} /> 영업자 소속</label>
+                  <input type="text" placeholder="영업자의 소속을 입력하세요" value={formData.salesAffiliation} onChange={(e) => updateFormData('salesAffiliation', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-8 outline-none focus:border-indigo-500 text-base font-bold" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 영업사원 성함</label>
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 영업자</label>
                   <div className="relative group">
                     <User className="absolute left-5 top-1/2 -translate-y-1/2 text-sub group-focus-within:text-indigo-500 transition-colors" size={18} />
-                    <input type="text" placeholder="성명을 입력하세요" value={formData.salesName} onChange={(e) => updateFormData('salesName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 pl-12 sm:pl-14 pr-8 outline-none focus:border-indigo-500 text-base font-bold" />
+                    <input type="text" placeholder="영업자 성명을 입력하세요" value={formData.salesName} onChange={(e) => updateFormData('salesName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 pl-12 sm:pl-14 pr-8 outline-none focus:border-indigo-500 text-base font-bold" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Phone size={14} /> 영업사원 연락처 (선택)</label>
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Phone size={14} /> 영업자 연락처</label>
                   <div className="relative group">
                     <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-sub group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input type="tel" placeholder="010-0000-0000" value={formData.salesPhone} onChange={(e) => {

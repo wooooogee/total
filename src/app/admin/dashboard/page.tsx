@@ -220,6 +220,7 @@ export default function AdminDashboard() {
   // 단건 사전등록 Form
   const [prefillForm, setPrefillForm] = useState({
     name: '',
+    gender: '남',
     birth: '',
     phone: '',
     address: '',
@@ -265,9 +266,11 @@ export default function AdminDashboard() {
       idxOffset = 1;
     }
 
+    const foundGender = tokens.find(t => t === '남' || t === '여' || t === '남자' || t === '여자');
     setPrefillForm(prev => ({
       ...prev,
       name: tokens[0 + idxOffset] || prev.name,
+      gender: foundGender ? (foundGender.includes('여') ? '여' : '남') : prev.gender,
       birth: tokens[1 + idxOffset] || prev.birth,
       phone: tokens[2 + idxOffset] ? formatPhone(tokens[2 + idxOffset]) : prev.phone,
       address: tokens[3 + idxOffset] || prev.address,
@@ -331,6 +334,7 @@ export default function AdminDashboard() {
         toast('고객 사전입력 맞춤 가입신청 링크가 성공적으로 생성되었습니다!', 'success', '생성 완료');
         setPrefillForm({
           name: '',
+          gender: '남',
           birth: '',
           phone: '',
           address: '',
@@ -406,6 +410,8 @@ export default function AdminDashboard() {
           };
 
           const name = String(getValue(/이름|계약자|성명|계약자명|name/i) || '').trim();
+          const genderRaw = String(getValue(/^성별$|^성$|gender/i) || '').trim();
+          const gender = genderRaw.includes('여') || genderRaw.toLowerCase().startsWith('f') ? '여' : (genderRaw.includes('남') || genderRaw.toLowerCase().startsWith('m') ? '남' : '');
           const birthRaw = String(getValue(/생년월일|주민번호|birth/i, /계약서/i) || '').trim();
           const phoneRaw = String(getValue(/연락처|전화번호|휴대폰|핸드폰|phone/i, /영업자/i) || '').trim();
           const address = String(getValue(/주소|address/i, /상세주소/i) || '').trim();
@@ -420,6 +426,7 @@ export default function AdminDashboard() {
 
           return {
             name,
+            gender: gender || '남',
             birth: birthRaw,
             phone: formatPhone(phoneRaw),
             address,
@@ -561,6 +568,7 @@ export default function AdminDashboard() {
         tokens.forEach((t, idx) => {
           const clean = t.replace(/\s+/g, '');
           if (/이름|계약자|성명/i.test(clean) && headerMap!.name === undefined) headerMap!.name = idx;
+          else if (/성별|gender/i.test(clean) && headerMap!.gender === undefined) headerMap!.gender = idx;
           else if (/생년월일|주민번호/i.test(clean) && !/계약서/i.test(clean) && headerMap!.birth === undefined) headerMap!.birth = idx;
           else if (/연락처|전화번호|휴대폰|핸드폰/i.test(clean) && !/영업자/i.test(clean) && headerMap!.phone === undefined) headerMap!.phone = idx;
           else if (/주소/i.test(clean) && !/상세/i.test(clean) && headerMap!.address === undefined) headerMap!.address = idx;
@@ -576,6 +584,7 @@ export default function AdminDashboard() {
 
       // 2. 데이터행 추출
       let name = '';
+      let gender = '';
       let birth = '';
       let phone = '';
       let address = '';
@@ -590,6 +599,7 @@ export default function AdminDashboard() {
 
       if (useHeaderMap) {
         name = tokens[headerMap!.name] || '';
+        gender = headerMap!.gender !== undefined ? (tokens[headerMap!.gender] || '') : '';
         birth = headerMap!.birth !== undefined ? (tokens[headerMap!.birth] || '') : '';
         phone = headerMap!.phone !== undefined ? formatPhone(tokens[headerMap!.phone] || '') : '';
         address = headerMap!.address !== undefined ? (tokens[headerMap!.address] || '') : '';
@@ -616,6 +626,12 @@ export default function AdminDashboard() {
             salesPhone = formatPhone(tokens[phoneIndices[1]]);
           }
         }
+
+        // 성별 토큰 찾기
+        tokens.forEach(t => {
+          if (t === '남' || t === '남자') gender = '남';
+          else if (t === '여' || t === '여자') gender = '여';
+        });
 
         // 생년월일 (숫자 6/8자리 토큰, 전화번호/가입일자 제외)
         tokens.forEach((t, idx) => {
@@ -696,8 +712,10 @@ export default function AdminDashboard() {
 
       if (!name || !phone) continue;
 
+      const finalGender = gender.includes('여') || gender.toLowerCase().startsWith('f') ? '여' : '남';
       formattedItems.push({
         name,
+        gender: finalGender,
         birth,
         phone,
         address,
@@ -3265,7 +3283,7 @@ export default function AdminDashboard() {
 
                     {showSingleFormDetail && (
                       <div className="space-y-5 pt-2 border-t border-slate-100">
-                        <div className="grid md:grid-cols-3 gap-5">
+                        <div className="grid md:grid-cols-4 gap-4">
                           <div className="space-y-2">
                             <label className="text-xs font-black text-slate-700 block">계약자 성명 <span className="text-red-500">*</span></label>
                             <input
@@ -3278,12 +3296,33 @@ export default function AdminDashboard() {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-700 block">생년월일 (6자리 또는 8자리)</label>
+                            <label className="text-xs font-black text-slate-700 block">성별</label>
+                            <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl h-[46px] items-center">
+                              <button
+                                type="button"
+                                onClick={() => setPrefillForm(p => ({ ...p, gender: '남' }))}
+                                className={`flex-1 h-full rounded-lg font-bold text-xs transition-all ${prefillForm.gender === '남' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-600'}`}
+                              >
+                                남
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPrefillForm(p => ({ ...p, gender: '여' }))}
+                                className={`flex-1 h-full rounded-lg font-bold text-xs transition-all ${prefillForm.gender === '여' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-indigo-600'}`}
+                              >
+                                여
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-700 block">생년월일 (6자리)</label>
                             <input
                               type="text"
+                              maxLength={6}
                               placeholder="예: 880101"
                               value={prefillForm.birth}
-                              onChange={e => setPrefillForm(p => ({ ...p, birth: e.target.value }))}
+                              onChange={e => setPrefillForm(p => ({ ...p, birth: e.target.value.replace(/[^0-9]/g, '') }))}
                               className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-3 px-4 text-sm font-bold text-slate-800"
                             />
                           </div>

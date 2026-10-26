@@ -88,6 +88,7 @@ export async function createPrefillLinkAction(inputData: any, customBatchName?: 
         batchId,
         batchName,
         name: item.name || '',
+        gender: item.gender || '',
         birth: item.birth || '',
         phone: item.phone || '',
         address: item.address || '',

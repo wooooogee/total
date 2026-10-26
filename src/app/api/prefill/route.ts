@@ -99,6 +99,7 @@ export async function POST(req: Request) {
         batchId,
         batchName,
         name: item.name || '',
+        gender: item.gender || '',
         birth: item.birth || '',
         phone: item.phone || '',
         address: item.address || '',

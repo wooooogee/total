@@ -32,6 +32,7 @@ export interface PrefillConfig {
   batchId?: string;          // 생성 묶음 그룹 ID
   batchName?: string;        // 생성 묶음 명칭
   name: string;              // 계약자 성명
+  gender?: '남' | '여' | string; // 성별
   birth: string;             // 생년월일 (6자리 또는 8자리)
   phone: string;             // 연락처
   address: string;           // 주소
