@@ -314,8 +314,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [products, setProducts] = useState<ProductConfig[]>([]);
   const sigCanvas = useRef<SignatureCanvas>(null);
-  const [signatureFailCount, setSignatureFailCount] = useState<number>(0);
-  const signatureFailCountRef = useRef<number>(0);
   const [isCustomProductCount, setIsCustomProductCount] = useState(false);
   const [showInstallmentGuide, setShowInstallmentGuide] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1020,53 +1018,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       return false;
     }
 
-    const data = sigCanvas.current?.toData();
-    if (!data || data.length === 0) {
-      toast('서명을 먼저 진행해 주세요.', 'warning');
-      return false;
-    }
-
-    const trimmedCanvas = sigCanvas.current?.getTrimmedCanvas();
+    const trimmedCanvas = sigCanvas.current?.getTrimmedCanvas() || sigCanvas.current?.getCanvas();
     if (!trimmedCanvas) {
       toast('서명을 먼저 진행해 주세요.', 'warning');
-      return false;
-    }
-
-    let totalPoints = 0;
-    let totalLength = 0;
-    data.forEach((stroke: any) => {
-      const points = stroke.points || [];
-      totalPoints += points.length;
-      for (let i = 1; i < points.length; i++) {
-        totalLength += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-      }
-    });
-
-    const boxWidth = trimmedCanvas.width;
-    const boxHeight = trimmedCanvas.height;
-
-    // 단순 점 찍기나 지나치게 짧은 미세 터치 방지 (정자 서명도 원활히 통과되도록 기준 대폭 완화)
-    const isTooSimple = totalPoints < 6 || totalLength < 25 || (boxWidth < 20 && boxHeight < 15);
-
-    if (isTooSimple) {
-      // 3회 실패 후 재시도(3회 초과)인 경우 우선 진행 허용
-      if (signatureFailCountRef.current >= 3) {
-        toast('서명을 확인하여 다음 단계로 진행합니다.', 'info');
-        const dataURL = trimmedCanvas.toDataURL('image/png');
-        updateFormData('signature', dataURL);
-        return true;
-      }
-
-      // 3회 이하인 경우 다시 작성 유도
-      signatureFailCountRef.current += 1;
-      const currentFails = signatureFailCountRef.current;
-      setSignatureFailCount(currentFails);
-
-      if (currentFails < 3) {
-        toast(`서명을 올바르게 작성해 주세요. (단순한 점이나 짧은 선은 서명으로 인정되지 않습니다) [${currentFails}/3회]`, 'warning');
-      } else {
-        toast('서명을 올바르게 작성해 주세요. (한 번 더 작성 후 완료 시 바로 진행됩니다) [3/3회]', 'warning');
-      }
       return false;
     }
 
@@ -2477,6 +2431,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             >
               <div className="space-y-1 pb-2 border-b border-theme/10">
                 <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
+                <p className="text-xs font-semibold text-sub">계약자 본인 확인을 위해 서명란에 <b>성함을 정자</b>로 또박또박 작성해 주세요.</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                <PenLine size={16} className="shrink-0 text-indigo-500" />
+                <span>서명란에 본인 성함을 <strong className="underline underline-offset-2">정자(이름)</strong>로 직접 작성해 주세요.</span>
               </div>
 
               <div className="bg-white rounded-3xl overflow-hidden border-4 border-theme shadow-2xl touch-none">
@@ -2493,21 +2453,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <button onClick={clearSignature} className="flex items-center gap-2 text-xs font-bold text-sub hover:text-indigo-500 transition-colors"><Eraser size={14} /> 서명 초기화</button>
                 <div className="text-[10px] text-zinc-400 font-black uppercase tracking-widest flex items-center gap-2"><PenLine size={12} className="text-indigo-500" /> Secure Input Active</div>
               </div>
-
-              {signatureFailCount > 0 && (
-                <div className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-                  signatureFailCount >= 3 
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                }`}>
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>
-                    {signatureFailCount >= 3
-                      ? '재시도 횟수(3회)를 채웠습니다. 서명 작성 후 [서명 완료]를 누르시면 다음 단계로 바로 진행됩니다.'
-                      : `정자(성함) 또는 서명을 명확하게 작성해 주세요. (재시도 ${signatureFailCount}/3회)`}
-                  </span>
-                </div>
-              )}
 
               <div className="flex gap-3 pt-4">
                 <button onClick={handleBack} className="flex-1 py-5 bg-card text-sub rounded-2xl font-bold border border-theme">이전</button>
