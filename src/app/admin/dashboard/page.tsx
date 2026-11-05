@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Link2, Plus, Trash2, Check, Copy, ExternalLink, RefreshCw, Edit2,
@@ -38,6 +38,7 @@ interface ProductConfig {
   thirdPartyTerm: string;
   marketingTerm: string;
   requireHealthcare?: boolean;
+  requireProduct?: boolean;
 }
 
 const KLJ_DEFAULT_TEMPLATE = `송하인\t수취인\t진화번호\t주소\t상품명\t상품옵션\t수량\t공급가\n더홈온라이프\t{고객명}\t{연락처}\t{주소}\t{제품명}\t\t1\t{공급가}`;
@@ -1358,7 +1359,11 @@ export default function AdminDashboard() {
   };
 
   // 신청 내역 가져오기 (forceRefresh=true일 경우 서버 캐시 무효화 및 강제 갱신)
+  const lastLogsRefreshTime = useRef<number>(Date.now());
+
+  // 신청 내역 가져오기 (forceRefresh=true일 경우 서버 캐시 무효화 및 강제 갱신)
   const fetchLogs = async (forceRefresh = false) => {
+    lastLogsRefreshTime.current = Date.now();
     // 이미 캐시된 데이터가 있는 경우 전체 로딩 스켈레톤을 띄우지 않고 백그라운드에서 조용히 갱신
     if (forceRefresh || logs.length === 0) {
       setIsLoadingLogs(true);
@@ -1455,6 +1460,32 @@ export default function AdminDashboard() {
     fetchOrders();
     fetchSuppliers();
     fetchSupplyProducts();
+  }, []);
+
+  // 다른 업무(다른 탭/창)를 보다가 해당 화면으로 복귀 시 통합 신청 내역 자동 새로고침
+  useEffect(() => {
+    const handleAutoRefresh = () => {
+      const now = Date.now();
+      // 마지막 새로고침 후 최소 3초 경과 시 강제 갱신 (중복 호출 방지)
+      if (now - lastLogsRefreshTime.current > 3000) {
+        lastLogsRefreshTime.current = now;
+        fetchLogs(true);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleAutoRefresh();
+      }
+    };
+
+    window.addEventListener('focus', handleAutoRefresh);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleAutoRefresh);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
     // 링크 복사 핸들러
@@ -2708,7 +2739,14 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
             <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl overflow-x-auto max-w-full">
               <button 
-                onClick={() => setActiveTab('logs')}
+                onClick={() => {
+                  setActiveTab('logs');
+                  const now = Date.now();
+                  if (now - lastLogsRefreshTime.current > 3000) {
+                    lastLogsRefreshTime.current = now;
+                    fetchLogs(true);
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
               >
                 <UserCheck size={14} /> 통합 신청 내역
@@ -3704,7 +3742,8 @@ export default function AdminDashboard() {
                           privacyTerm: '',
                           thirdPartyTerm: '',
                           marketingTerm: '',
-                          requireHealthcare: true
+                          requireHealthcare: true,
+                          requireProduct: true
                         });
                         setIsAddingProduct(true);
                       }}
@@ -3889,6 +3928,17 @@ export default function AdminDashboard() {
                               className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 w-4 h-4"
                             />
                             <span>헬스케어 대상자 입력 단계 활성화 (체크 시 가입 신청 시점에 헬스케어 대상자 입력 단계를 노출하며, 체크 해제 시 단계를 건너뜅니다.)</span>
+                          </label>
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                          <label className="text-[11px] font-bold text-slate-650 flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedProductForEdit.requireProduct !== false}
+                              onChange={(e) => updateEditField('requireProduct', e.target.checked)}
+                              className="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 w-4 h-4"
+                            />
+                            <span>제품 입력 단계 활성화 (체크 시 가입 신청 시점에 제품명 입력란을 노출하며, 체크 해제 시 제품 입력을 건너뜁니다.)</span>
                           </label>
                         </div>
                       </div>

@@ -481,6 +481,11 @@ export async function getProductConfigsFromSheet(): Promise<ProductConfig[]> {
         const val = row.get('헬스케어대상자입력여부');
         if (val === undefined || val === null || val === '') return true;
         return (val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1');
+      })(),
+      requireProduct: (() => {
+        const val = row.get('제품입력여부');
+        if (val === undefined || val === null || val === '') return true;
+        return (val === true || val === 'TRUE' || val === 'true' || val === 1 || val === '1');
       })()
     }));
   } catch (error) {
@@ -509,7 +514,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
         headerValues: [
           '상품ID', '상품명', '총액', '1차납입금', '2차납입금', '환급금안내', '이폼사인템플릿ID', '연결시트명',
           '상품내용고지약관', '개인정보수집이용약관', '제3자제공동의약관', '마케팅정보제공동의약관',
-          '1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부'
+          '1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부', '제품입력여부'
         ]
       });
     }
@@ -519,7 +524,7 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
 
     // 헤더 동적 확장
     const existingHeaders = sheet.headerValues;
-    const requiredHeaders = ['1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부'];
+    const requiredHeaders = ['1차납입금제목', '2차납입금제목', '헬스케어대상자입력여부', '제품입력여부'];
     const missingHeaders = requiredHeaders.filter(h => !existingHeaders.includes(h));
     if (missingHeaders.length > 0) {
       const newHeaders = [...existingHeaders, ...missingHeaders];
@@ -558,6 +563,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
     if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
       rowData['헬스케어대상자입력여부'] = config.requireHealthcare !== false ? 'TRUE' : 'FALSE';
     }
+    if (sheet.headerValues.includes('제품입력여부')) {
+      rowData['제품입력여부'] = config.requireProduct !== false ? 'TRUE' : 'FALSE';
+    }
 
     if (existingRow) {
       existingRow.set('상품명', rowData['상품명']);
@@ -580,6 +588,9 @@ export async function saveProductConfigToSheet(config: ProductConfig): Promise<b
       }
       if (sheet.headerValues.includes('헬스케어대상자입력여부')) {
         existingRow.set('헬스케어대상자입력여부', rowData['헬스케어대상자입력여부']);
+      }
+      if (sheet.headerValues.includes('제품입력여부')) {
+        existingRow.set('제품입력여부', rowData['제품입력여부']);
       }
       await existingRow.save();
     } else {

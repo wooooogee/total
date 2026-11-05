@@ -25,6 +25,7 @@ export interface ProductConfig {
   thirdPartyTerm: string;    // 3. 제3자제공동의 약관 문구
   marketingTerm: string;     // 4. 마케팅정보제공동의 약관 문구
   requireHealthcare?: boolean; // 헬스케어 대상자 입력 여부
+  requireProduct?: boolean;    // 제품 입력 단계 활성화 여부
 }
 
 export interface PrefillConfig {

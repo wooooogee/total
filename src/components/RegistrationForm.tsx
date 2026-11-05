@@ -778,7 +778,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   // 상품 변경에 따른 구좌 수 자료형 및 대상자 리스트 개수 조율
   useEffect(() => {
     const isRise = formData.product === '더좋은라이즈498';
-    const isHealthcare580 = formData.product === '더좋은헬스케어580';
+    const isHealthcare580 = formData.product === '더좋은헬스케어580' || formData.product === '더좋은헬스케어600' || formData.product === '더좋은플러스600' || formData.product?.includes('헬스케어') || formData.product?.includes('플러스');
     setIsCustomProductCount(false);
 
     if (isRise) {
@@ -1037,7 +1037,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       }
     }
     if (currentStep === 1) { // Info
-      const requireProdName = !['좋은건강크루즈', '더좋은헬스케어580'].includes(formData.product) && !formData.product?.includes('크루즈');
+      const currentProductConfig = getProductConfig(formData.product);
+      const isProductRequired = currentProductConfig && typeof currentProductConfig.requireProduct === 'boolean'
+        ? currentProductConfig.requireProduct
+        : (!['좋은건강크루즈', '더좋은헬스케어580'].includes(formData.product) && !formData.product?.includes('크루즈'));
+      const requireProdName = isProductRequired && !['더좋은라이즈498', '더좋은통신결합'].includes(formData.product);
       if (requireProdName && !formData.productName) {
         toast('제품명을 입력해 주세요.', 'warning');
         return;
@@ -1472,7 +1476,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
               </div>
 
               <div className="space-y-6">
-                {formData.product === '더좋은헬스케어580' && (
+                {(formData.product === '더좋은헬스케어580' || formData.product === '더좋은헬스케어600' || formData.product === '더좋은플러스600' || formData.product?.includes('헬스케어') || formData.product?.includes('플러스')) && (
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 가입 유형</label>
                     <div className="flex bg-theme p-1 rounded-2xl border border-theme">
@@ -1482,7 +1486,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   </div>
                 )}
 
-                {formData.product === '더좋은헬스케어580' && formData.contractorType === 'corporate' && (
+                {(formData.product === '더좋은헬스케어580' || formData.product === '더좋은헬스케어600' || formData.product === '더좋은플러스600' || formData.product?.includes('헬스케어') || formData.product?.includes('플러스')) && formData.contractorType === 'corporate' && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Briefcase size={14} /> 기업명</label>
@@ -1602,12 +1606,23 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   )}
                 </div>
 
-                {!['좋은건강크루즈', '더좋은헬스케어580', '더좋은라이즈498', '더좋은통신결합'].includes(formData.product) && !formData.product?.includes('크루즈') && (
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
-                    <input type="text" placeholder="예: LG 스탠바이미" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
-                  </div>
-                )}
+                {(() => {
+                  const currentProductConfig = getProductConfig(formData.product);
+                  const isProductRequired = currentProductConfig && typeof currentProductConfig.requireProduct === 'boolean'
+                    ? currentProductConfig.requireProduct
+                    : (!['좋은건강크루즈', '더좋은헬스케어580', '더좋은라이즈498', '더좋은통신결합'].includes(formData.product) && !formData.product?.includes('크루즈'));
+                  
+                  if (!isProductRequired || ['더좋은라이즈498', '더좋은통신결합'].includes(formData.product)) {
+                    return null;
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Tag size={14} /> 제품명</label>
+                      <input type="text" placeholder="예: LG 스탠바이미" value={formData.productName} onChange={(e) => updateFormData('productName', e.target.value)} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    </div>
+                  );
+                })()}
 
                 {formData.product === '더좋은라이즈498' && (
                   <div className="space-y-4">

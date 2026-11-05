@@ -193,6 +193,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 
@@ -253,6 +255,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 // 헬스케어 대상자 1
@@ -273,6 +277,12 @@ export async function createEformsignDocument(data: any) {
                 { id: '대상자3_생년월일', value: data.healthcareTargets?.[2]?.birth || '' },
                 { id: '대상자3_성별', value: data.healthcareTargets?.[2]?.gender || '' },
                 { id: '대상자3_연락처', value: data.healthcareTargets?.[2]?.phone || '' },
+                // 헬스케어 대상자 4
+                { id: '대상자4_관계', value: data.healthcareTargets?.[3]?.relation || '' },
+                { id: '대상자4_성명', value: data.healthcareTargets?.[3]?.name || '' },
+                { id: '대상자4_생년월일', value: data.healthcareTargets?.[3]?.birth || '' },
+                { id: '대상자4_성별', value: data.healthcareTargets?.[3]?.gender || '' },
+                { id: '대상자4_연락처', value: data.healthcareTargets?.[3]?.phone || '' },
                 { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
                 { id: '카드/은행명', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardCompany || '') : (data.paymentInfo?.bankName || '') },
                 { id: '카드번호/계좌번호', value: data.paymentMethod === 'card' ? (data.paymentInfo?.cardNumber || '') : normalizeAccountNumber(data.paymentInfo?.bankName, data.paymentInfo?.accountNumber || '') },
@@ -301,6 +311,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 { id: '결제방법', value: data.paymentMethod === 'card' ? '카드' : 'CMS(계좌)' },
@@ -339,6 +351,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 // 헬스케어 대상자 1
@@ -427,6 +441,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 
@@ -482,6 +498,8 @@ export async function createEformsignDocument(data: any) {
                 { id: '계약자이름', value: data.name },
                 { id: '주민번호', value: data.residentId },
                 { id: '성별', value: data.gender || '남' },
+                { id: '기업명', value: data.companyName || '' },
+                { id: '사업자등록번호', value: data.businessNumber || '' },
                 { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
                 { id: '휴대폰', value: data.phone },
                 // 헬스케어 대상자 1
