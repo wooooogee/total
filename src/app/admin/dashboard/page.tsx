@@ -1463,31 +1463,7 @@ export default function AdminDashboard() {
     fetchSupplyProducts();
   }, []);
 
-  // 다른 업무(다른 탭/창)를 보다가 해당 화면으로 복귀 시 통합 신청 내역 자동 새로고침
-  useEffect(() => {
-    const handleAutoRefresh = () => {
-      const now = Date.now();
-      // 마지막 새로고침 후 최소 3초 경과 시 강제 갱신 (중복 호출 방지)
-      if (now - lastLogsRefreshTime.current > 3000) {
-        lastLogsRefreshTime.current = now;
-        fetchLogs(true);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        handleAutoRefresh();
-      }
-    };
-
-    window.addEventListener('focus', handleAutoRefresh);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleAutoRefresh);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+  // (화면 전환/포커스 시 자동 새로고침은 복사-붙여넣기 및 입력 방해 방지를 위해 비활성화됨. 필요 시 상단 '새로고침' 버튼 사용)
 
     // 링크 복사 핸들러
   const handleCopyLink = (id: string) => {
@@ -2740,14 +2716,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
             <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl overflow-x-auto max-w-full">
               <button 
-                onClick={() => {
-                  setActiveTab('logs');
-                  const now = Date.now();
-                  if (now - lastLogsRefreshTime.current > 3000) {
-                    lastLogsRefreshTime.current = now;
-                    fetchLogs(true);
-                  }
-                }}
+                onClick={() => setActiveTab('logs')}
                 className={`flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${activeTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'}`}
               >
                 <UserCheck size={14} /> 통합 신청 내역
@@ -3288,13 +3257,34 @@ export default function AdminDashboard() {
                   <form onSubmit={handleCreateSinglePrefill} className="space-y-6">
                     {/* 엑셀 한 줄 복사-붙여넣기 빠른 입력 상자 */}
                     <div className="bg-indigo-50/70 border border-indigo-200 p-5 rounded-2xl space-y-3 shadow-inner">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <label className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
                           <span>📋 엑셀 복사-붙여넣기 (한 줄 파싱 또는 다중 행 대량 자동입력)</span>
                         </label>
-                        <span className="text-[11px] text-indigo-600 font-bold">
-                          컬럼순서: 가입일자 ➔ 이름 ➔ 생년월일 ➔ 연락처 ➔ 주소 ➔ 상품 ➔ 구좌수 ➔ 제품명 ➔ 영업자소속 ➔ 영업자성명 ➔ 영업자연락처
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText();
+                                if (text && text.trim()) {
+                                  handleQuickPaste(text);
+                                  toast('클립보드에서 내용을 성공적으로 가져왔습니다!', 'success');
+                                } else {
+                                  toast('클립보드에 복사된 텍스트가 없습니다.', 'warning');
+                                }
+                              } catch (e) {
+                                toast('클립보드 읽기 권한을 허용해 주세요.', 'warning');
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-black transition-all shadow-sm flex items-center gap-1 cursor-pointer"
+                          >
+                            <Copy size={12} /> 클립보드 내용 바로 붙여넣기
+                          </button>
+                          <span className="text-[11px] text-indigo-600 font-bold hidden md:inline">
+                            컬럼순서: 가입일자 ➔ 이름 ➔ 생년월일 ➔ 연락처 ➔ 주소 ➔ 상품 ➔ 구좌수 ➔ 제품명 ➔ 영업자소속 ➔ 영업자성명 ➔ 영업자연락처
+                          </span>
+                        </div>
                       </div>
                       <textarea
                         rows={5}
