@@ -790,15 +790,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         contractorType: 'individual'
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        productCount: prev.productCount && prev.productCount !== 'A' ? prev.productCount : 1,
-        hasMultipleProducts: false,
-        productName2: '',
-        contractorType: isHealthcare580 ? prev.contractorType : 'individual'
-      }));
+      const currentConfig = getProductConfig(formData.product);
+      const defaultMax = (formData.product === '더좋은통신결합') ? 1 : ((formData.product?.includes('크루즈')) ? 2 : 3);
+      const maxCount = currentConfig?.maxProductCount || defaultMax;
+
+      setFormData(prev => {
+        let currentCount = Number(prev.productCount) || 1;
+        if (currentCount > maxCount) {
+          currentCount = 1;
+        }
+        return {
+          ...prev,
+          productCount: prev.productCount && prev.productCount !== 'A' && prev.productCount !== 'B' && prev.productCount !== 'C' ? currentCount : 1,
+          hasMultipleProducts: false,
+          productName2: '',
+          contractorType: isHealthcare580 ? prev.contractorType : 'individual'
+        };
+      });
     }
-  }, [formData.product]);
+  }, [formData.product, products]);
 
 
   // 구좌 수 변경 시 대상자 배열 크기 조정
@@ -815,8 +825,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       count = !isHealthcareRequired ? 0 : (Number(formData.productCount) || 1);
     }
 
-
-
     if (formData.healthcareTargets.length !== count) {
       setFormData(prev => {
         const currentTargets = [...prev.healthcareTargets];
@@ -831,7 +839,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         }
       });
     }
-  }, [formData.productCount, formData.product]);
+  }, [formData.productCount, formData.product, products]);
 
   // 모바일 기기 서명 시 스크롤 및 새로고침(Pull-to-refresh) 방지
   useEffect(() => {
@@ -1549,31 +1557,38 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                     </div>
                   ) : formData.product === '더좋은헬스케어580' ? (
                     <div className="space-y-3">
-                      <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
-                        {[1, 2, 3].map(num => (
-                          <button 
-                            key={num} 
-                            type="button" 
-                            onClick={() => {
-                              setIsCustomProductCount(false);
-                              updateFormData('productCount', num);
-                            }} 
-                            className={`flex-1 rounded-xl font-bold transition-all ${!isCustomProductCount && Number(formData.productCount) === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
-                          >
-                            {num}구좌
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCustomProductCount(true);
-                            updateFormData('productCount', '');
-                          }}
-                          className={`flex-1 rounded-xl font-bold transition-all ${isCustomProductCount ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
-                        >
-                          직접 입력
-                        </button>
-                      </div>
+                      {(() => {
+                        const currentProductConfig = getProductConfig(formData.product);
+                        const maxCount = currentProductConfig?.maxProductCount || 3;
+                        const counts = Array.from({ length: Math.max(1, maxCount) }, (_, i) => i + 1);
+                        return (
+                          <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
+                            {counts.map(num => (
+                              <button 
+                                key={num} 
+                                type="button" 
+                                onClick={() => {
+                                  setIsCustomProductCount(false);
+                                  updateFormData('productCount', num);
+                                }} 
+                                className={`flex-1 rounded-xl font-bold transition-all ${!isCustomProductCount && Number(formData.productCount) === num ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                              >
+                                {num}구좌
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCustomProductCount(true);
+                                updateFormData('productCount', '');
+                              }}
+                              className={`flex-1 rounded-xl font-bold transition-all ${isCustomProductCount ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                            >
+                              직접 입력
+                            </button>
+                          </div>
+                        );
+                      })()}
                       {isCustomProductCount && (
                         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative">
                           <input 
@@ -1591,18 +1606,30 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       )}
                     </div>
                   ) : (
-                    <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
-                      {[1, 2, 3].map(num => {
-                        const disabled = (formData.product === '더좋은통신결합' && num > 1) || ((formData.product?.includes('크루즈')) && num > 2);
-                        if (disabled) return null;
-                        const isSelected = Number(formData.productCount) === num;
-                        return (
-                          <button key={num} type="button" onClick={() => updateFormData('productCount', num)} className={`flex-1 rounded-xl font-bold transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}>
-                            {num}구좌
-                          </button>
-                        );
-                      })}
-                    </div>
+                    (() => {
+                      const currentProductConfig = getProductConfig(formData.product);
+                      const defaultMax = (formData.product === '더좋은통신결합') ? 1 : ((formData.product?.includes('크루즈')) ? 2 : 3);
+                      const maxCount = currentProductConfig?.maxProductCount || defaultMax;
+                      const counts = Array.from({ length: Math.max(1, maxCount) }, (_, i) => i + 1);
+
+                      return (
+                        <div className="flex bg-theme p-1 rounded-2xl border border-theme h-14">
+                          {counts.map(num => {
+                            const isSelected = Number(formData.productCount) === num;
+                            return (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => updateFormData('productCount', num)}
+                                className={`flex-1 rounded-xl font-bold transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'text-sub hover:text-indigo-500'}`}
+                              >
+                                {num}구좌
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()
                   )}
                 </div>
 

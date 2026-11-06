@@ -26,6 +26,7 @@ export interface ProductConfig {
   marketingTerm: string;     // 4. 마케팅정보제공동의 약관 문구
   requireHealthcare?: boolean; // 헬스케어 대상자 입력 여부
   requireProduct?: boolean;    // 제품 입력 단계 활성화 여부
+  maxProductCount?: number;    // 가입 가능 구좌수 (최대 구좌수)
 }
 
 export interface PrefillConfig {
@@ -86,6 +87,7 @@ const DEFAULT_LINKS: LinkConfig[] = [
 const DEFAULT_PRODUCTS: ProductConfig[] = [
   {
     id: '더좋은하이브리드698',
+    maxProductCount: 4,
     name: '더좋은하이브리드698',
     totalPrice: '498만원',
     monthlyPayment1: '35,000원 (1~60회)',

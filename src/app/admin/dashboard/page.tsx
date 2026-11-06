@@ -39,6 +39,7 @@ interface ProductConfig {
   marketingTerm: string;
   requireHealthcare?: boolean;
   requireProduct?: boolean;
+  maxProductCount?: number;
 }
 
 const KLJ_DEFAULT_TEMPLATE = `송하인\t수취인\t진화번호\t주소\t상품명\t상품옵션\t수량\t공급가\n더홈온라이프\t{고객명}\t{연락처}\t{주소}\t{제품명}\t\t1\t{공급가}`;
@@ -3743,7 +3744,8 @@ export default function AdminDashboard() {
                           thirdPartyTerm: '',
                           marketingTerm: '',
                           requireHealthcare: true,
-                          requireProduct: true
+                          requireProduct: true,
+                          maxProductCount: 3
                         });
                         setIsAddingProduct(true);
                       }}
@@ -3919,6 +3921,36 @@ export default function AdminDashboard() {
                             className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-none rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 transition-all"
                           />
                         </div>
+                        <div className="space-y-2 md:col-span-2 p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-black text-slate-700 flex items-center gap-1.5">
+                              가입 가능 구좌 수 (최대 신청 가능 구좌 수)
+                            </label>
+                            <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                              현재: {selectedProductForEdit.maxProductCount || 3}구좌까지 가입 가능
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            고객이 가입 신청 시 선택할 수 있는 최대 구좌 수를 설정합니다. 헬스케어 대상자 입력 단계가 활성화되어 있을 경우, 고객이 선택한 구좌 수만큼 대상자 입력란이 생성됩니다.
+                          </p>
+                          <div className="flex items-center gap-2 pt-1">
+                            {[1, 2, 3, 4, 5, 6].map(num => (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => updateEditField('maxProductCount', num)}
+                                className={`flex-1 py-2 rounded-xl text-xs font-black transition-all border ${
+                                  (selectedProductForEdit.maxProductCount || 3) === num
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {num}구좌
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         <div className="space-y-1 md:col-span-2 mt-2">
                           <label className="text-[11px] font-bold text-slate-650 flex items-center gap-2 cursor-pointer">
                             <input
