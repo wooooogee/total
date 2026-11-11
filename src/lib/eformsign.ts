@@ -224,7 +224,7 @@ function buildUnifiedFieldMap(
 
     // 결제 정보 계산 (분할결제 상품 vs 단일결제 상품)
     const hasSplit = Boolean(data.paymentMethod1);
-    const isSplitProduct = flags.isGoodlifeAllinoneLumpSum || flags.isCruise || hasSplit;
+    const isSplitProduct = flags.isGoodlifeAllinoneLumpSum || flags.isCruise;
 
     let paymentMethod1 = '';
     let cardCompany1 = '';
@@ -252,7 +252,7 @@ function buildUnifiedFieldMap(
         installmentPeriod1 = hasSplit && data.paymentMethod1 === 'card'
             ? data.paymentInfo1?.installmentPeriod || '일시불'
             : data.paymentInfo?.installmentPeriod || '-';
-    } else if (hasSplit) {
+    } else if (flags.isCruise && hasSplit) {
         paymentMethod1 = data.paymentMethod1 === 'card' ? '카드' : '계좌이체';
         cardCompany1 = data.paymentMethod1 === 'card' ? data.paymentInfo1?.cardCompany || '' : '';
         cardNumber1 = data.paymentMethod1 === 'card' ? data.paymentInfo1?.cardNumber || '' : '';
