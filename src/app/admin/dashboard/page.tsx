@@ -142,6 +142,41 @@ const extractContractorBirth = (log: any): string => {
 
 import { useToast } from '@/components/ToastContext';
 
+const isGoodlifeAllinoneLumpSumProduct = (productName?: any): boolean => {
+  const name = String(productName || '').trim();
+  return (
+    name === '굿라이프헬스케어 올인원(일시납)' ||
+    (name.includes('올인원') && name.includes('일시납'))
+  );
+};
+
+const getContractImagePageNumber = (log?: any): number =>
+  isGoodlifeAllinoneLumpSumProduct(log?.['상품명']) ? 2 : 1;
+
+const getShippingInfo = (log: any) => {
+  const name = String(log?.['수령인성명'] || '').trim();
+  const relation = String(log?.['수령인관계'] || '').trim();
+  const address = String(log?.['수령지주소'] || '').trim();
+  const phone = String(log?.['수령인연락처'] || '').trim();
+  const hasAny = Boolean(name || relation || address || phone);
+  const shouldShow = isGoodlifeAllinoneLumpSumProduct(log?.['상품명']) || hasAny;
+  const copyText = [
+    name ? (relation ? `${name} (${relation})` : name) : '',
+    phone,
+    address,
+  ]
+    .filter(Boolean)
+    .join(' / ');
+  return { name, relation, address, phone, hasAny, shouldShow, copyText };
+};
+
+const getTargetPdfPage = async (pdf: any, log?: any) => {
+  const preferredPage = getContractImagePageNumber(log);
+  const targetPage = Math.max(1, Math.min(pdf.numPages || 1, preferredPage));
+  const page = await pdf.getPage(targetPage);
+  return { page, targetPage };
+};
+
 export default function AdminDashboard() {
   const { toast, showAlert, showConfirm } = useToast();
   const [activeTab, setActiveTab] = useState<'links' | 'logs' | 'products' | 'orders' | 'prefill'>('logs');
@@ -911,7 +946,7 @@ export default function AdminDashboard() {
     return parts.length > 0 ? parts.join('_') : `contract_${log['document_id'] || ''}`;
   };
 
-  const handleDownloadAsImage = async (documentId?: string | React.MouseEvent, fileName?: string) => {
+  const handleDownloadAsImage = async (documentId?: string | React.MouseEvent, fileName?: string, logOverride?: any) => {
     const targetId = typeof documentId === 'string' ? documentId : selectedPdfId;
     if (!targetId) return;
     
@@ -932,8 +967,8 @@ export default function AdminDashboard() {
       const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
       const pdf = await loadingTask.promise;
       
-      // 사용자 요청에 따라 1페이지만 가져옵니다.
-      const page = await pdf.getPage(1);
+      const matchedLog = logOverride || logs.find(l => l['document_id'] === targetId);
+      const { page, targetPage } = await getTargetPdfPage(pdf, matchedLog);
       
       const viewport = page.getViewport({ scale: 1.5 });
       const canvas = document.createElement('canvas');
@@ -953,7 +988,7 @@ export default function AdminDashboard() {
       
       const a = document.createElement('a');
       a.href = imageUrl;
-      a.download = fileName && typeof fileName === 'string' ? `${fileName}.jpg` : `contract_${targetId}_page1.jpg`;
+      a.download = fileName && typeof fileName === 'string' ? `${fileName}.jpg` : `contract_${targetId}_page${targetPage}.jpg`;
       a.click();
     } catch (error: any) {
       console.error('Error downloading image:', error);
@@ -1237,6 +1272,70 @@ export default function AdminDashboard() {
     navigator.clipboard.writeText(targetText);
     setCopiedHealthcareTarget(targetText);
     setTimeout(() => setCopiedHealthcareTarget(null), 2000);
+  };
+
+  const renderShippingSummary = (log: any, copyKey: string, asTableRow = false) => {
+    const shipping = getShippingInfo(log);
+    if (!shipping.shouldShow) return null;
+
+    const isCopied = copiedPaymentItem === copyKey;
+    const content = (
+      <div
+        className={`flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700 border border-indigo-100/90 ${
+          asTableRow
+            ? 'px-3 py-1.5 rounded-xl bg-white/95 shadow-2xs'
+            : 'px-3 py-2 rounded-xl bg-indigo-50/40'
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0 flex-1">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black tracking-tight shrink-0">
+            배송 및 수령인 정보
+          </span>
+          <span className="inline-flex items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-bold text-slate-400">수령인</span>
+            <span className="font-black text-slate-900">{shipping.name || '-'}</span>
+            {shipping.relation && (
+              <span className="text-[11px] font-bold text-slate-500">({shipping.relation})</span>
+            )}
+          </span>
+          <span className="text-slate-300 select-none">|</span>
+          <span className="inline-flex items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-bold text-slate-400">연락처</span>
+            <span className="font-bold text-slate-700 font-mono">{shipping.phone || '-'}</span>
+          </span>
+          <span className="text-slate-300 select-none">|</span>
+          <span className="inline-flex items-center gap-1.5 min-w-0">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0">수령지 주소</span>
+            <span className="font-bold text-slate-800 break-words">{shipping.address || '-'}</span>
+          </span>
+        </div>
+        {shipping.copyText && (
+          <button
+            type="button"
+            onClick={() => handleCopyPaymentItem(shipping.copyText, copyKey)}
+            className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+              isCopied
+                ? 'bg-emerald-500 text-white border-emerald-500'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'
+            }`}
+            title="배송 및 수령인 정보 복사"
+          >
+            {isCopied ? <Check size={11} /> : <Copy size={11} />}
+            <span>{isCopied ? '복사됨' : '복사'}</span>
+          </button>
+        )}
+      </div>
+    );
+
+    if (!asTableRow) return content;
+
+    return (
+      <tr className="!border-t-0 bg-indigo-50/20 hover:bg-indigo-50/35 transition-colors">
+        <td colSpan={11} className="px-3 pb-3 pt-0.5">
+          {content}
+        </td>
+      </tr>
+    );
   };
 
   const handleCopyCertificateMethod = (log: any, idx: number) => {
@@ -1690,7 +1789,10 @@ export default function AdminDashboard() {
       (log['영업자'] && log['영업자'].includes(searchTerm)) ||
       (log['상품명'] && log['상품명'].includes(searchTerm)) ||
       (log['카드사/은행명'] && log['카드사/은행명'].includes(searchTerm)) ||
-      (log['결제정보(카드/cms)'] && log['결제정보(카드/cms)'].includes(searchTerm));
+      (log['결제정보(카드/cms)'] && log['결제정보(카드/cms)'].includes(searchTerm)) ||
+      (log['수령인성명'] && log['수령인성명'].includes(searchTerm)) ||
+      (log['수령인연락처'] && log['수령인연락처'].includes(searchTerm)) ||
+      (log['수령지주소'] && log['수령지주소'].includes(searchTerm));
       
     const matchesSheet = selectedSheets.length === 0 || selectedSheets.includes(log['시트구분']);
 
@@ -1792,7 +1894,7 @@ export default function AdminDashboard() {
 
               const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
               const pdf = await loadingTask.promise;
-              const page = await pdf.getPage(1);
+              const { page } = await getTargetPdfPage(pdf, item.log);
 
               const viewport = page.getViewport({ scale: 1.5 });
               const canvas = document.createElement('canvas');
@@ -4633,6 +4735,8 @@ export default function AdminDashboard() {
                               )}
                             </div>
 
+                            {renderShippingSummary(log, `m-ship-${idx}`)}
+
                             {/* 카드 하단 액션 버튼 */}
                             <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
                               {log['document_id'] ? (
@@ -4644,7 +4748,7 @@ export default function AdminDashboard() {
                                     <FileText size={13} /> 계약서 보기
                                   </button>
                                   <button
-                                    onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log))}
+                                    onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log), log)}
                                     disabled={isDownloadingImage}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                                   >
@@ -4696,8 +4800,11 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {paginatedLogs.map((log, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700">
+                        {paginatedLogs.map((log, idx) => {
+                          const shippingRow = renderShippingSummary(log, `t-ship-${idx}`, true);
+                          return (
+                            <React.Fragment key={log['document_id'] || idx}>
+                              <tr className={`hover:bg-slate-50/50 transition-colors text-xs font-bold text-slate-700 ${shippingRow ? '!border-b-0' : ''}`}>
                             <td className="px-2 py-3 text-center w-8">
                               {log['document_id'] ? (
                                 <input
@@ -4980,7 +5087,7 @@ export default function AdminDashboard() {
                                       <FileText size={12} /> 계약서 보기
                                     </button>
                                     <button 
-                                      onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log))}
+                                      onClick={() => handleDownloadAsImage(log['document_id'], getFormattedFileName(log), log)}
                                       disabled={isDownloadingImage}
                                       className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-150 text-indigo-600 hover:bg-indigo-650 hover:text-white hover:border-transparent rounded-lg transition-all text-[10px] font-black shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                     >
@@ -5000,7 +5107,10 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          {shippingRow}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -6036,7 +6146,7 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => {
                       const matchedLog = logs.find(l => l['document_id'] === selectedPdfId);
-                      handleDownloadAsImage(selectedPdfId || undefined, matchedLog ? getFormattedFileName(matchedLog) : undefined);
+                      handleDownloadAsImage(selectedPdfId || undefined, matchedLog ? getFormattedFileName(matchedLog) : undefined, matchedLog);
                     }}
                     disabled={isDownloadingImage}
                     className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

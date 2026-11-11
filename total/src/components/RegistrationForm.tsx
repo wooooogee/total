@@ -369,8 +369,11 @@ const RegistrationForm = () => {
   };
 
   const handleAddressSearch = () => {
-    if (typeof window !== 'undefined' && (window as any).daum) {
-      new (window as any).daum.Postcode({
+    const Postcode = typeof window !== 'undefined'
+      ? ((window as any).kakao?.Postcode || (window as any).daum?.Postcode)
+      : null;
+    if (Postcode) {
+      new Postcode({
         oncomplete: function (data: any) {
           let fullAddr = data.address;
           let extraAddr = '';

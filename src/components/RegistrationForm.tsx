@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon, Copy, Check, Lock, AlertCircle } from 'lucide-react';
+import { User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Loader2, CreditCard, Landmark, ShieldCheck, MapPin, Search, Eraser, PenLine, Package, Calculator, Briefcase, Calendar, Tag, FileText, Sun, Moon, Copy, Check, Lock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import TermsAgreement from './TermsAgreement';
 import { registerAction } from '@/app/actions';
@@ -280,6 +280,7 @@ const GOODLIFE_TERMS = [
 const STEPS = [
   { id: 'product', title: '상품 선택' },
   { id: 'info', title: '계약자 정보' },
+  { id: 'shipping', title: '배송지 및 수령인 정보' },
   { id: 'healthcare', title: '헬스케어대상자 정보' },
   { id: 'plan', title: '상품 정보' },
   { id: 'payment', title: '결제 정보' },
@@ -288,6 +289,51 @@ const STEPS = [
   { id: 'sales', title: '영업자 정보' },
   { id: 'complete', title: '가입 완료' },
 ];
+
+const isGoodlifeAllinoneProduct = (productName?: string) =>
+  productName === '굿라이프헬스케어 올인원(일시납)' ||
+  (Boolean(productName?.includes('올인원')) && Boolean(productName?.includes('일시납')));
+
+const getStepIndex = (stepId: string) => {
+  const idx = STEPS.findIndex((s) => s.id === stepId);
+  return idx >= 0 ? idx : 0;
+};
+
+const formatContactPhone = (raw: string) => {
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (digits.startsWith('02')) {
+    const trimmed = digits.slice(0, 10);
+    if (trimmed.length <= 2) return trimmed;
+    if (trimmed.length <= 5) return `${trimmed.slice(0, 2)}-${trimmed.slice(2)}`;
+    if (trimmed.length <= 9) return `${trimmed.slice(0, 2)}-${trimmed.slice(2, 5)}-${trimmed.slice(5)}`;
+    return `${trimmed.slice(0, 2)}-${trimmed.slice(2, 6)}-${trimmed.slice(6)}`;
+  }
+  const trimmed = digits.slice(0, 11);
+  if (trimmed.length <= 3) return trimmed;
+  if (trimmed.length <= 6) return `${trimmed.slice(0, 3)}-${trimmed.slice(3)}`;
+  if (trimmed.length <= 10) return `${trimmed.slice(0, 3)}-${trimmed.slice(3, 6)}-${trimmed.slice(6)}`;
+  return `${trimmed.slice(0, 3)}-${trimmed.slice(3, 7)}-${trimmed.slice(7)}`;
+};
+
+const APPLIANCE_CONTRACT_GUIDES = [
+  <React.Fragment key="guide-1">본 계약은 가전제품의 일시납 구매에 관한 계약이며, 제품 판매자는 <strong className="text-indigo-600 dark:text-indigo-400">(주)리치웰페어</strong>, 결제 및 수납 주체는 <strong className="text-indigo-600 dark:text-indigo-400">더좋은라이프앤바이오</strong>입니다.</React.Fragment>,
+  '본 계약은 가전제품 구매와 상조서비스가 연계된 결합상품 구조입니다.',
+  '가전제품 구매계약과 상조서비스 계약은 각각 독립된 계약으로 별도 체결됩니다.',
+  '제품 대금은 카드결제 또는 계좌이체 방식으로 일시납 결제합니다.',
+  '본 상품은 상조서비스와 가전제품이 결합된 상품으로, 제품 설치 이후 단순 변심에 따른 취소·환불은 불가합니다.',
+  '상조서비스 계약을 해약하더라도 가전제품은 별도로 구매한 상품이므로, 구매계약이 유효하고 해당 제품의 소유권은 고객에게 유지됩니다.',
+  '상조서비스 계약상 약정 조건을 충족하고 익월까지 상조서비스를 이용하지 않은 경우, 더좋은라이프(주)가 구좌별 약정된 만기 지급금액을 지급합니다.',
+];
+
+const APPLIANCE_PRIVACY_CONTENT = `이용목적
+· 가전제품 일시납 구매계약 체결·이행 및 제품 배송·설치 안내
+· 제품 판매자((주)리치웰페어) 및 결제·수납 주체(더좋은라이프앤바이오)의 결제·수납 처리, 본인 확인, 민원 및 상담 처리
+
+수집·이용 항목
+· 성명, 생년월일, 연락처, 주소 및 수령지 정보, 결제정보(카드/계좌 정보, 제3자 결제 시 결제자 정보 및 서명)
+
+보유 및 이용기간
+· 본 계약 체결일로부터 계약 종료 및 관계 법령에 따른 보존기간까지`;
 
 interface RegistrationFormProps {
   allowedProducts?: string[];
@@ -307,13 +353,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   const isValidInitialProduct = initialProduct && productsToDisplay.includes(initialProduct);
   const defaultProduct = initialPrefillData?.product || (isValidInitialProduct ? initialProduct : (productsToDisplay[0] || '더좋은헬스케어580'));
 
-  const [currentStep, setCurrentStep] = useState(initialPrefillData ? 1 : (isValidInitialProduct ? 1 : 0));
+  const [currentStep, setCurrentStep] = useState(
+    initialPrefillData ? getStepIndex('info') : (isValidInitialProduct ? getStepIndex('info') : getStepIndex('product'))
+  );
+  const currentStepId = STEPS[currentStep]?.id || 'product';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState('');
   const [createdDocumentId, setCreatedDocumentId] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [products, setProducts] = useState<ProductConfig[]>([]);
   const sigCanvas = useRef<SignatureCanvas>(null);
+  const payerSigCanvas = useRef<SignatureCanvas>(null);
+  const [showAppliancePrivacy, setShowAppliancePrivacy] = useState(false);
   const [isCustomProductCount, setIsCustomProductCount] = useState(false);
   const [showInstallmentGuide, setShowInstallmentGuide] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -569,6 +620,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     phone: '',
     address: '',
     addressDetail: '',
+    recipientSameAsContractor: false,
+    recipientName: '',
+    recipientRelation: '',
+    recipientAddress: '',
+    recipientAddressDetail: '',
+    recipientPhone: '',
     residentId: '',
     contractorType: 'individual', // 'individual' or 'corporate'
     companyName: '',
@@ -582,6 +639,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     paymentPlan: 'normal',
     paymentMethod: 'card',
     paymentDate: '5',
+    isThirdPartyPayer: false,
+    payerName: '',
+    payerBirth: '',
+    payerPhone: '',
+    payerRelation: '',
+    payerSignature: '',
+    applianceNoticeAgreed: false,
+    appliancePrivacyAgreed: false,
     paymentInfo: {
       cardCompany: '',
       cardNumber: '',
@@ -694,7 +759,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         prefillToken: initialPrefillData.token
       }));
       setPrefillBannerVisible(true);
-      setCurrentStep(1);
+      setCurrentStep(getStepIndex('info'));
     }
   }, [initialPrefillData]);
   // 기존 임시저장 데이터 제거 (무조건 신규 작성)
@@ -709,7 +774,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   // 1회차 카드 정보가 바뀌고 '동일' 체크 상태일 때 2회차 정보 실시간 동기화
   useEffect(() => {
-    if (isSameCard) {
+    if (isSameCard && !(isGoodlifeAllinoneProduct(formData.product) && formData.isThirdPartyPayer)) {
       setFormData(prev => ({
         ...prev,
         paymentInfo2: {
@@ -721,13 +786,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       }));
     }
   }, [
-    isSameCard, 
-    formData.paymentInfo1.cardCompany, 
-    formData.paymentInfo1.cardNumber, 
+    isSameCard,
+    formData.product,
+    formData.isThirdPartyPayer,
+    formData.paymentInfo1.cardCompany,
+    formData.paymentInfo1.cardNumber,
     formData.paymentInfo1.cardExpiry
   ]);
 
   const handleSameCardToggle = (checked: boolean) => {
+    if (isGoodlifeAllinoneProduct(formData.product) && formData.isThirdPartyPayer) {
+      setIsSameCard(false);
+      return;
+    }
     setIsSameCard(checked);
     if (checked) {
       setFormData(prev => ({
@@ -740,6 +811,92 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         }
       }));
     }
+  };
+
+  const handleThirdPartyPayerToggle = (checked: boolean) => {
+    if (checked) {
+      const wasSameCard = isSameCard;
+      if (wasSameCard) {
+        setIsSameCard(false);
+      }
+      setFormData(prev => ({
+        ...prev,
+        isThirdPartyPayer: true,
+        ...(wasSameCard ? {
+          paymentInfo2: {
+            ...prev.paymentInfo2,
+            cardCompany: '',
+            cardNumber: '',
+            cardExpiry: '',
+          }
+        } : {})
+      }));
+    } else {
+      payerSigCanvas.current?.clear();
+      setFormData(prev => ({
+        ...prev,
+        isThirdPartyPayer: false,
+        payerName: '',
+        payerBirth: '',
+        payerPhone: '',
+        payerRelation: '',
+        payerSignature: '',
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (formData.recipientSameAsContractor) {
+      setFormData(prev => ({
+        ...prev,
+        recipientName: prev.name,
+        recipientRelation: '본인',
+        recipientAddress: prev.address,
+        recipientAddressDetail: prev.addressDetail,
+        recipientPhone: prev.phone,
+      }));
+    }
+  }, [
+    formData.recipientSameAsContractor,
+    formData.name,
+    formData.address,
+    formData.addressDetail,
+    formData.phone,
+  ]);
+
+  const handleRecipientSameToggle = (checked: boolean) => {
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        recipientSameAsContractor: true,
+        recipientName: prev.name,
+        recipientRelation: '본인',
+        recipientAddress: prev.address,
+        recipientAddressDetail: prev.addressDetail,
+        recipientPhone: prev.phone,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        recipientSameAsContractor: false,
+        recipientName: '',
+        recipientRelation: '',
+        recipientAddress: '',
+        recipientAddressDetail: '',
+        recipientPhone: '',
+      }));
+    }
+  };
+
+  const updateRecipientField = (
+    field: 'recipientName' | 'recipientRelation' | 'recipientAddress' | 'recipientAddressDetail' | 'recipientPhone',
+    value: string
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      recipientSameAsContractor: false,
+      [field]: value,
+    }));
   };
 
   const updateFormData = (field: string, value: any) => {
@@ -843,29 +1000,44 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
 
   // 모바일 기기 서명 시 스크롤 및 새로고침(Pull-to-refresh) 방지
   useEffect(() => {
-    if (currentStep === 6) {
-      const canvas = sigCanvas.current?.getCanvas();
-      if (!canvas) return;
+    const activeCanvas =
+      currentStepId === 'signature'
+        ? sigCanvas.current?.getCanvas()
+        : (currentStepId === 'payment' && isGoodlifeAllinoneProduct(formData.product) && formData.isThirdPartyPayer
+          ? payerSigCanvas.current?.getCanvas()
+          : undefined);
 
-      const preventDefault = (e: TouchEvent) => {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-      };
-
-      canvas.addEventListener('touchstart', preventDefault as EventListener, { passive: false });
-      canvas.addEventListener('touchmove', preventDefault as EventListener, { passive: false });
-      canvas.addEventListener('touchend', preventDefault as EventListener, { passive: false });
-      canvas.addEventListener('touchcancel', preventDefault as EventListener, { passive: false });
-
-      return () => {
-        canvas.removeEventListener('touchstart', preventDefault as EventListener);
-        canvas.removeEventListener('touchmove', preventDefault as EventListener);
-        canvas.removeEventListener('touchend', preventDefault as EventListener);
-        canvas.removeEventListener('touchcancel', preventDefault as EventListener);
-      };
+    if (
+      currentStepId === 'payment' &&
+      isGoodlifeAllinoneProduct(formData.product) &&
+      formData.isThirdPartyPayer &&
+      formData.payerSignature &&
+      payerSigCanvas.current &&
+      payerSigCanvas.current.isEmpty()
+    ) {
+      payerSigCanvas.current.fromDataURL(formData.payerSignature);
     }
-  }, [currentStep]);
+
+    if (!activeCanvas) return;
+
+    const preventDefault = (e: TouchEvent) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    activeCanvas.addEventListener('touchstart', preventDefault as EventListener, { passive: false });
+    activeCanvas.addEventListener('touchmove', preventDefault as EventListener, { passive: false });
+    activeCanvas.addEventListener('touchend', preventDefault as EventListener, { passive: false });
+    activeCanvas.addEventListener('touchcancel', preventDefault as EventListener, { passive: false });
+
+    return () => {
+      activeCanvas.removeEventListener('touchstart', preventDefault as EventListener);
+      activeCanvas.removeEventListener('touchmove', preventDefault as EventListener);
+      activeCanvas.removeEventListener('touchend', preventDefault as EventListener);
+      activeCanvas.removeEventListener('touchcancel', preventDefault as EventListener);
+    };
+  }, [currentStepId, formData.product, formData.isThirdPartyPayer]);
 
   const copyContractorToHealthcare = (index: number) => {
     const isSame = !formData.healthcareTargets[index].isSameAsContractor;
@@ -892,9 +1064,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     }
   };
 
-  const handleAddressSearch = () => {
-    if (typeof window !== 'undefined' && (window as any).daum) {
-      new (window as any).daum.Postcode({
+  const openAddressSearch = (onSelect: (fullAddr: string) => void) => {
+    const Postcode = typeof window !== 'undefined'
+      ? ((window as any).kakao?.Postcode || (window as any).daum?.Postcode)
+      : null;
+    if (Postcode) {
+      new Postcode({
         oncomplete: function (data: any) {
           let fullAddr = data.address;
           let extraAddr = '';
@@ -905,11 +1080,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             fullAddr += (extraAddr !== '' ? ` (${extraAddr})` : '');
           }
 
-          updateFormData('address', fullAddr);
+          onSelect(fullAddr);
         }
       }).open();
     }
   };
+
+  const handleAddressSearch = () => openAddressSearch((fullAddr) => updateFormData('address', fullAddr));
+  const handleRecipientAddressSearch = () => openAddressSearch((fullAddr) => updateRecipientField('recipientAddress', fullAddr));
 
   const copyPreviousHealthcareTarget = (index: number) => {
     if (index === 0) return;
@@ -921,9 +1099,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
     updateHealthcareTarget(index, 'phone', prev.phone);
   };
 
+  const getCanvasDataUrl = (canvasRef: React.RefObject<SignatureCanvas | null>) => {
+    if (!canvasRef.current || canvasRef.current.isEmpty()) return '';
+    const trimmed = canvasRef.current.getTrimmedCanvas() || canvasRef.current.getCanvas();
+    return trimmed ? trimmed.toDataURL('image/png') : '';
+  };
+
   const clearSignature = () => {
     sigCanvas.current?.clear();
     updateFormData('signature', '');
+  };
+
+  const clearPayerSignature = () => {
+    payerSigCanvas.current?.clear();
+    updateFormData('payerSignature', '');
   };
 
   // 유효성 검사 헬퍼 함수들
@@ -1021,30 +1210,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   };
 
   const saveSignature = () => {
-    if (sigCanvas.current?.isEmpty()) {
+    const dataURL = getCanvasDataUrl(sigCanvas);
+    if (!dataURL) {
       toast('서명을 먼저 진행해 주세요.', 'warning');
       return false;
     }
 
-    const trimmedCanvas = sigCanvas.current?.getTrimmedCanvas() || sigCanvas.current?.getCanvas();
-    if (!trimmedCanvas) {
-      toast('서명을 먼저 진행해 주세요.', 'warning');
-      return false;
-    }
-
-    const dataURL = trimmedCanvas.toDataURL('image/png');
     updateFormData('signature', dataURL);
     return true;
   };
 
   const handleNext = () => {
-    if (currentStep === 0) { // Product Selection
+    if (currentStepId === 'product') { // Product Selection
       if (!formData.product) {
         toast('가입하실 상품을 선택해 주세요.', 'warning');
         return;
       }
     }
-    if (currentStep === 1) { // Info
+    if (currentStepId === 'info') { // Info
       const currentProductConfig = getProductConfig(formData.product);
       const isProductRequired = currentProductConfig && typeof currentProductConfig.requireProduct === 'boolean'
         ? currentProductConfig.requireProduct
@@ -1085,8 +1268,46 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           return;
         }
       }
+
+      if (isGoodlifeAllinoneProduct(formData.product)) {
+        setCurrentStep(getStepIndex('shipping'));
+        return;
+      }
+      if (formData.product === '더좋은통신결합') {
+        setCurrentStep(getStepIndex('plan'));
+        return;
+      }
+      const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
+      if (!isHealthcareRequired) {
+        setCurrentStep(getStepIndex('plan')); // 헬스케어대상자를 건너뛰고 상품정보로 바로 이동
+        return;
+      }
+      setCurrentStep(getStepIndex('healthcare'));
+      return;
     }
-    if (currentStep === 2) { // Healthcare Targets step
+    if (currentStepId === 'shipping') { // Shipping & Recipient step (굿라이프헬스케어 올인원 일시납)
+      if (!formData.recipientName?.trim() || !formData.recipientRelation?.trim() || !formData.recipientAddress?.trim() || !formData.recipientPhone?.trim()) {
+        toast('배송지 및 수령인 정보를 모두 정확히 입력해 주세요.', 'warning');
+        return;
+      }
+      if (!isValidFullName(formData.recipientName)) {
+        toast('수령인 성명을 올바르게 입력해 주세요 (특수문자, 숫자, 자모음 단독 불가).', 'warning');
+        return;
+      }
+      if (!isValidContactNumber(formData.recipientPhone)) {
+        toast('수령인 연락처를 올바르게 입력해 주세요 (10~11자리).', 'warning');
+        return;
+      }
+      const currentProductConfig = getProductConfig(formData.product);
+      const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
+      if (!isHealthcareRequired) {
+        setCurrentStep(getStepIndex('plan'));
+        return;
+      }
+      setCurrentStep(getStepIndex('healthcare'));
+      return;
+    }
+    if (currentStepId === 'healthcare') { // Healthcare Targets step
       let count = 1;
       if (formData.product === '더좋은라이즈498') {
         const countMap: { [key: string]: number } = { 'A': 1, 'B': 2, 'C': 3 };
@@ -1117,18 +1338,48 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         }
       }
     }
-    if (currentStep === 4) { // Payment Details step
-      const isGoodlifeAllinone = formData.product === '굿라이프헬스케어 올인원(일시납)' || (formData.product?.includes('올인원') && formData.product?.includes('일시납'));
+    if (currentStepId === 'payment') { // Payment Details step
+      const isGoodlifeAllinone = isGoodlifeAllinoneProduct(formData.product);
       const isSplitPayment = formData.product === '좋은건강크루즈' || isGoodlifeAllinone;
 
       if (isSplitPayment) {
         const firstLabel = isGoodlifeAllinone ? '가전제품' : '1회차';
         const secondLabel = isGoodlifeAllinone ? '라이프서비스' : '2~101회차';
+        if (isGoodlifeAllinone && formData.isThirdPartyPayer) {
+          if (!formData.payerName?.trim() || !formData.payerBirth?.trim() || !formData.payerPhone?.trim() || !formData.payerRelation?.trim()) {
+            toast('제3자 결제자 정보(성명, 생년월일, 연락처, 계약자와의 관계)를 모두 입력해 주세요.', 'warning');
+            return;
+          }
+          if (!isValidFullName(formData.payerName)) {
+            toast('결제자 성명을 올바르게 입력해 주세요 (특수문자, 숫자, 자모음 단독 불가).', 'warning');
+            return;
+          }
+          if (!isValidBirth6(formData.payerBirth)) {
+            toast('결제자 생년월일 6자리를 올바르게 입력해 주세요 (예: 880805).', 'warning');
+            return;
+          }
+          if (!isValidContactNumber(formData.payerPhone)) {
+            toast('결제자 연락처를 올바르게 입력해 주세요 (10~11자리).', 'warning');
+            return;
+          }
+          const payerSigUrl = getCanvasDataUrl(payerSigCanvas) || formData.payerSignature;
+          if (!payerSigUrl) {
+            toast('제3자 결제자 서명을 진행해 주세요.', 'warning');
+            return;
+          }
+          if (payerSigUrl !== formData.payerSignature) {
+            updateFormData('payerSignature', payerSigUrl);
+          }
+        }
         // 1회차 / 가전제품 검증
         if (formData.paymentMethod1 === 'card') {
           const pureCard = formData.paymentInfo1.cardNumber.replace(/[^0-9]/g, '');
           if (!isValidCardNumber(pureCard) || !formData.paymentInfo1.cardCompany || !formData.paymentInfo1.cardExpiry) {
             toast(`${firstLabel} 카드 정보(11~16자리 번호, 유효기간, 카드사)를 모두 정확히 입력해 주세요.`, 'warning');
+            return;
+          }
+          if (isGoodlifeAllinone && !formData.paymentInfo1.installmentPeriod) {
+            toast('가전제품 할부 기간(1~24)을 입력해 주세요.', 'warning');
             return;
           }
         }
@@ -1162,7 +1413,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         }
       }
     }
-    if (currentStep === 5) { // Terms Agreement step
+    if (currentStepId === 'terms') { // Terms Agreement step
+      if (isGoodlifeAllinoneProduct(formData.product)) {
+        if (!formData.applianceNoticeAgreed) {
+          toast('가전제품구매계약서 주요내용 이해 확인에 체크해 주세요.', 'warning');
+          return;
+        }
+        if (!formData.appliancePrivacyAgreed) {
+          toast('가전제품구매계약서 개인정보 수집·이용에 동의해 주세요.', 'warning');
+          return;
+        }
+      }
       const currentTerms = getTermsForProduct(formData.product);
 
       const requiredTerms = currentTerms.filter(t => t.required).map(t => t.id);
@@ -1172,10 +1433,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         return;
       }
     }
-    if (currentStep === 6) { // Signature step
+    if (currentStepId === 'signature') { // Signature step
       if (!saveSignature()) return;
     }
-    if (currentStep === 7) { // Sales Info step
+    if (currentStepId === 'sales') { // Sales Info step
       if (!formData.salesName || !formData.salesAffiliation) {
         toast('영업자 정보(영업자 소속 및 영업자 성명)를 모두 정확히 입력해 주세요.', 'warning');
         return;
@@ -1183,34 +1444,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
       handleSubmit();
       return;
     }
-    if (currentStep === 1) {
-      if (formData.product === '더좋은통신결합') {
-        setCurrentStep(3);
-        return;
-      }
-      const currentProductConfig = getProductConfig(formData.product);
-      const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
-      if (!isHealthcareRequired) {
-        setCurrentStep(3); // 헬스케어대상자(Step 2)를 건너뛰고 상품정보(Step 3)로 바로 이동
-        return;
-      }
-    }
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
 
   };
 
   const handleBack = () => {
-    if (currentStep === 3) {
+    if (currentStepId === 'plan') {
       if (formData.product === '더좋은통신결합') {
-        setCurrentStep(1);
+        setCurrentStep(getStepIndex('info'));
         return;
       }
       const currentProductConfig = getProductConfig(formData.product);
       const isHealthcareRequired = (currentProductConfig?.requireHealthcare !== false) && !initialSkipHealthcare;
       if (!isHealthcareRequired) {
-        setCurrentStep(1); // 헬스케어대상자(Step 2)를 건너뛰고 계약자정보(Step 1)로 바로 이동
+        setCurrentStep(getStepIndex(isGoodlifeAllinoneProduct(formData.product) ? 'shipping' : 'info'));
         return;
       }
+      setCurrentStep(getStepIndex('healthcare'));
+      return;
+    }
+    if (currentStepId === 'healthcare') {
+      setCurrentStep(getStepIndex(isGoodlifeAllinoneProduct(formData.product) ? 'shipping' : 'info'));
+      return;
+    }
+    if (currentStepId === 'shipping') {
+      setCurrentStep(getStepIndex('info'));
+      return;
     }
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
@@ -1234,14 +1493,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           // PDF 생성이 완료될 때까지 약 10초간 로딩 화면 유지
           await new Promise(resolve => setTimeout(resolve, 10000));
           
-          setCurrentStep(8); // 완료 화면으로 이동
+          setCurrentStep(getStepIndex('complete')); // 완료 화면으로 이동
           
           // 완료 화면 렌더링 후 약간의 시차를 두고 다운로드 시작
           setTimeout(() => {
             window.location.href = `/api/download?id=${result.documentId}&action=download`;
           }, 500);
         } else {
-          setCurrentStep(8); // Final step
+          setCurrentStep(getStepIndex('complete')); // Final step
         }
       } else {
         toast(result.message || '등록 중 오류가 발생했습니다.', 'error');
@@ -1326,7 +1585,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
   return (
     <div className="min-h-screen bg-theme text-theme transition-colors duration-300 flex flex-col items-center py-12 px-4 selection:bg-indigo-500/30">
 
-      <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="lazyOnload" />
+      <Script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="lazyOnload" />
 
       <div className="w-full max-w-xl space-y-10">
         <div className="flex justify-between items-center px-4">
@@ -1369,7 +1628,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
           </motion.div>
         )}
 
-        {currentStep > 0 && currentStep < 8 && (
+        {currentStepId !== 'product' && currentStepId !== 'complete' && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }} 
             animate={{ opacity: 1, y: 0 }}
@@ -1390,7 +1649,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
         )}
 
         <AnimatePresence mode="wait">
-          {currentStep === 0 && (
+          {currentStepId === 'product' && (
             <motion.div
               key="step-product"
               initial={{ opacity: 0, x: 20 }}
@@ -1471,7 +1730,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 1 && (
+          {currentStepId === 'info' && (
             <motion.div
               key="step-info"
               initial={{ opacity: 0, x: 20 }}
@@ -1515,7 +1774,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Calendar size={14} /> 생년월일</label>
-                    <input type="text" placeholder="생년월일 6자리 (예: 880805)" maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
+                    <input type="text" placeholder={isGoodlifeAllinoneProduct(formData.product) ? '생년월일 6자리' : '생년월일 6자리 (예: 880805)'} maxLength={6} value={formData.residentId} onChange={(e) => updateFormData('residentId', e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none font-bold text-base" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-sub ml-1">성별</label>
@@ -1745,7 +2004,112 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 2 && (
+          {currentStepId === 'shipping' && (
+            <motion.div
+              key="step-shipping"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8 card-theme p-6 sm:p-8 rounded-[2.5rem] sm:rounded-[3rem]"
+            >
+              <div className="space-y-1 pb-2 border-b border-theme/10">
+                <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
+                <p className="text-xs font-semibold text-sub">제품을 배송받으실 수령인 및 수령지 주소를 입력해 주세요.</p>
+              </div>
+
+              <div className="space-y-6">
+                <label
+                  htmlFor="recipientSameAsContractor"
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer select-none ${
+                    formData.recipientSameAsContractor
+                      ? 'bg-indigo-600/10 border-indigo-500/40 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-theme border-theme text-sub hover:border-indigo-400/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="recipientSameAsContractor"
+                      type="checkbox"
+                      checked={formData.recipientSameAsContractor}
+                      onChange={(e) => handleRecipientSameToggle(e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-sm font-black">계약자와 동일</span>
+                  </div>
+                  <span className="text-[11px] font-bold opacity-80">계약자 정보 자동 입력</span>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 수령인 성명</label>
+                    <input
+                      type="text"
+                      placeholder="성명을 입력하세요"
+                      value={formData.recipientName}
+                      onChange={(e) => updateRecipientField('recipientName', e.target.value)}
+                      className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><User size={14} /> 계약자와의 관계</label>
+                    <input
+                      type="text"
+                      placeholder="예: 본인, 배우자, 자녀"
+                      value={formData.recipientRelation}
+                      onChange={(e) => updateRecipientField('recipientRelation', e.target.value)}
+                      className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><MapPin size={14} /> 수령지 주소</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="주소 검색을 클릭하세요"
+                      value={formData.recipientAddress}
+                      readOnly
+                      onClick={handleRecipientAddressSearch}
+                      className="flex-1 bg-theme border border-theme rounded-2xl py-4.5 px-6 outline-none cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRecipientAddressSearch}
+                      className="px-6 bg-card border border-theme rounded-2xl hover:bg-zinc-100 transition-colors font-bold text-sm"
+                    >
+                      검색
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="상세 주소를 입력하세요"
+                    value={formData.recipientAddressDetail}
+                    onChange={(e) => updateRecipientField('recipientAddressDetail', e.target.value)}
+                    className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-sub ml-1 flex items-center gap-2"><Phone size={14} /> 수령인 연락처</label>
+                  <input
+                    type="tel"
+                    placeholder="010-0000-0000"
+                    value={formData.recipientPhone}
+                    onChange={(e) => updateRecipientField('recipientPhone', formatContactPhone(e.target.value))}
+                    className="w-full bg-theme border border-theme rounded-2xl py-4.5 px-6 focus:border-indigo-500 outline-none text-base font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button onClick={handleBack} className="flex-1 py-5 bg-card text-sub rounded-2xl font-bold border border-theme">이전</button>
+                <button onClick={handleNext} className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black">다음 단계</button>
+              </div>
+            </motion.div>
+          )}
+
+          {currentStepId === 'healthcare' && (
             <motion.div
               key="step-healthcare"
               initial={{ opacity: 0, x: 20 }}
@@ -1830,7 +2194,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 3 && (
+          {currentStepId === 'plan' && (
             <motion.div
               key="step-plan"
               initial={{ opacity: 0, x: 20 }}
@@ -2043,7 +2407,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 4 && (
+          {currentStepId === 'payment' && (
             <motion.div
               key="step-pay-detail"
               initial={{ opacity: 0, x: 20 }}
@@ -2198,10 +2562,114 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                   <div className="space-y-6">
                     {/* --- 1회차 / 가전제품 결제정보 --- */}
                     <div className="space-y-3.5 p-5 bg-indigo-50/10 dark:bg-indigo-950/5 rounded-3xl border border-indigo-100/50 dark:border-indigo-950/20">
-                      <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 border-b border-indigo-100/30 pb-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                        {firstSectionTitle}
-                      </h3>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100/30 pb-2">
+                        <h3 className="text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                          {firstSectionTitle}
+                        </h3>
+                        {isGoodlifeAllinone && (
+                          <label
+                            htmlFor="thirdPartyPayerCheckbox"
+                            className="flex items-center gap-1.5 text-xs font-bold text-sub cursor-pointer select-none"
+                          >
+                            <input
+                              id="thirdPartyPayerCheckbox"
+                              type="checkbox"
+                              checked={formData.isThirdPartyPayer}
+                              onChange={(e) => handleThirdPartyPayerToggle(e.target.checked)}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                            />
+                            <span>계약자와 결제자가 다른 경우</span>
+                          </label>
+                        )}
+                      </div>
+
+                      {isGoodlifeAllinone && formData.isThirdPartyPayer && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-3 p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40"
+                        >
+                          <p className="text-[11px] font-black text-amber-700 dark:text-amber-300">
+                            제3자 결제자 정보 입력
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><User size={13} /> 제3자 결제자 성명</label>
+                              <input
+                                type="text"
+                                placeholder="결제자 성명을 입력하세요"
+                                value={formData.payerName}
+                                onChange={(e) => updateFormData('payerName', e.target.value)}
+                                className="w-full bg-theme border border-theme rounded-2xl py-3.5 px-4 focus:border-indigo-500 outline-none text-sm font-bold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Calendar size={13} /> 결제자 생년월일</label>
+                              <input
+                                type="text"
+                                placeholder="생년월일 6자리"
+                                maxLength={6}
+                                value={formData.payerBirth}
+                                onChange={(e) => updateFormData('payerBirth', e.target.value.replace(/[^0-9]/g, ''))}
+                                className="w-full bg-theme border border-theme rounded-2xl py-3.5 px-4 focus:border-indigo-500 outline-none text-sm font-bold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><Phone size={13} /> 결제자 연락처</label>
+                              <input
+                                type="tel"
+                                placeholder="010-0000-0000"
+                                value={formData.payerPhone}
+                                onChange={(e) => updateFormData('payerPhone', formatContactPhone(e.target.value))}
+                                className="w-full bg-theme border border-theme rounded-2xl py-3.5 px-4 focus:border-indigo-500 outline-none text-sm font-bold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5"><User size={13} /> 계약자와의 관계</label>
+                              <input
+                                type="text"
+                                placeholder="예: 배우자, 부모, 자녀"
+                                value={formData.payerRelation}
+                                onChange={(e) => updateFormData('payerRelation', e.target.value)}
+                                className="w-full bg-theme border border-theme rounded-2xl py-3.5 px-4 focus:border-indigo-500 outline-none text-sm font-bold"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[12px] font-bold text-sub ml-1 flex items-center gap-1.5">
+                                <PenLine size={13} /> 제3자 결제자 서명
+                              </label>
+                              <button
+                                type="button"
+                                onClick={clearPayerSignature}
+                                className="flex items-center gap-1 text-[11px] font-bold text-sub hover:text-indigo-600 transition-colors cursor-pointer"
+                              >
+                                <Eraser size={12} /> 서명 초기화
+                              </button>
+                            </div>
+                            <div className="bg-white rounded-2xl overflow-hidden border-2 border-theme shadow-inner touch-none">
+                              <SignatureCanvas
+                                ref={payerSigCanvas}
+                                penColor="black"
+                                onEnd={() => {
+                                  const url = getCanvasDataUrl(payerSigCanvas);
+                                  if (url) updateFormData('payerSignature', url);
+                                }}
+                                canvasProps={{
+                                  className: 'signature-canvas w-full h-40 touch-none',
+                                  style: { touchAction: 'none' }
+                                }}
+                              />
+                            </div>
+                            <p className="text-[11px] font-semibold text-sub ml-1">
+                              제3자 결제자 본인의 성함을 정자로 서명해 주세요.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
                       <div className="flex bg-theme p-1 rounded-2xl border border-theme">
                         <button type="button" onClick={() => updateFormData('paymentMethod1', 'card')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'card' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>카드 결제</button>
                         <button type="button" onClick={() => updateFormData('paymentMethod1', 'bank')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${formData.paymentMethod1 === 'bank' ? 'bg-indigo-600 text-white shadow-sm' : 'text-sub'}`}>계좌 이체</button>
@@ -2250,30 +2718,66 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-sub ml-1">할부 기간</label>
-                            <select 
-                              value={formData.paymentInfo1.installmentPeriod || '일시불'} 
-                              onChange={(e) => updatePaymentInfo1('installmentPeriod', e.target.value)} 
-                              className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center] bg-[length:1em]"
-                              style={{
-                                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`
-                              }}
-                            >
-                              <option value="일시불">일시불</option>
-                              <option value="2개월">2개월</option>
-                              <option value="3개월">3개월</option>
-                              <option value="4개월">4개월</option>
-                              <option value="5개월">5개월</option>
-                              <option value="6개월">6개월</option>
-                              <option value="7개월">7개월</option>
-                              <option value="8개월">8개월</option>
-                              <option value="9개월">9개월</option>
-                              <option value="10개월">10개월</option>
-                              <option value="11개월">11개월</option>
-                              <option value="12개월">12개월</option>
-                            </select>
+                            <label className="text-[12px] font-bold text-sub ml-1">
+                              할부 기간{isGoodlifeAllinone ? ' (1~24개월)' : ''}
+                            </label>
+                            {isGoodlifeAllinone ? (
+                              <>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={2}
+                                    placeholder="1~24 입력 (1 = 일시불)"
+                                    value={
+                                      formData.paymentInfo1.installmentPeriod === '일시불'
+                                        ? '1'
+                                        : (formData.paymentInfo1.installmentPeriod || '').replace(/[^0-9]/g, '')
+                                    }
+                                    onChange={(e) => {
+                                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                                      if (!digits) {
+                                        updatePaymentInfo1('installmentPeriod', '');
+                                        return;
+                                      }
+                                      const parsed = parseInt(digits, 10);
+                                      if (parsed > 24) {
+                                        toast('할부 기간은 최대 24개월까지 입력 가능합니다.', 'warning');
+                                      }
+                                      const clamped = Math.min(24, Math.max(1, parsed));
+                                      updatePaymentInfo1('installmentPeriod', clamped === 1 ? '일시불' : `${clamped}개월`);
+                                    }}
+                                    className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 pr-20 focus:border-indigo-500 outline-none text-sm font-bold"
+                                  />
+                                  <span className="absolute right-5 top-1/2 -translate-y-1/2 text-xs font-black text-indigo-600 dark:text-indigo-400 pointer-events-none">
+                                    {formData.paymentInfo1.installmentPeriod === '일시불'
+                                      ? '일시불'
+                                      : formData.paymentInfo1.installmentPeriod
+                                        ? '개월'
+                                        : '1~24'}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-sub font-semibold ml-1">
+                                  ※ 1 입력 시 일시불로 적용되며, 최대 24개월까지 입력할 수 있습니다.
+                                </p>
+                              </>
+                            ) : (
+                              <select 
+                                value={formData.paymentInfo1.installmentPeriod || '일시불'} 
+                                onChange={(e) => updatePaymentInfo1('installmentPeriod', e.target.value)} 
+                                className="w-full bg-theme border border-theme rounded-2xl py-4 px-5 focus:border-indigo-500 outline-none text-sm font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center] bg-[length:1em]"
+                                style={{
+                                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`
+                                }}
+                              >
+                                <option value="일시불">일시불</option>
+                                {Array.from({ length: 11 }, (_, i) => i + 2).map((month) => (
+                                  <option key={month} value={`${month}개월`}>{month}개월</option>
+                                ))}
+                              </select>
+                            )}
                           </div>
-                          {renderInstallmentGuide()}
+                          {!isGoodlifeAllinone && renderInstallmentGuide()}
                         </div>
                       ) : (
                         <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800 rounded-3xl text-center space-y-4 mt-3 shadow-inner">
@@ -2336,16 +2840,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                       {formData.paymentMethod2 === 'card' ? (
                         <div className="space-y-4 mt-3">
                           {formData.paymentMethod1 === 'card' && (
-                            <div className="flex items-center gap-2 mb-1 pl-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-1 pl-1">
                               <input 
                                 type="checkbox" 
                                 id="sameCardCheckbox"
-                                checked={isSameCard}
+                                checked={!(isGoodlifeAllinone && formData.isThirdPartyPayer) && isSameCard}
+                                disabled={isGoodlifeAllinone && formData.isThirdPartyPayer}
                                 onChange={(e) => handleSameCardToggle(e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                className={`w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 ${isGoodlifeAllinone && formData.isThirdPartyPayer ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               />
-                              <label htmlFor="sameCardCheckbox" className="text-xs font-bold text-sub cursor-pointer select-none flex items-center gap-1.5">
-                                {sameCardCheckboxLabel}
+                              <label
+                                htmlFor="sameCardCheckbox"
+                                className={`text-xs font-bold select-none flex items-center gap-1.5 ${isGoodlifeAllinone && formData.isThirdPartyPayer ? 'text-sub/50 cursor-not-allowed' : 'text-sub cursor-pointer'}`}
+                              >
+                                <span>{sameCardCheckboxLabel}</span>
+                                {isGoodlifeAllinone && formData.isThirdPartyPayer && (
+                                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                    (제3자 결제 시 적용 불가)
+                                  </span>
+                                )}
                               </label>
                             </div>
                           )}
@@ -2437,7 +2950,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 5 && (
+          {currentStepId === 'terms' && (
             <motion.div
               key="step-terms"
               initial={{ opacity: 0, x: 20 }}
@@ -2449,12 +2962,123 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
                 <h2 className="text-2xl font-black italic tracking-tight">{STEPS[currentStep].title}</h2>
               </div>
 
-              <div className="bg-theme border border-theme rounded-[2.5rem] overflow-hidden max-h-[350px] overflow-y-auto px-4 shadow-inner">
-                <TermsAgreement
-                  terms={getTermsForProduct(formData.product)}
-                  onAgreementChange={(agreement) => updateFormData('agreement', agreement)}
-                />
-              </div>
+              {isGoodlifeAllinoneProduct(formData.product) ? (
+                <div className="space-y-6">
+                  {/* 1. 가전제품구매계약서 계약 안내사항 */}
+                  <div className="p-5 sm:p-6 rounded-3xl bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-200/70 dark:border-indigo-900/40 space-y-4">
+                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-indigo-100/60 dark:border-indigo-900/40">
+                      <h3 className="text-sm sm:text-base font-black text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                        <FileText size={16} className="shrink-0" />
+                        가전제품구매계약서 계약 안내사항
+                      </h3>
+                      <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-400">
+                        필수 확인
+                      </span>
+                    </div>
+
+                    <ul className="space-y-2.5 text-xs sm:text-[13px] leading-relaxed font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-zinc-900/80 p-4 rounded-2xl border border-theme">
+                      {APPLIANCE_CONTRACT_GUIDES.map((guide, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span>{guide}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="space-y-2.5 pt-1">
+                      <label
+                        htmlFor="applianceNoticeAgreed"
+                        className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer select-none ${
+                          formData.applianceNoticeAgreed
+                            ? 'bg-indigo-600/10 border-indigo-500/40 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-theme border-theme text-sub hover:border-indigo-400/50'
+                        }`}
+                      >
+                        <input
+                          id="applianceNoticeAgreed"
+                          type="checkbox"
+                          checked={formData.applianceNoticeAgreed}
+                          onChange={(e) => updateFormData('applianceNoticeAgreed', e.target.checked)}
+                          className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600 shrink-0"
+                        />
+                        <span className="text-xs sm:text-sm font-black">
+                          위 계약의 주요내용을 자세히 설명받고 이해하였음{' '}
+                          <span className="text-indigo-600 dark:text-indigo-400">(필수)</span>
+                        </span>
+                      </label>
+
+                      <div className={`rounded-2xl border transition-all overflow-hidden ${
+                        formData.appliancePrivacyAgreed
+                          ? 'bg-indigo-600/10 border-indigo-500/40'
+                          : 'bg-theme border-theme hover:border-indigo-400/50'
+                      }`}>
+                        <div className="flex items-center justify-between gap-2 p-4">
+                          <label
+                            htmlFor="appliancePrivacyAgreed"
+                            className={`flex items-center gap-3 cursor-pointer select-none flex-1 ${
+                              formData.appliancePrivacyAgreed
+                                ? 'text-indigo-700 dark:text-indigo-300'
+                                : 'text-sub'
+                            }`}
+                          >
+                            <input
+                              id="appliancePrivacyAgreed"
+                              type="checkbox"
+                              checked={formData.appliancePrivacyAgreed}
+                              onChange={(e) => updateFormData('appliancePrivacyAgreed', e.target.checked)}
+                              className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600 shrink-0"
+                            />
+                            <span className="text-xs sm:text-sm font-black">
+                              개인정보수집, 이용에 관한 동의{' '}
+                              <span className="text-indigo-600 dark:text-indigo-400">(필수)</span>
+                            </span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowAppliancePrivacy((prev) => !prev)}
+                            className="text-sub hover:text-indigo-600 transition-colors p-1 shrink-0"
+                            aria-label="개인정보 수집·이용 내용 보기"
+                          >
+                            {showAppliancePrivacy ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          </button>
+                        </div>
+                        {showAppliancePrivacy && (
+                          <div className="px-4 pb-4 pt-2 border-t border-slate-200/70 dark:border-zinc-700/70 text-[11px] text-sub leading-relaxed whitespace-pre-wrap bg-white/70 dark:bg-zinc-900/60">
+                            {APPLIANCE_PRIVACY_CONTENT}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. 약관 동의 */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between px-1">
+                      <h3 className="text-sm font-black text-sub flex items-center gap-1.5">
+                        <ShieldCheck size={15} className="text-indigo-500" />
+                        약관 동의
+                      </h3>
+                    </div>
+                    <div className="bg-white border border-theme rounded-[2rem] overflow-hidden shadow-inner">
+                      <TermsAgreement
+                        terms={getTermsForProduct(formData.product)}
+                        initialAgreements={formData.agreement}
+                        onAgreementChange={(agreement) => updateFormData('agreement', agreement)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-theme border border-theme rounded-[2.5rem] overflow-hidden max-h-[350px] overflow-y-auto px-4 shadow-inner">
+                  <TermsAgreement
+                    terms={getTermsForProduct(formData.product)}
+                    initialAgreements={formData.agreement}
+                    onAgreementChange={(agreement) => updateFormData('agreement', agreement)}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button onClick={handleBack} className="flex-1 py-5 bg-card text-sub rounded-2xl font-bold border border-theme">이전</button>
@@ -2463,7 +3087,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 6 && (
+          {currentStepId === 'signature' && (
             <motion.div
               key="step-signature"
               initial={{ opacity: 0, x: 20 }}
@@ -2503,7 +3127,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 7 && (
+          {currentStepId === 'sales' && (
             <motion.div
               key="step-sales"
               initial={{ opacity: 0, x: 20 }}
@@ -2555,7 +3179,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ allowedProducts, li
             </motion.div>
           )}
 
-          {currentStep === 8 && (
+          {currentStepId === 'complete' && (
             <motion.div
               key="step-complete"
               initial={{ scale: 0.9, opacity: 0 }}

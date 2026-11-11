@@ -258,7 +258,26 @@ export async function registerAction(data: any) {
         '회원증서수령방법': !data.certificateDeliveryMethod || data.certificateDeliveryMethod === 'alimtalk' ? '알림톡' : data.certificateDeliveryMethod === 'email' ? `이메일 (${data.certificateEmail || ''})` : '우편'
       };
 
-      const isSplitPayment = data.product === '좋은건강크루즈' || data.product === '굿라이프헬스케어 올인원(일시납)' || (data.product?.includes('올인원') && data.product?.includes('일시납'));
+      const isGoodlifeAllinoneLumpSum = data.product === '굿라이프헬스케어 올인원(일시납)' || (data.product?.includes('올인원') && data.product?.includes('일시납'));
+      const isSplitPayment = data.product === '좋은건강크루즈' || isGoodlifeAllinoneLumpSum;
+
+      if (isGoodlifeAllinoneLumpSum) {
+        sheetData['수령인성명'] = data.recipientName || '';
+        sheetData['수령인관계'] = data.recipientRelation || '';
+        sheetData['수령지주소'] = `${data.recipientAddress || ''} ${data.recipientAddressDetail || ''}`.trim();
+        sheetData['수령인연락처'] = data.recipientPhone || '';
+      }
+      if (isGoodlifeAllinoneLumpSum) {
+        sheetData['가전제품계약안내동의'] = data.applianceNoticeAgreed ? '동의' : '미동의';
+        sheetData['가전제품개인정보동의'] = data.appliancePrivacyAgreed ? '동의' : '미동의';
+        sheetData['제3자결제여부'] = data.isThirdPartyPayer ? 'Y' : 'N';
+        if (data.isThirdPartyPayer) {
+          sheetData['결제자성명'] = data.payerName || '';
+          sheetData['결제자생년월일'] = data.payerBirth || '';
+          sheetData['결제자연락처'] = data.payerPhone || '';
+          sheetData['결제자관계'] = data.payerRelation || '';
+        }
+      }
 
       if (isSplitPayment) {
         sheetData['결제정보(카드/cms)'] = data.paymentMethod2 === 'card' ? '카드' : 'CMS';

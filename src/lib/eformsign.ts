@@ -186,70 +186,70 @@ export async function createEformsignDocument(data: any) {
             const paymentDay = `${(data.paymentDate || '05').toString().padStart(2, '0')}일`;
 
             fields = [
-                { id: '상품명', value: `${productNameDisplay}(${data.productCount}구좌) ${data.productName || ''}`.trim() },
-                { id: '제품명', value: data.productName || '' },
+                { id: '계약자 성별', value: data.gender || '남' },
+                { id: '계약자 성명', value: data.name },
+                { id: '계약자 생년월일', value: data.residentId },
+                { id: '계약자 주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
+                { id: '계약자 연락처', value: data.phone },
+                { id: '계약자 서명', value: data.signature || '' },
+
+                // 배송지 및 수령인 정보
+                { id: '수령인 성명', value: data.recipientName || '' },
+                { id: '수령인 관계', value: data.recipientRelation || '' },
+                { id: '수령인 주소', value: `${data.recipientAddress || ''} ${data.recipientAddressDetail || ''}`.trim() },
+                { id: '수령인 연락처', value: data.recipientPhone || '' },
+
+                // 상품 정보
                 { id: '구좌수', value: `${data.productCount}구좌` },
-                { id: '계약자이름', value: data.name },
-                { id: '계약자', value: data.name },
-                { id: '주민번호', value: data.residentId },
-                { id: '성별', value: data.gender || '남' },
-                { id: '기업명', value: data.companyName || '' },
-                { id: '사업자등록번호', value: data.businessNumber || '' },
-                { id: '주소', value: `${data.address} ${data.addressDetail || ''}`.trim() },
-                { id: '휴대폰', value: data.phone },
-                
+                { id: '제품명', value: data.productName || '' },
+
                 // 가전제품 일시납 결제 정보
                 { id: '일시납 결제방법', value: paymentMethod1 },
-                { id: '일시납 카드/은행명', value: cardCompany1 },
+                { id: '일시납 카드사', value: cardCompany1 },
                 { id: '일시납 카드번호', value: cardNumber1 },
                 { id: '일시납 유효기간', value: cardExpiry1 },
                 { id: '일시납 할부개월', value: installmentPeriod1 },
-                
+                { id: '결제자 성명', value: data.isThirdPartyPayer ? (data.payerName || '') : '' },
+                { id: '결제자 생년월일', value: data.isThirdPartyPayer ? (data.payerBirth || '') : '' },
+                { id: '결제자 연락처', value: data.isThirdPartyPayer ? (data.payerPhone || '') : '' },
+                { id: '결제자 관계', value: data.isThirdPartyPayer ? (data.payerRelation || '') : '' },
+                { id: '결제자 서명', value: data.isThirdPartyPayer ? (data.payerSignature || '') : '' },
+
                 // 라이프서비스 결제 정보
                 { id: '결제방법', value: paymentMethod2 },
                 { id: '카드/은행명', value: cardOrBank2 },
-                { id: '카드번호/계좌번호', value: cardOrAccount2 },
+                { id: '카드/계좌번호', value: cardOrAccount2 },
                 { id: '유효기간', value: cardExpiry2 },
-                { id: '카드할부', value: '' },
                 { id: '이체일', value: paymentDay },
-                
-                // 헬스케어 대상자 1
+                { id: '텍스트 1', value: '' },
+
+                // 헬스케어 대상자 1~3
                 { id: '대상자1_관계', value: data.healthcareTargets?.[0]?.relation || '' },
                 { id: '대상자1_성명', value: data.healthcareTargets?.[0]?.name || '' },
                 { id: '대상자1_생년월일', value: data.healthcareTargets?.[0]?.birth || '' },
                 { id: '대상자1_성별', value: data.healthcareTargets?.[0]?.gender || '' },
-                { id: '대상자1_연락처', value: data.healthcareTargets?.[0]?.phone || '' },
-                
-                // 헬스케어 대상자 2
+                { id: '대상자1_전화번호', value: data.healthcareTargets?.[0]?.phone || '' },
                 { id: '대상자2_관계', value: data.healthcareTargets?.[1]?.relation || '' },
                 { id: '대상자2_성명', value: data.healthcareTargets?.[1]?.name || '' },
                 { id: '대상자2_생년월일', value: data.healthcareTargets?.[1]?.birth || '' },
                 { id: '대상자2_성별', value: data.healthcareTargets?.[1]?.gender || '' },
-                { id: '대상자2_연락처', value: data.healthcareTargets?.[1]?.phone || '' },
-                
-                // 헬스케어 대상자 3
+                { id: '대상자2_전화번호', value: data.healthcareTargets?.[1]?.phone || '' },
                 { id: '대상자3_관계', value: data.healthcareTargets?.[2]?.relation || '' },
                 { id: '대상자3_성명', value: data.healthcareTargets?.[2]?.name || '' },
                 { id: '대상자3_생년월일', value: data.healthcareTargets?.[2]?.birth || '' },
                 { id: '대상자3_성별', value: data.healthcareTargets?.[2]?.gender || '' },
-                { id: '대상자3_연락처', value: data.healthcareTargets?.[2]?.phone || '' },
-                // 헬스케어 대상자 4
-                { id: '대상자4_관계', value: data.healthcareTargets?.[3]?.relation || '' },
-                { id: '대상자4_성명', value: data.healthcareTargets?.[3]?.name || '' },
-                { id: '대상자4_생년월일', value: data.healthcareTargets?.[3]?.birth || '' },
-                { id: '대상자4_성별', value: data.healthcareTargets?.[3]?.gender || '' },
-                { id: '대상자4_연락처', value: data.healthcareTargets?.[3]?.phone || '' },
-                
-                // 약관 동의 및 서명
+                { id: '대상자3_전화번호', value: data.healthcareTargets?.[2]?.phone || '' },
+
+                // 약관 동의 및 계약·영업자 정보
                 { id: '상품내용고지', value: data.agreement?.product_notice ? '1' : '' },
                 { id: '개인정보수집', value: data.agreement?.privacy ? '1' : '' },
                 { id: '제3자제공', value: data.agreement?.third_party ? '1' : '' },
-                { id: '마케팅정보제공', value: data.agreement?.marketing ? '1' : '' },
-                { id: '서명', value: data.signature || '' },
-                { id: '계약일', value: today },
-                { id: '영업자소속', value: data.salesAffiliation || '' },
-                { id: '영업자성명', value: data.salesName || '' },
-                { id: '영업자연락처', value: data.salesPhone || '' }
+                { id: '마케팅정보동의', value: data.agreement?.marketing ? '1' : '' },
+                { id: '계약일자', value: today },
+                { id: '영업자 소속', value: data.salesAffiliation || '' },
+                { id: '영업자', value: data.salesName || '' },
+                { id: '영업자 성명', value: data.salesName || '' },
+                { id: '영업자 연락처', value: data.salesPhone || '' }
             ];
         } else if (!isTongsin && !isRise && !isCruise && !isHealth580) {
             console.log(`Creating e-FormSign document for ${data.product} using template ${templateId}`);
@@ -566,10 +566,12 @@ export async function createEformsignDocument(data: any) {
                             country_code: "+82",
                             phone_number: cleanPhone
                         },
-                        auth: {
-                            type: "field",
-                            value: data.name // '계약자' 필드 값과 동일해야 함
-                        }
+                        ...(isGoodlifeAllinoneLumpSum ? {} : {
+                            auth: {
+                                type: "field",
+                                value: data.name // '계약자' 필드 값과 동일해야 함
+                            }
+                        })
                     }
                 ],
                 fields: fields

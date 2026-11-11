@@ -34,7 +34,7 @@ export default function RootLayout({
     >
       <head />
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="beforeInteractive" />
+        <Script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="beforeInteractive" />
         <Providers>
           {children}
         </Providers>

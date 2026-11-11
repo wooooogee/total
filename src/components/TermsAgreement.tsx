@@ -13,11 +13,12 @@ interface TermItem {
 interface TermsAgreementProps {
   terms: TermItem[];
   onAgreementChange: (agreements: Record<string, boolean>) => void;
+  initialAgreements?: Record<string, boolean>;
 }
 
-const TermsAgreement: React.FC<TermsAgreementProps> = ({ terms, onAgreementChange }) => {
-  const [agreements, setAgreements] = useState<Record<string, boolean>>(
-    Object.fromEntries(terms.map((t) => [t.id, false]))
+const TermsAgreement: React.FC<TermsAgreementProps> = ({ terms, onAgreementChange, initialAgreements }) => {
+  const [agreements, setAgreements] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(terms.map((t) => [t.id, Boolean(initialAgreements?.[t.id])]))
   );
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -28,7 +29,7 @@ const TermsAgreement: React.FC<TermsAgreementProps> = ({ terms, onAgreementChang
   };
 
   const toggleAll = () => {
-    const allChecked = Object.values(agreements).every((v) => v);
+    const allChecked = terms.length > 0 && terms.every((t) => Boolean(agreements[t.id]));
     const newAgreements = Object.fromEntries(terms.map((t) => [t.id, !allChecked]));
     setAgreements(newAgreements);
     onAgreementChange(newAgreements);
@@ -38,7 +39,7 @@ const TermsAgreement: React.FC<TermsAgreementProps> = ({ terms, onAgreementChang
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const isAllChecked = Object.values(agreements).every((v) => v);
+  const isAllChecked = terms.length > 0 && terms.every((t) => Boolean(agreements[t.id]));
 
   return (
     <div className="flex flex-col gap-4 w-full p-6 bg-white">
